@@ -29,10 +29,12 @@ MODULE FFWind
    REAL(ReKi)                       :: FFZHWid                    ! half the grid height
    REAL(ReKi)                       :: RefHt                      ! the reference (hub) height of the grid in meters 
    REAL(ReKi)                       :: GridBase                   ! the height of the bottom of the grid in meters
+   REAL(ReKi)                       :: InitXPosition              ! the initial x location of the wind file (distance the FF file will be offset)
    REAL(ReKi)                       :: InvFFYD                    ! reciprocal of delta y
    REAL(ReKi)                       :: InvFFZD                    ! reciprocal of delta z
    REAL(ReKi)                       :: InvMFFWS                   ! reciprocal of the mean wind speed (MeanFFWS)
    REAL(ReKi)                       :: MeanFFWS                   ! the mean wind speed (as defined in the FF file), not necessarially the mean of the portion of the wind used
+   REAL(ReKi)                       :: TotalTime                  ! the total time in the simulation
 
    INTEGER                          :: NFFComp                    ! number of wind components
    INTEGER                          :: NFFSteps                   ! number of time steps in the FF array
@@ -41,6 +43,7 @@ MODULE FFWind
    INTEGER                          :: NTGrids                    ! number of points in the vertical (z) direction on the tower (below the grids)
          
    LOGICAL, SAVE                    :: Initialized = .FALSE.      ! flag that determines if the module has been initialized
+   LOGICAL                          :: Periodic    = .FALSE.      ! flag that determines if the wind is periodic
 
 
    INTERFACE FF_GetValue
@@ -124,11 +127,11 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
     
    SELECT CASE (DumInt)  
    
-      CASE ( 7 )                                                       !        TurbSim binary format
+      CASE ( 7, 8 )                                                    ! TurbSim binary format
          
          CALL Read_TurbSim_FF(UnWind, TRIM(BinFile), ErrStat)
          
-      CASE ( -1, -2, -3, -99 )                                         !   Bladed-style binary format
+      CASE ( -1, -2, -3, -99 )                                         ! Bladed-style binary format
       
          !...........................................................................................
          ! Create full-field summary file name from binary file root name.  Also get tower file
@@ -221,8 +224,16 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
    END SELECT
 
 
+   IF (Periodic) THEN
+      InitXPosition = 0                ! start at the hub
+      TotalTime     = NFFSteps*FFDTime
+   ELSE
+      InitXPosition = FFYHWid          ! start half the grid with ahead of the turbine
+      TotalTime     = (NFFSteps-1)*FFDTime      
+   END IF
+      
    Initialized = .TRUE.
-
+   
    RETURN
    
 END SUBROUTINE FF_Init
@@ -469,7 +480,7 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
                READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                       ! TI(u, v, w) (%)
                
                   IF (ErrStat /= 0) THEN
-                     CALL WrScr( ' Error reading TI('//'TRIM(Int2LStr(I))'//') from binary FF file.' )
+                     CALL WrScr( ' Error reading TI('//'TRIM(Num2LStr(I))'//') from binary FF file.' )
                      RETURN
                   END IF
                   TI(I) = Dum_Real4                                                          ! This overwrites the TI read in the summary file
@@ -500,7 +511,7 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
                                   
       CASE DEFAULT
       
-         CALL ProgWarn( ' AeroDyn does not recognize the full-field turbulence file type ='//TRIM(Int2LStr(TurbType))//'.' )
+         CALL ProgWarn( ' AeroDyn does not recognize the full-field turbulence file type ='//TRIM(Num2LStr(TurbType))//'.' )
                   
    END SELECT !TurbType
 
@@ -735,10 +746,10 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat )
    ! Generate an informative message.
    !-------------------------------------------------------------------------------------------------
       
-   CALL WrScr1( ' Reading a '//TRIM( Int2LStr(NYGrids) )//'x'//TRIM( Int2LStr(NZGrids) )//  &
-            ' grid ('//TRIM( Flt2Lstr(FFYHWid*2) )//' m wide, '// &
-            TRIM( Flt2Lstr(GridBase) )//' m to '//TRIM( Flt2Lstr(GridBase+FFZHWid*2) )//&
-            ' m above ground) with a characterstic wind speed of '//TRIM( Flt2LStr(MeanFFWS) )//' m/s. ' )
+   CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+            ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
+            TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
+            ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. ' )
 
    !-------------------------------------------------------------------------------------------------
    ! Allocate space for the FF array 
@@ -817,9 +828,9 @@ TIME_LOOP:  DO IT=1,TmpNumSteps     ! time (add 1 to see if there is an odd numb
                      ErrStat  = 0
                      EXIT TIME_LOOP       
                   ELSE               
-                     CALL WrScr( ' Error reading binary data file. ic = '//TRIM(Int2LStr(ic))// &
-                                    ', ir = '//TRIM(Int2LStr(ir))//', it = '//TRIM(Int2LStr(it))// &
-                                    ', nffsteps = '//TRIM(Int2LStr(nffsteps)) )
+                     CALL WrScr( ' Error reading binary data file. ic = '//TRIM(Num2LStr(ic))// &
+                                    ', ir = '//TRIM(Num2LStr(ir))//', it = '//TRIM(Num2LStr(it))// &
+                                    ', nffsteps = '//TRIM(Num2LStr(nffsteps)) )
                      ErrStat = 1
                      RETURN
                   END IF
@@ -835,10 +846,13 @@ TIME_LOOP:  DO IT=1,TmpNumSteps     ! time (add 1 to see if there is an odd numb
 
    END DO TIME_LOOP !IT
    
-   
-   CALL WrScr ( ' Processed '//TRIM( Int2LStr( NFFSteps ) )//' time steps of '//TRIM( Flt2LStr ( FFRate ) )// & 
-                  '-Hz full-field data ('//TRIM( Flt2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
-
+   IF ( Periodic ) THEN
+      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// & 
+                     '-Hz full-field data (period of '//TRIM( Num2LStr( FFDTime*NFFSteps ) )//' seconds).' )
+   ELSE                     
+      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// & 
+                     '-Hz full-field data ('//TRIM( Num2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
+   END IF
 
 END SUBROUTINE Read_Bladed_Grids
 !====================================================================================================
@@ -857,7 +871,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
    REAL(ReKi)                 :: ZGOffset       ! The vertical offset of the turbine on rectangular grid (allows turbulence not centered on turbine hub)
 
    
-   INTEGER, PARAMETER         :: NumStrings = 5 ! number of strings to be looking for in the file
+   INTEGER, PARAMETER         :: NumStrings = 6 ! number of strings to be looking for in the file
 
    INTEGER                    :: FirstIndx      ! The first character of a line where data is located
    INTEGER                    :: I              ! A loop counter
@@ -878,7 +892,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
    StrNeeded(:) = .TRUE.
    ZGOffset     = 0.0
    RefHt        = 0.0
-
+   Periodic     = .FALSE.
    
       !----------------------------------------------------------------------------------------------
       ! Open summary file.
@@ -899,7 +913,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
       IF ( ErrStat /= 0 ) THEN
       
          IF ( StrNeeded(NumStrings-1) ) THEN  ! the "HEIGHT OFFSET" StrNeeded(NumStrings) parameter is not necessary.  We'll assume it's zero if we didn't find it.
-            CALL WrScr( ' Error reading line #'//TRIM(Int2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
+            CALL WrScr( ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
             CALL WrScr( 'Could not find all of the required parameters.' )
             ErrStat = NumStrings+1
             RETURN
@@ -994,7 +1008,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
                READ ( UnWind, '(A)', IOSTAT=Status ) LINE
                IF ( Status /= 0 ) THEN
-                  CALL WrScr( ' Error reading line #'//TRIM(Int2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
+                  CALL WrScr( ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
                   CALL WrScr( 'Could not find all of the required parameters.' )
                   ErrStat = Status
                   RETURN
@@ -1007,7 +1021,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
                READ ( LINE( FirstIndx:LastIndx ), *, IOSTAT=Status ) TI(I)
                IF ( Status /= 0 ) THEN
-                  CALL WrScr( ' Error reading TI('//TRIM(Int2LStr(I))//') binary data normalizing parameter from FF summary file.' )
+                  CALL WrScr( ' Error reading TI('//TRIM(Num2LStr(I))//') binary data normalizing parameter from FF summary file.' )
                   ErrStat = 4
                   RETURN
                END IF ! Status /= 0      
@@ -1039,6 +1053,19 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
             StrNeeded(5) = .FALSE.
             
          END IF !INDEX for "HEIGHT OFFSET"
+
+      ELSEIF ( StrNeeded(6) ) THEN
+         
+         !-------------------------------------------------------------------------------------------
+         ! #5: Get the grid "PERIODIC", if it exists (in TurbSim). Otherwise, assume it's  
+         !        not a periodic file
+         !-------------------------------------------------------------------------------------------         
+         IF ( INDEX( LINE, 'PERIODIC' ) > 0  ) THEN
+         
+            Periodic     = .TRUE.                  
+            StrNeeded(6) = .FALSE.
+            
+         END IF !INDEX for "PERIODIC"
          
       END IF ! StrNeeded
       
@@ -1106,11 +1133,12 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    !-------------------------------------------------------------------------------------------------
    ! Read the header information
    !-------------------------------------------------------------------------------------------------
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int2               ! the number 7: (file identifier), INT(2)
+      READ (UnWind, IOSTAT=ErrStat)  Dum_Int2               ! the file identifier, INT(2)
          IF ( ErrStat /= 0 )  THEN
             CALL WrScr ( ' Error reading the file identifier in the FF binary file "'//TRIM( WindFile )//'."' )
             RETURN
-         ENDIF
+         ENDIF         
+         Periodic = Dum_Int2 == INT( 8, B2Ki) ! the number 7 is used for non-periodic wind files; 8 is periodic wind
 
 
       READ (UnWind, IOSTAT=ErrStat)  Dum_Int4               ! the number of grid points vertically, INT(4)
@@ -1206,14 +1234,14 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
          DO IC = 1,NFFComp         
             READ (UnWind, IOSTAT=ErrStat)  Vslope(IC)       ! the IC-component slope for scaling, REAL(4)
                IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr ( ' Error reading Vslope('//Int2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
+                  CALL WrScr ( ' Error reading Vslope('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
                   RETURN
                ENDIF
 
 
             READ (UnWind, IOSTAT=ErrStat)  Voffset(IC)      ! the IC-component offset for scaling, REAL(4)
                IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr ( ' Error reading Voffset('//Int2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
+                  CALL WrScr ( ' Error reading Voffset('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
                   RETURN
                ENDIF
                
@@ -1255,10 +1283,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    ! Get the grid and tower velocities
    !-------------------------------------------------------------------------------------------------
 
-   CALL WrScr1( ' Reading a '//TRIM( Int2LStr(NYGrids) )//'x'//TRIM( Int2LStr(NZGrids) )//  &
-            ' grid ('//TRIM( Flt2Lstr(FFYHWid*2) )//' m wide, '// &
-            TRIM( Flt2Lstr(GridBase) )//' m to '//TRIM( Flt2Lstr(GridBase+FFZHWid*2) )//&
-            ' m above ground) with a characterstic wind speed of '//TRIM( Flt2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
+   CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+            ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
+            TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
+            ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
                
                
    !----------------------------------------------------------------------------------------------
@@ -1356,8 +1384,13 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    CLOSE ( UnWind )
 
 
-   CALL WrScr ( ' Processed '//TRIM( Int2LStr( NFFSteps ) )//' time steps of '//TRIM( Flt2LStr ( FFRate ) )// & 
-                  '-Hz full-field data ('//TRIM( Flt2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
+   IF ( Periodic ) THEN
+      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// & 
+                     '-Hz full-field data (period of '//TRIM( Num2LStr( FFDTime*( NFFSteps ) ) )//' seconds).' )
+   ELSE
+      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// & 
+                     '-Hz full-field data ('//TRIM( Num2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
+   END IF                  
 
    RETURN
 
@@ -1493,7 +1526,7 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
       DO IC=1,3
          READ (UnWind, IOSTAT=ErrStat)  TI(IC)               ! TI(u), TI(v), TI(w)  [4-byte REAL]
             IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Error reading TI('//TRIM(Int2Lstr(IC))//') in the binary tower file "' &
+               CALL WrScr ( ' Error reading TI('//TRIM(Num2LStr(IC))//') in the binary tower file "' &
                                //TRIM( WindFile )//'."' )
                NTgrids = 0                               
                RETURN
@@ -1539,8 +1572,8 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
 
                READ (UnWind, IOSTAT=ErrStat)  Dum_Int2      ! normalized wind-component, INT(2)
                IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr( ' Error reading binary tower data file. it = '//TRIM(Int2LStr(it))// &
-                                 ', nffsteps = '//TRIM(Int2LStr(nffsteps)) )
+                  CALL WrScr( ' Error reading binary tower data file. it = '//TRIM(Num2LStr(it))// &
+                                 ', nffsteps = '//TRIM(Num2LStr(nffsteps)) )
                   ErrStat = 1  
                   NTgrids = 0            
                   RETURN
@@ -1561,7 +1594,7 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
    CLOSE ( UnWind )
 
 
-   CALL WrScr ( ' Processed '//TRIM( Int2LStr(NFFSteps) )//' time steps of '//TRIM( Int2LStr(NTgrids) )//'x1 tower data grids.')
+   CALL WrScr ( ' Processed '//TRIM( Num2LStr(NFFSteps) )//' time steps of '//TRIM( Num2LStr(NTgrids) )//'x1 tower data grids.')
 
 
    RETURN
@@ -1758,31 +1791,52 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
    ! If we did not do this, any point downstream of the tower at the beginning of the run would index outside of the array.   
    ! This all assumes the grid width is at least as large as the rotor.  If it isn't, then the interpolation will not work.
 
-! bjj: should we shift by MIN(FFYHWid,FFZHWid) instead of FFYHWid?
 
-   TimeShifted = TIME + ( FFYHWid - Position(1) )*InvMFFWS    ! in distance, X: -(TIME*MeanFFWS + FFYHWid) - InputInfo%Position(1))
-   TGRID       = TimeShifted*FFRate
+   TimeShifted = TIME + ( InitXPosition - Position(1) )*InvMFFWS    ! in distance, X: InputInfo%Position(1) - InitXPosition - TIME*MeanFFWS
+      
 
-   ITLO = INT( TGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
-   ITHI = ITLO + 1
+   IF ( Periodic ) THEN ! translate TimeShifted to ( 0 <= TimeShifted < TotalTime )
+
+      TimeShifted = MODULO( TimeShifted, TotalTime )
    
-   T    = TGRID - ( ITLO - 1 )         ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
-
-   IF ( ITLO >= NFFSteps .OR. ITLO < 1 ) THEN
-      IF ( ITLO == NFFSteps  ) THEN
-         ITHI = ITLO   
-         IF ( T <= TOL ) THEN ! we're on the last point
-            T = 0.0
-         ELSE  ! We'll extrapolate one dt past the last value in the file
-            ITLO = ITHI - 1
-         END IF         
-      ELSE                 
-         CALL WrScr( ' Error: FF wind array was exhausted at '//TRIM( Flt2LStr( REAL( TIME,   ReKi ) ) )// & 
-                        ' seconds (trying to access data at '//TRIM( Flt2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'  )
-         ErrStat = 1   
-         RETURN
+      TGRID = TimeShifted*FFRate
+      ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0) 
+      T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI   
+      
+      ITLO = ITLO + 1
+      IF ( ITLO == NFFSteps ) THEN
+         ITHI = 1
+      ELSE
+         ITHI = ITLO + 1
       END IF
-   ENDIF
+      
+      
+   ELSE
+   
+      TGRID = TimeShifted*FFRate
+      ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0) 
+      T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI   
+   
+      ITLO = ITLO + 1                  ! add one since our grids start at 1, not 0 
+      ITHI = ITLO + 1   
+
+      IF ( ITLO >= NFFSteps .OR. ITLO < 1 ) THEN
+         IF ( ITLO == NFFSteps  ) THEN
+            ITHI = ITLO   
+            IF ( T <= TOL ) THEN ! we're on the last point
+               T = 0.0
+            ELSE  ! We'll extrapolate one dt past the last value in the file
+               ITLO = ITHI - 1
+            END IF         
+         ELSE                 
+            CALL WrScr( ' Error: FF wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )// & 
+                           ' seconds (trying to access data at '//TRIM( Num2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'  )
+            ErrStat = 1   
+            RETURN
+         END IF
+      ENDIF
+
+   END IF
 
 
    !-------------------------------------------------------------------------------------------------
@@ -1805,7 +1859,7 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
             IZLO = 1
          ELSE
             CALL WrScr( ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-                        TRIM(Flt2LStr(Position(3)))//' m is below the grid).' )
+                        TRIM(Num2LStr(Position(3)))//' m is below the grid).' )
             ErrStat = 1   
             RETURN
          END IF
@@ -1815,7 +1869,7 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
             IZHI = IZLO                   ! We're right on the last point, which is still okay
          ELSE      
             CALL WrScr( ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-                        TRIM(Flt2LStr(Position(3)))//' m is above the grid).' )
+                        TRIM(Num2LStr(Position(3)))//' m is above the grid).' )
             ErrStat = 3   
             RETURN
          END IF         
@@ -1827,7 +1881,7 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
       
       IF ( NTGrids < 1 ) THEN
          CALL WrScr ( ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
-                       '(height (Z='//TRIM(Flt2LStr(Position(3)))//' m) is below the grid and no tower points are defined).' )
+                       '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).' )
          ErrStat = 1
          RETURN
       END IF
@@ -1869,8 +1923,8 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
                IYHI = IYLO                   ! We're right on the last point, which is still okay      
             ELSE
                CALL WrScr( ' Error FF wind array boundaries violated: Grid too small in Y direction. Y=' &
-                             //TRIM(Flt2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Flt2LStr(-1.0*FFYHWid)) &
-                             //', '//TRIM(Flt2LStr(FFYHWid))//']' )
+                             //TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*FFYHWid)) &
+                             //', '//TRIM(Num2LStr(FFYHWid))//']' )
                ErrStat = 2   
                RETURN
             END IF
@@ -1882,9 +1936,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
 
       DO IDIM=1,NFFComp       ! all the components
 
-         IG = 1
-
-         DO IT=ITLO,ITHI      ! time slices
+         IT = ITLO            ! Start using the ITLO slice
+   
+         DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
 
             !-------------------------------------------------------------------------------------------
             ! Get the wind velocity values for the four corners of the grid for this time.
@@ -1904,9 +1958,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
             W_YH_Z  = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
             Wnd(IG) = ( W_YH_Z  - W_YL_Z  )*Y + W_YL_Z
 
-            IG = IG + 1
+            IT = ITHI            ! repeat for the using the ITHI slice
 
-         END DO !IT
+         END DO !IG
 
          !----------------------------------------------------------------------------------------------
          ! Interpolate between the two times.

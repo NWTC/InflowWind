@@ -9,6 +9,7 @@ MODULE InflowWind
 !
 !  7 Oct 2009    Initial Release with AeroDyn 13.00.00      B. Jonkman, NREL/NWTC
 ! 14 Nov 2011    v1.00.01b-bjj                              B. Jonkman
+!  1 Aug 2012    v1.01.00a-bjj                              B. Jonkman
 !----------------------------------------------------------------------------------------------------  
 
    USE                              NWTC_Library

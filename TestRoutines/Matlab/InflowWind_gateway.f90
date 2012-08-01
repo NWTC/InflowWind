@@ -6,13 +6,13 @@
 !  National Wind Technology Center
 !
 !     To initialize the subroutine:
-!  [Err] = WindInflow_mex( 0, FileName, FileType, ReferenceHeight, ReferenceWidth )
+!  [Err] = InflowWind_mex( 0, FileName, FileType, ReferenceHeight, ReferenceWidth )
 !
 !     To get wind speeds:
-!  [Err, V] = WindInflow_mex( 3, t, X )
+!  [Err, V] = InflowWind_mex( 3, t, X )
 !
 !     To terminate:
-!  [Err] = WindInflow_mex( 9 )
+!  [Err] = InflowWind_mex( 9 )
 !
 !     Err             = INTEGER(8)         error status
 !     V               = REAL(8) ARRAY(3)   velocity

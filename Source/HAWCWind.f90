@@ -253,7 +253,7 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
    IF ( GridBase <= 0.0 ) THEN
       CALL WrScr( ' HAWCWind error: the bottom of the grid is located at a height of '//&
-                      TRIM( Flt2LStr(GridBase) )//' meters, which is below the ground.' )
+                      TRIM( Num2LStr(GridBase) )//' meters, which is below the ground.' )
       ErrStat = 1
       RETURN
    END IF 
@@ -301,8 +301,8 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
                
                IF (ErrStat /= 0) THEN
                   CALL WrScr( ' Error reading binary data from "'//TRIM(DataFiles(IC))//'".' )
-                  CALL WrScr( ' I/O error '//TRIM(Int2LStr(ErrStat))//' occurred at IZ='//TRIM(Int2LStr(IZ))//&
-                                                   ', IY='//TRIM(Int2LStr(IY))//', IX='//TRIM(Int2LStr(IX))//'.' )
+                  CALL WrScr( ' I/O error '//TRIM(Num2LStr(ErrStat))//' occurred at IZ='//TRIM(Num2LStr(IZ))//&
+                                                   ', IY='//TRIM(Num2LStr(IY))//', IX='//TRIM(Num2LStr(IX))//'.' )
                   CLOSE ( UnWind )
                   RETURN
                END IF
@@ -543,8 +543,8 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
       
 ! BJJ: assuming LengthX and NX have been correctly defined, this cannot happen:      
 !      IF ( IXLO > NX .OR. IXLO < 1 ) THEN
-!            CALL WrScr( ' HAWCWind error: wind array was exhausted at '//TRIM( Flt2LStr( REAL( TIME,   ReKi ) ) )//' seconds '//& 
-!                        '(trying to access X data at '//TRIM( Flt2LStr( REAL( ShiftedXPosition, ReKi ) ) )//' m).'  )
+!            CALL WrScr( ' HAWCWind error: wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )//' seconds '//& 
+!                        '(trying to access X data at '//TRIM( Num2LStr( REAL( ShiftedXPosition, ReKi ) ) )//' m).'  )
 !            ErrStat = 1   
 !            RETURN
 !      ENDIF
@@ -571,7 +571,7 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
          IZLO = 1
       ELSE
          CALL WrScr( ' HAWCWind error: wind array boundaries violated. Grid too small in Z direction (Z='//&
-                     TRIM(Flt2LStr(Position(3)))//' m is below the grid).' )
+                     TRIM(Num2LStr(Position(3)))//' m is below the grid).' )
          ErrStat = 1   
          RETURN
       END IF
@@ -581,7 +581,7 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
          IZHI = IZLO                   ! We're right on the last point, which is still okay
       ELSE      
          CALL WrScr( ' HAWCWind error: wind array boundaries violated. Grid too small in Z direction (Z='//&
-                     TRIM(Flt2LStr(Position(3)))//' m is above the grid).' )
+                     TRIM(Num2LStr(Position(3)))//' m is above the grid).' )
          ErrStat = 3   
          RETURN
       END IF         
@@ -608,8 +608,8 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
          IYHI = IYLO                   ! We're right on the last point, which is still okay      
       ELSE
          CALL WrScr( ' HAWCWind error: wind array boundaries violated: Grid too small in Y direction. Y=' &
-                        //TRIM(Flt2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Flt2LStr(-1.0*LengthYHalf)) &
-                        //', '//TRIM(Flt2LStr(LengthYHalf))//']' )
+                        //TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*LengthYHalf)) &
+                        //', '//TRIM(Num2LStr(LengthYHalf))//']' )
          ErrStat = 2   
          RETURN
       END IF

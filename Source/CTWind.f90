@@ -665,7 +665,7 @@ SUBROUTINE LoadCTData( UnWind, FileName, ITime, IComp, Vel, ErrStat )
 
       IF ( ErrStat /= 0 )  THEN
 
-         CALL WrScr( ' Error reading record '//TRIM( Int2LStr( IZ ) )//' of the binary CT wind file, "' &
+         CALL WrScr( ' Error reading record '//TRIM( Num2LStr( IZ ) )//' of the binary CT wind file, "' &
                            //TRIM( FileName )//'."')
          RETURN                           
 
@@ -894,7 +894,7 @@ SUBROUTINE ReadCTTS ( UnWind, FileName, CT_SC_ext, ErrStat )
       READ (UnWind,*,IOSTAT=ErrStat)  Tdata(IT), TimeStpCT(IT)
 
       IF ( ErrStat /= 0 )  THEN
-         CALL WrScr ( ' Error reading record '//TRIM( Int2LStr( IT ) )//' of the CT-wind time-steps file, "' &
+         CALL WrScr ( ' Error reading record '//TRIM( Num2LStr( IT ) )//' of the CT-wind time-steps file, "' &
                          //TRIM( FileName )//'."')
 
          NumCTt = IT - 1
@@ -949,10 +949,10 @@ SUBROUTINE ReadCTScales ( UnWind, FileName, ErrStat )
    IF ( ErrStat /= 0 )  RETURN
 
    DO I = 1,3
-      CALL ReadVar( UnWind, TRIM( FileName ), CTScale(I), 'CTScale('//TRIM(Int2LStr(I))//')', ' ', ErrStat ) 
+      CALL ReadVar( UnWind, TRIM( FileName ), CTScale(I), 'CTScale('//TRIM(Num2LStr(I))//')', ' ', ErrStat ) 
       IF ( ErrStat /= 0 )  RETURN
    
-      CALL ReadVar( UnWind, TRIM( FileName ), CTOffset(I), 'CTOffset('//TRIM(Int2LStr(I))//')', ' ', ErrStat ) 
+      CALL ReadVar( UnWind, TRIM( FileName ), CTOffset(I), 'CTOffset('//TRIM(Num2LStr(I))//')', ' ', ErrStat ) 
       IF ( ErrStat /= 0 )  RETURN
    END DO !I
 

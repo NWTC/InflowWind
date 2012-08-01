@@ -124,7 +124,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
       READ(UnWind,'( A )',IOSTAT=ErrStat) LINE
             
       IF ( ErrStat /=0 ) THEN
-         CALL WrScr ( ' Error reading from HH wind file on line '//TRIM(Int2Lstr(NumComments))//'.' )
+         CALL WrScr ( ' Error reading from HH wind file on line '//TRIM(Num2LStr(NumComments))//'.' )
          RETURN
       END IF
       
@@ -146,10 +146,10 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
 
 
    IF (NumDataLines < 1) THEN
-      CALL WrScr ( ' Error reading data from HH wind file on line '//TRIM(Int2Lstr(NumDataLines+NumComments))//'.' )
+      CALL WrScr ( ' Error reading data from HH wind file on line '//TRIM(Num2LStr(NumDataLines+NumComments))//'.' )
       RETURN
    ELSE
-      CALL WrScr ( ' Reading '//TRIM(Int2Lstr(NumDataLines))//' lines of data from the HH wind file.' )
+      CALL WrScr ( ' Reading '//TRIM(Num2LStr(NumDataLines))//' lines of data from the HH wind file.' )
    END IF
 
 
@@ -231,7 +231,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
    REWIND( UnWind )
    
    DO I=1,NumComments
-      CALL ReadCom( UnWind, TRIM(WindFile), 'Header line #'//TRIM(Int2LStr(I)), ErrStat )
+      CALL ReadCom( UnWind, TRIM(WindFile), 'Header line #'//TRIM(Num2LStr(I)), ErrStat )
       IF ( ErrStat /= 0 ) RETURN
    END DO !I
 
@@ -243,7 +243,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
    DO I=1,NumDataLines
          
       CALL ReadAry( UnWind, TRIM(WindFile), TmpData(1:NumCols), NumCols, 'TmpData', & 
-                'Data from HH line '//TRIM(Int2LStr(NumComments+I)), ErrStat )
+                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), ErrStat )
       IF (ErrStat /= 0) RETURN
                  
       Tdata(  I) = TmpData(1)
@@ -281,8 +281,8 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
       
       IF ( ILine >= MaxTries ) THEN
          CALL WrScr( ' Error calculating wind direction from HH file. Delta(' &
-               // TRIM(Int2LStr(I  )) // ') = ' // TRIM(Flt2Lstr(Delta(I))) // '; Delta(' & 
-               // TRIM(Int2LStr(I+1)) // ') = ' // TRIM(Flt2Lstr(Delta(I+1))) )
+               // TRIM(Num2LStr(I  )) // ') = ' // TRIM(Num2LStr(Delta(I))) // '; Delta(' & 
+               // TRIM(Num2LStr(I+1)) // ') = ' // TRIM(Num2LStr(Delta(I+1))) )
          ErrStat = 1
       END IF
            
@@ -300,7 +300,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
    !-------------------------------------------------------------------------------------------------
    ! Print warnings and messages
    !-------------------------------------------------------------------------------------------------
-!   CALL WrScr ( ' Processed '//TRIM( Int2LStr( NumDataLines ) )//' records of HH data' )
+!   CALL WrScr ( ' Processed '//TRIM( Num2LStr( NumDataLines ) )//' records of HH data' )
    
    
    IF ( Tdata(1) > 0.0 ) THEN
@@ -309,7 +309,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
    ENDIF
    
    IF ( NumDataLines == 1 ) THEN
-      CALL WrScr( ' Only 1 line in HH wind file. Steady, hub-height horizontal wind speed = '//TRIM(Flt2Lstr(V(1)))//' m/s.' )
+      CALL WrScr( ' Only 1 line in HH wind file. Steady, hub-height horizontal wind speed = '//TRIM(Num2LStr(V(1)))//' m/s.' )
    END IF
 
 

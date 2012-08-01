@@ -654,7 +654,7 @@ SUBROUTINE Read4Dtimes ( UnWind, FileName, ErrStat )
 
       IF ( ErrStat /= 0 )  THEN
 
-         CALL WrScr( ' Error reading line '//TRIM( Int2LStr( I+1 ) )// &
+         CALL WrScr( ' Error reading line '//TRIM( Num2LStr( I+1 ) )// &
                         ' of the 4D-wind time-steps file, "'//TRIM( FileName )//'."')
          RETURN                        
 
@@ -792,7 +792,7 @@ SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
 
       IF ( ErrStat /= 0 )  THEN
 
-         CALL WrScr( ' Error reading record '//TRIM( Int2LStr( IZ ) )// & 
+         CALL WrScr( ' Error reading record '//TRIM( Num2LStr( IZ ) )// & 
                                             ' of the binary 4D wind file, "'//TRIM( FileName )//'".')
          RETURN
 

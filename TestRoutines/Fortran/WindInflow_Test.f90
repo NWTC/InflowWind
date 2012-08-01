@@ -62,7 +62,7 @@ PROGRAM WindInflow
          
          !IF (ErrStat /=0) CALL ProgAbort('Error in getting wind speed')
             
-         WRITE(*,*) TRIM(Int2LStr(ErrStat)), ' V(t=', TRIM(Flt2LStr(Time)), ') = ', MyWindSpeed
+         WRITE(*,*) TRIM(Num2LStr(ErrStat)), ' V(t=', TRIM(Num2LStr(Time)), ') = ', MyWindSpeed
 
       END DO
     
