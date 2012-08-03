@@ -1,15 +1,10 @@
-!  WindInflow.f90 
-!
-!  FUNCTIONS:
-!  WindInflow      - This program tests the inflow wind module
-!
 !****************************************************************************
 !
-!  PROGRAM: WindInflow
+!  PROGRAM: InflowWind_Test  - This program tests the inflow wind module
 !
 !****************************************************************************
 
-PROGRAM WindInflow
+PROGRAM InflowWind_Test
     
    USE InflowWind
    USE SharedInflowDefns
@@ -72,5 +67,5 @@ PROGRAM WindInflow
     CALL WindInf_Terminate( ErrStat )
 
 
-END PROGRAM WindInflow
+END PROGRAM InflowWind_Test
 
