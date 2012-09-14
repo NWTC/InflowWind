@@ -1978,9 +1978,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
       
       DO IDIM=1,NFFComp    ! all the components
 
-         IG = 1
+         IT = ITLO            ! Start using the ITLO slice
 
-         DO IT=ITLO,ITHI
+         DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
 
             !-------------------------------------------------------------------------------------------
             ! Get the wind velocity values for the two corners of the grid for this time.
@@ -2001,9 +2001,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
 
             Wnd(IG) = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
 
-            IG = IG + 1
+            IT = ITHI            ! repeat for the using the ITHI slice
 
-         END DO !IT
+         END DO !IG
 
          !----------------------------------------------------------------------------------------------
          ! Interpolate between the two times.

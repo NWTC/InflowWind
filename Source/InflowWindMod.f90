@@ -10,6 +10,7 @@ MODULE InflowWind
 !  7 Oct 2009    Initial Release with AeroDyn 13.00.00      B. Jonkman, NREL/NWTC
 ! 14 Nov 2011    v1.00.01b-bjj                              B. Jonkman
 !  1 Aug 2012    v1.01.00a-bjj                              B. Jonkman
+! 10 Aug 2012    v1.01.00b-bjj                              B. Jonkman
 !----------------------------------------------------------------------------------------------------  
 
    USE                              NWTC_Library
@@ -62,7 +63,7 @@ MODULE InflowWind
    PUBLIC                         :: WindInf_ADhack_DIcheck ! used to keep old AeroDyn functionality--remove soon!
    PUBLIC                         :: WindInf_LinearizePerturbation !used for linearization; should be modified
 
-   CHARACTER(99),PARAMETER        :: WindInfVer = 'InflowWind (v1.01.00a-bjj, 01-Aug-2012)'
+   CHARACTER(99),PARAMETER        :: WindInfVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
 
 CONTAINS
 !====================================================================================================
