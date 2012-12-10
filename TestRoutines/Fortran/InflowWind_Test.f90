@@ -26,7 +26,11 @@ PROGRAM InflowWind_Test
    ! Send the data required for initialization
    !-------------------------------------------------------------------------------------------------
     
-      InitWindData%WindFileName     = "D:\DATA\Fortran\IVF Projects\AeroDyn\Update\Source\InflowWind\TestData\GPLLJ_DNS\InOut.wnd"
+!      InitWindData%WindFileName     = "D:\DATA\Fortran\IVF Projects\AeroDyn\Update\Source\InflowWind\TestData\GPLLJ_DNS\InOut.wnd"
+!      InitWindData%WindFileName     = "../TestRoutines/TestData/Periodic_Winds.wnd"    !! ff wind
+!      InitWindData%WindFileName     = "Test-Data/InOut.wnd"    !! ff wind
+!      InitWindData%WindFileName     = "../Samples/Steady.wnd"  !! HH wind
+      InitWindData%WindFileName     = "../Samples/les.fdp"  !! 4 D -- points to some other files.
       InitWindData%ReferenceHeight  = 80.   ! meters
       InitWindData%Width            = 100.  ! meters
 
