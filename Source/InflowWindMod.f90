@@ -54,14 +54,15 @@ MODULE InflowWind
 
    PUBLIC                         :: WindInf_Init           ! Initialization subroutine
    PUBLIC                         :: WindInf_GetVelocity    ! function to get wind speed at point in space and time
-   PUBLIC                         :: WindInf_GetMean        ! function to get the mean wind speed at a point in space
-   PUBLIC                         :: WindInf_GetStdDev      ! function to calculate standard deviation at a point in space
-   PUBLIC                         :: WindInf_GetTI          ! function to get TI at a point in space
    PUBLIC                         :: WindInf_Terminate      ! subroutine to clean up
 
    PUBLIC                         :: WindInf_ADhack_diskVel ! used to keep old AeroDyn functionality--remove soon!
    PUBLIC                         :: WindInf_ADhack_DIcheck ! used to keep old AeroDyn functionality--remove soon!
    PUBLIC                         :: WindInf_LinearizePerturbation !used for linearization; should be modified
+!!----Removed during conversion to new framework
+!!       PUBLIC                         :: WindInf_GetMean        ! function to get the mean wind speed at a point in space
+!!       PUBLIC                         :: WindInf_GetStdDev      ! function to calculate standard deviation at a point in space
+!!       PUBLIC                         :: WindInf_GetTI          ! function to get TI at a point in space
 
    CHARACTER(99),PARAMETER        :: WindInfVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
 
@@ -261,236 +262,6 @@ FUNCTION WindInf_GetVelocity(Time, InputPosition, ErrStat)
 
 END FUNCTION WindInf_GetVelocity
 !====================================================================================================
-!!----Remove this functionality for now. Will put it back in sometime after the conversion to the new framework ----
-!!    FUNCTION WindInf_GetMean(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
-!!    !  This function returns the mean wind speed
-!!    !----------------------------------------------------------------------------------------------------
-!!
-!!          ! passed variables
-!!       REAL(ReKi),       INTENT(IN)  :: StartTime
-!!       REAL(ReKi),       INTENT(IN)  :: EndTime
-!!       REAL(ReKi),       INTENT(IN)  :: delta_time
-!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
-!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
-!!
-!!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetMean(3)      ! MEAN U, V, W
-!!
-!!          ! local variables
-!!       REAL(ReKi)                    :: Time
-!!       REAL(DbKi)                    :: SumVel(3)
-!!       INTEGER                       :: I
-!!       INTEGER                       :: Nt
-!!
-!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
-!!
-!!
-!!       Nt = (EndTime - StartTime) / delta_time
-!!
-!!       SumVel(:) = 0.0
-!!       ErrStat   = 0
-!!
-!!
-!!       DO I=1,Nt
-!!
-!!          Time = StartTime + (I-1)*delta_time
-!!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
-!!          IF ( ErrStat /= 0 ) THEN
-!!             WindInf_GetMean(:) = SumVel(:) / REAL(I-1, ReKi)
-!!             RETURN
-!!          ELSE
-!!             SumVel(:) = SumVel(:) + NewVelocity%Velocity(:)
-!!          END IF
-!!
-!!       END DO
-!!
-!!       WindInf_GetMean(:) = SumVel(:) / REAL(Nt, ReKi)
-!!
-!!
-!!    END FUNCTION WindInf_GetMean
-!!    !====================================================================================================
-!!    FUNCTION WindInf_GetStdDev(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
-!!    !  This function returns the mean wind speed (mean, std, TI, etc)
-!!    !----------------------------------------------------------------------------------------------------
-!!
-!!          ! passed variables
-!!       REAL(ReKi),       INTENT(IN)  :: StartTime
-!!       REAL(ReKi),       INTENT(IN)  :: EndTime
-!!       REAL(ReKi),       INTENT(IN)  :: delta_time
-!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
-!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
-!!
-!!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetStdDev(3)    ! STD U, V, W
-!!
-!!          ! local variables
-!!       REAL(ReKi)                    :: Time
-!!       REAL(ReKi), ALLOCATABLE       :: Velocity(:,:)
-!!       REAL(DbKi)                    :: SumAry(3)
-!!       REAL(DbKi)                    :: MeanVel(3)
-!!       INTEGER                       :: I
-!!       INTEGER                       :: Nt
-!!
-!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Initialize
-!!       !-------------------------------------------------------------------------------------------------
-!!
-!!       WindInf_GetStdDev(:) = 0.0
-!!
-!!       Nt = (EndTime - StartTime) / delta_time
-!!
-!!       IF ( Nt < 2 ) RETURN    ! StdDev is 0
-!!
-!!
-!!       IF (.NOT. ALLOCATED(Velocity)) THEN
-!!    !      CALL AllocAry( Velocity, 3, Nt, 'StdDev velocity', ErrStat)
-!!          ALLOCATE ( Velocity(3, Nt), STAT=ErrStat )
-!!
-!!          IF ( ErrStat /= 0 )  THEN
-!!             CALL WrScr ( ' Error allocating memory for the StdDev velocity array.' )
-!!             RETURN
-!!          END IF
-!!       END IF
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Calculate the mean, storing the velocity for later
-!!       !-------------------------------------------------------------------------------------------------
-!!       SumAry(:) = 0.0
-!!
-!!       DO I=1,Nt
-!!
-!!          Time = StartTime + (I-1)*delta_time
-!!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
-!!          IF ( ErrStat /= 0 ) RETURN
-!!          Velocity(:,I) = NewVelocity%Velocity(:)
-!!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
-!!
-!!       END DO
-!!
-!!       MeanVel(:) = SumAry(:) / REAL(Nt, ReKi)
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Calculate the standard deviation
-!!       !-------------------------------------------------------------------------------------------------
-!!       SumAry(:) = 0.0
-!!
-!!       DO I=1,Nt
-!!
-!!          SumAry(:) = SumAry(:) + ( Velocity(:,I) - MeanVel(:) )**2
-!!
-!!       END DO ! I
-!!
-!!       WindInf_GetStdDev(:) = SQRT( SumAry(:) / ( Nt - 1 ) )
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Deallocate
-!!       !-------------------------------------------------------------------------------------------------
-!!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
-!!
-!!
-!!    END FUNCTION WindInf_GetStdDev
-!!    !====================================================================================================
-!!    FUNCTION WindInf_GetTI(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
-!!    !  This function returns the TI of the wind speed.  It's basically a copy of WindInf_GetStdDev,
-!!    !  except the return value is divided by the mean U-component wind speed.
-!!    !----------------------------------------------------------------------------------------------------
-!!
-!!          ! passed variables
-!!       REAL(ReKi),       INTENT(IN)  :: StartTime
-!!       REAL(ReKi),       INTENT(IN)  :: EndTime
-!!       REAL(ReKi),       INTENT(IN)  :: delta_time
-!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
-!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
-!!
-!!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetTI(3)        ! TI U, V, W
-!!
-!!          ! local variables
-!!       REAL(ReKi)                    :: Time
-!!       REAL(ReKi), ALLOCATABLE       :: Velocity(:,:)
-!!       REAL(DbKi)                    :: SumAry(3)
-!!       REAL(DbKi)                    :: MeanVel(3)
-!!       INTEGER                       :: I
-!!       INTEGER                       :: Nt
-!!
-!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Initialize
-!!       !-------------------------------------------------------------------------------------------------
-!!
-!!       WindInf_GetTI(:) = 0.0
-!!
-!!       Nt = (EndTime - StartTime) / delta_time
-!!
-!!       IF ( Nt < 2 ) RETURN    ! StdDev is 0
-!!
-!!
-!!       IF (.NOT. ALLOCATED(Velocity)) THEN
-!!    !      CALL AllocAry( Velocity, 3, Nt, 'TI velocity', ErrStat)
-!!          ALLOCATE ( Velocity(3, Nt), STAT=ErrStat )
-!!
-!!          IF ( ErrStat /= 0 )  THEN
-!!             CALL WrScr ( ' Error allocating memory for the TI velocity array.' )
-!!             RETURN
-!!          END IF
-!!       END IF
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Calculate the mean, storing the velocity for later
-!!       !-------------------------------------------------------------------------------------------------
-!!       SumAry(:) = 0.0
-!!
-!!       DO I=1,Nt
-!!
-!!          Time = StartTime + (I-1)*delta_time
-!!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
-!!          IF ( ErrStat /= 0 ) RETURN
-!!          Velocity(:,I) = NewVelocity%Velocity(:)
-!!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
-!!
-!!       END DO
-!!
-!!       MeanVel(:) = SumAry(:) / REAL(Nt, ReKi)
-!!
-!!       IF ( ABS(MeanVel(1)) <= EPSILON(MeanVel(1)) ) THEN
-!!          CALL WrScr( ' Wind speed is small in WindInf_GetTI(). TI is undefined.' )
-!!          ErrStat = 1
-!!          RETURN
-!!       END IF
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Calculate the standard deviation
-!!       !-------------------------------------------------------------------------------------------------
-!!       SumAry(:) = 0.0
-!!
-!!       DO I=1,Nt
-!!
-!!          SumAry(:) = SumAry(:) + ( Velocity(:,I) - MeanVel(:) )**2
-!!
-!!       END DO ! I
-!!
-!!       WindInf_GetTI(:) = SQRT( SumAry(:) / ( Nt - 1 ) ) / MeanVel(1)
-!!
-!!
-!!       !-------------------------------------------------------------------------------------------------
-!!       ! Deallocate
-!!       !-------------------------------------------------------------------------------------------------
-!!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
-!!
-!!
-!!    END FUNCTION WindInf_GetTI
 !!    !====================================================================================================
 FUNCTION GetWindType( FileName, ErrStat )
 !  This subroutine checks the file FileName to see what kind of wind file we are using.  Used when
@@ -855,3 +626,238 @@ SUBROUTINE WindInf_Terminate( ErrStat )
 END SUBROUTINE WindInf_Terminate
 !====================================================================================================
 END MODULE InflowWind
+
+
+
+
+
+!!----Remove this functionality for now. Might put it back in sometime after the conversion to the new framework ----
+!!    FUNCTION WindInf_GetMean(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!!    !  This function returns the mean wind speed
+!!    !----------------------------------------------------------------------------------------------------
+!!
+!!          ! passed variables
+!!       REAL(ReKi),       INTENT(IN)  :: StartTime
+!!       REAL(ReKi),       INTENT(IN)  :: EndTime
+!!       REAL(ReKi),       INTENT(IN)  :: delta_time
+!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
+!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
+!!
+!!          ! function definition
+!!       REAL(ReKi)                    :: WindInf_GetMean(3)      ! MEAN U, V, W
+!!
+!!          ! local variables
+!!       REAL(ReKi)                    :: Time
+!!       REAL(DbKi)                    :: SumVel(3)
+!!       INTEGER                       :: I
+!!       INTEGER                       :: Nt
+!!
+!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
+!!
+!!
+!!       Nt = (EndTime - StartTime) / delta_time
+!!
+!!       SumVel(:) = 0.0
+!!       ErrStat   = 0
+!!
+!!
+!!       DO I=1,Nt
+!!
+!!          Time = StartTime + (I-1)*delta_time
+!!
+!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          IF ( ErrStat /= 0 ) THEN
+!!             WindInf_GetMean(:) = SumVel(:) / REAL(I-1, ReKi)
+!!             RETURN
+!!          ELSE
+!!             SumVel(:) = SumVel(:) + NewVelocity%Velocity(:)
+!!          END IF
+!!
+!!       END DO
+!!
+!!       WindInf_GetMean(:) = SumVel(:) / REAL(Nt, ReKi)
+!!
+!!
+!!    END FUNCTION WindInf_GetMean
+!!    !====================================================================================================
+!!    FUNCTION WindInf_GetStdDev(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!!    !  This function returns the mean wind speed (mean, std, TI, etc)
+!!    !----------------------------------------------------------------------------------------------------
+!!
+!!          ! passed variables
+!!       REAL(ReKi),       INTENT(IN)  :: StartTime
+!!       REAL(ReKi),       INTENT(IN)  :: EndTime
+!!       REAL(ReKi),       INTENT(IN)  :: delta_time
+!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
+!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
+!!
+!!          ! function definition
+!!       REAL(ReKi)                    :: WindInf_GetStdDev(3)    ! STD U, V, W
+!!
+!!          ! local variables
+!!       REAL(ReKi)                    :: Time
+!!       REAL(ReKi), ALLOCATABLE       :: Velocity(:,:)
+!!       REAL(DbKi)                    :: SumAry(3)
+!!       REAL(DbKi)                    :: MeanVel(3)
+!!       INTEGER                       :: I
+!!       INTEGER                       :: Nt
+!!
+!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Initialize
+!!       !-------------------------------------------------------------------------------------------------
+!!
+!!       WindInf_GetStdDev(:) = 0.0
+!!
+!!       Nt = (EndTime - StartTime) / delta_time
+!!
+!!       IF ( Nt < 2 ) RETURN    ! StdDev is 0
+!!
+!!
+!!       IF (.NOT. ALLOCATED(Velocity)) THEN
+!!    !      CALL AllocAry( Velocity, 3, Nt, 'StdDev velocity', ErrStat)
+!!          ALLOCATE ( Velocity(3, Nt), STAT=ErrStat )
+!!
+!!          IF ( ErrStat /= 0 )  THEN
+!!             CALL WrScr ( ' Error allocating memory for the StdDev velocity array.' )
+!!             RETURN
+!!          END IF
+!!       END IF
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Calculate the mean, storing the velocity for later
+!!       !-------------------------------------------------------------------------------------------------
+!!       SumAry(:) = 0.0
+!!
+!!       DO I=1,Nt
+!!
+!!          Time = StartTime + (I-1)*delta_time
+!!
+!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          IF ( ErrStat /= 0 ) RETURN
+!!          Velocity(:,I) = NewVelocity%Velocity(:)
+!!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
+!!
+!!       END DO
+!!
+!!       MeanVel(:) = SumAry(:) / REAL(Nt, ReKi)
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Calculate the standard deviation
+!!       !-------------------------------------------------------------------------------------------------
+!!       SumAry(:) = 0.0
+!!
+!!       DO I=1,Nt
+!!
+!!          SumAry(:) = SumAry(:) + ( Velocity(:,I) - MeanVel(:) )**2
+!!
+!!       END DO ! I
+!!
+!!       WindInf_GetStdDev(:) = SQRT( SumAry(:) / ( Nt - 1 ) )
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Deallocate
+!!       !-------------------------------------------------------------------------------------------------
+!!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
+!!
+!!
+!!    END FUNCTION WindInf_GetStdDev
+!!    !====================================================================================================
+!!    FUNCTION WindInf_GetTI(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!!    !  This function returns the TI of the wind speed.  It's basically a copy of WindInf_GetStdDev,
+!!    !  except the return value is divided by the mean U-component wind speed.
+!!    !----------------------------------------------------------------------------------------------------
+!!
+!!          ! passed variables
+!!       REAL(ReKi),       INTENT(IN)  :: StartTime
+!!       REAL(ReKi),       INTENT(IN)  :: EndTime
+!!       REAL(ReKi),       INTENT(IN)  :: delta_time
+!!       REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
+!!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
+!!
+!!          ! function definition
+!!       REAL(ReKi)                    :: WindInf_GetTI(3)        ! TI U, V, W
+!!
+!!          ! local variables
+!!       REAL(ReKi)                    :: Time
+!!       REAL(ReKi), ALLOCATABLE       :: Velocity(:,:)
+!!       REAL(DbKi)                    :: SumAry(3)
+!!       REAL(DbKi)                    :: MeanVel(3)
+!!       INTEGER                       :: I
+!!       INTEGER                       :: Nt
+!!
+!!       TYPE(InflIntrpOut)            :: NewVelocity             ! U, V, W velocities
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Initialize
+!!       !-------------------------------------------------------------------------------------------------
+!!
+!!       WindInf_GetTI(:) = 0.0
+!!
+!!       Nt = (EndTime - StartTime) / delta_time
+!!
+!!       IF ( Nt < 2 ) RETURN    ! StdDev is 0
+!!
+!!
+!!       IF (.NOT. ALLOCATED(Velocity)) THEN
+!!    !      CALL AllocAry( Velocity, 3, Nt, 'TI velocity', ErrStat)
+!!          ALLOCATE ( Velocity(3, Nt), STAT=ErrStat )
+!!
+!!          IF ( ErrStat /= 0 )  THEN
+!!             CALL WrScr ( ' Error allocating memory for the TI velocity array.' )
+!!             RETURN
+!!          END IF
+!!       END IF
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Calculate the mean, storing the velocity for later
+!!       !-------------------------------------------------------------------------------------------------
+!!       SumAry(:) = 0.0
+!!
+!!       DO I=1,Nt
+!!
+!!          Time = StartTime + (I-1)*delta_time
+!!
+!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          IF ( ErrStat /= 0 ) RETURN
+!!          Velocity(:,I) = NewVelocity%Velocity(:)
+!!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
+!!
+!!       END DO
+!!
+!!       MeanVel(:) = SumAry(:) / REAL(Nt, ReKi)
+!!
+!!       IF ( ABS(MeanVel(1)) <= EPSILON(MeanVel(1)) ) THEN
+!!          CALL WrScr( ' Wind speed is small in WindInf_GetTI(). TI is undefined.' )
+!!          ErrStat = 1
+!!          RETURN
+!!       END IF
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Calculate the standard deviation
+!!       !-------------------------------------------------------------------------------------------------
+!!       SumAry(:) = 0.0
+!!
+!!       DO I=1,Nt
+!!
+!!          SumAry(:) = SumAry(:) + ( Velocity(:,I) - MeanVel(:) )**2
+!!
+!!       END DO ! I
+!!
+!!       WindInf_GetTI(:) = SQRT( SumAry(:) / ( Nt - 1 ) ) / MeanVel(1)
+!!
+!!
+!!       !-------------------------------------------------------------------------------------------------
+!!       ! Deallocate
+!!       !-------------------------------------------------------------------------------------------------
+!!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
+!!
+!!
+!!    END FUNCTION WindInf_GetTI
