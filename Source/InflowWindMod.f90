@@ -1,8 +1,8 @@
 MODULE InflowWind
 ! This module is used to read and process the (undisturbed) inflow winds.  It must be initialized
-! using WindInf_Init() with the name of the file, the file type, and possibly reference height and
+! using InflowWind_Init() with the name of the file, the file type, and possibly reference height and
 ! width (depending on the type of wind file being used).  This module calls appropriate routines
-! in the wind modules so that the type of wind becomes seamless to the user.  WindInf_Terminate()
+! in the wind modules so that the type of wind becomes seamless to the user.  InflowWind_Terminate()
 ! should be called when the program has finshed.
 !
 ! Data are assumed to be in units of meters and seconds.  Z is measured from the ground (NOT the hub!).
@@ -37,6 +37,8 @@ MODULE InflowWind
 
    INTEGER, SAVE                  :: WindType = Undef_Wind  ! Wind Type Flag
 
+!FIXME: handle this differently -- should be allocated by the library function to get an open unit number
+! store as parameter in parametertype
    INTEGER                        :: UnWind   = 91          ! The unit number used for wind inflow files
 
    LOGICAL, SAVE                  :: CT_Flag  = .FALSE.     ! determines if coherent turbulence is used
@@ -44,7 +46,7 @@ MODULE InflowWind
    !-------------------------------------------------------------------------------------------------
    ! Definitions of public types and routines
    !-------------------------------------------------------------------------------------------------
-
+!FIXME: move to types
    TYPE, PUBLIC :: InflInitInfo
       CHARACTER(1024)             :: WindFileName
       INTEGER                     :: WindFileType
@@ -52,23 +54,31 @@ MODULE InflowWind
       REAL(ReKi)                  :: Width                  ! width of the HH file (was 2*R), in meters
    END TYPE InflInitInfo
 
-   PUBLIC                         :: WindInf_Init           ! Initialization subroutine
-   PUBLIC                         :: WindInf_GetVelocity    ! function to get wind speed at point in space and time
-   PUBLIC                         :: WindInf_Terminate      ! subroutine to clean up
+   PUBLIC                         :: InflowWind_Init           ! Initialization subroutine
 
-   PUBLIC                         :: WindInf_ADhack_diskVel ! used to keep old AeroDyn functionality--remove soon!
-   PUBLIC                         :: WindInf_ADhack_DIcheck ! used to keep old AeroDyn functionality--remove soon!
-   PUBLIC                         :: WindInf_LinearizePerturbation !used for linearization; should be modified
-!!----Removed during conversion to new framework
-!!       PUBLIC                         :: WindInf_GetMean        ! function to get the mean wind speed at a point in space
-!!       PUBLIC                         :: WindInf_GetStdDev      ! function to calculate standard deviation at a point in space
-!!       PUBLIC                         :: WindInf_GetTI          ! function to get TI at a point in space
+!FIXME: not public anymore
+   PUBLIC                         :: InflowWind_GetVelocity    ! function to get wind speed at point in space and time
 
-   CHARACTER(99),PARAMETER        :: WindInfVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
+   PUBLIC                         :: InflowWind_Terminate      ! subroutine to clean up
+
+!FIXME: not public anymore. may not exist
+   PUBLIC                         :: InflowWind_ADhack_diskVel ! used to keep old AeroDyn functionality--remove soon!
+   PUBLIC                         :: InflowWind_ADhack_DIcheck ! used to keep old AeroDyn functionality--remove soon!
+
+!FIXME: not public anymore.
+   PUBLIC                         :: InflowWind_LinearizePerturbation !used for linearization; should be modified
+!!----Removed during conversion to new framework: may put back in as part of OtherStates
+!!       PUBLIC                         :: InflowWind_GetMean        ! function to get the mean wind speed at a point in space
+!!       PUBLIC                         :: InflowWind_GetStdDev      ! function to calculate standard deviation at a point in space
+!!       PUBLIC                         :: InflowWind_GetTI          ! function to get TI at a point in space
+
+!FIXME: tie this to a type as well. Change to ProgDesc type
+   CHARACTER(99),PARAMETER        :: InflowWindVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE WindInf_Init( FileInfo, ErrStat )
+!FIXME: change naming to new standard. InflowWind_Init or IfW_Init
+SUBROUTINE InflowWind_Init( FileInfo, ErrStat )
 !  Open and read the wind files, allocating space for necessary variables
 !
 !----------------------------------------------------------------------------------------------------
@@ -87,7 +97,7 @@ SUBROUTINE WindInf_Init( FileInfo, ErrStat )
    REAL(ReKi)                       :: HalfWidth
    CHARACTER(1024)                  :: FileName
 
-
+!FIXME: not sure if want to track it this way or not.
    IF ( WindType /= Undef_Wind ) THEN
       CALL WrScr( ' Wind inflow has already been initialized.' )
       ErrStat = 1
@@ -96,7 +106,7 @@ SUBROUTINE WindInf_Init( FileInfo, ErrStat )
       WindType = FileInfo%WindFileType
       FileName = FileInfo%WindFileName
       CALL NWTC_Init()
-      CALL WrScr1( ' Using '//TRIM( WindInfVer ) )
+      CALL WrScr1( ' Using '//TRIM( InflowWindVer ) )
 
    END IF
 
@@ -117,7 +127,7 @@ SUBROUTINE WindInf_Init( FileInfo, ErrStat )
 
       CALL CT_Init(UnWind, FileName, BackGrndValues, ErrStat)
       IF (ErrStat /= 0) THEN
-         CALL WindInf_Terminate( ErrStat )
+         CALL InflowWind_Terminate( ErrStat )
          WindType = Undef_Wind
          ErrStat  = 1
          RETURN
@@ -191,16 +201,17 @@ SUBROUTINE WindInf_Init( FileInfo, ErrStat )
    END SELECT
 
    IF ( ErrStat /= 0 ) THEN
-      CALL WindInf_Terminate( ErrStat )  !Just in case we've allocated something
+      CALL InflowWind_Terminate( ErrStat )  !Just in case we've allocated something
       WindType = Undef_Wind
       ErrStat  = 1
    END IF
 
    RETURN
 
-END SUBROUTINE WindInf_Init
+END SUBROUTINE InflowWind_Init
 !====================================================================================================
-FUNCTION WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!FIXME: this becomes part of InflowWind_CalcOutput
+FUNCTION InflowWind_GetVelocity(Time, InputPosition, ErrStat)
 ! Get the wind speed at a point in space and time
 !----------------------------------------------------------------------------------------------------
 
@@ -210,7 +221,7 @@ FUNCTION WindInf_GetVelocity(Time, InputPosition, ErrStat)
    INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
 
       ! local variables
-   TYPE(InflIntrpOut)            :: WindInf_GetVelocity     ! U, V, W velocities
+   TYPE(InflIntrpOut)            :: InflowWind_GetVelocity     ! U, V, W velocities
    TYPE(InflIntrpOut)            :: CTWindSpeed             ! U, V, W velocities to superimpose on background wind
 
 
@@ -218,32 +229,32 @@ FUNCTION WindInf_GetVelocity(Time, InputPosition, ErrStat)
 
    SELECT CASE ( WindType )
       CASE (HH_Wind)
-         WindInf_GetVelocity = HH_GetWindSpeed(     Time, InputPosition, ErrStat )
+         InflowWind_GetVelocity = HH_GetWindSpeed(     Time, InputPosition, ErrStat )
 
       CASE (FF_Wind)
-         WindInf_GetVelocity = FF_GetWindSpeed(     Time, InputPosition, ErrStat )
+         InflowWind_GetVelocity = FF_GetWindSpeed(     Time, InputPosition, ErrStat )
 
       CASE (UD_Wind)
-         WindInf_GetVelocity = UsrWnd_GetWindSpeed( Time, InputPosition, ErrStat )
+         InflowWind_GetVelocity = UsrWnd_GetWindSpeed( Time, InputPosition, ErrStat )
 
       CASE (FD_Wind)
-         WindInf_GetVelocity = FD_GetWindSpeed(     Time, InputPosition, ErrStat )
+         InflowWind_GetVelocity = FD_GetWindSpeed(     Time, InputPosition, ErrStat )
 
       CASE (HAWC_Wind)
-         WindInf_GetVelocity = HW_GetWindSpeed(     Time, InputPosition, ErrStat )
+         InflowWind_GetVelocity = HW_GetWindSpeed(     Time, InputPosition, ErrStat )
 
       CASE DEFAULT
-         CALL WrScr(' Error: Undefined wind type in WindInf_GetVelocity(). ' &
+         CALL WrScr(' Error: Undefined wind type in InflowWind_GetVelocity(). ' &
                    //'Call WindInflow_Init() before calling this function.' )
          ErrStat = 1
-         WindInf_GetVelocity%Velocity(:) = 0.0
+         InflowWind_GetVelocity%Velocity(:) = 0.0
 
    END SELECT
 
 
    IF (ErrStat /= 0) THEN
 
-      WindInf_GetVelocity%Velocity(:) = 0.0
+      InflowWind_GetVelocity%Velocity(:) = 0.0
 
    ELSE
 
@@ -254,14 +265,15 @@ FUNCTION WindInf_GetVelocity(Time, InputPosition, ErrStat)
          CTWindSpeed = CT_GetWindSpeed(Time, InputPosition, ErrStat)
          IF (ErrStat /=0 ) RETURN
 
-         WindInf_GetVelocity%Velocity(:) = WindInf_GetVelocity%Velocity(:) + CTWindSpeed%Velocity(:)
+         InflowWind_GetVelocity%Velocity(:) = InflowWind_GetVelocity%Velocity(:) + CTWindSpeed%Velocity(:)
 
       ENDIF
 
    ENDIF
 
-END FUNCTION WindInf_GetVelocity
+END FUNCTION InflowWind_GetVelocity
 !====================================================================================================
+!FIXME: move to subroutines
 !!    !====================================================================================================
 FUNCTION GetWindType( FileName, ErrStat )
 !  This subroutine checks the file FileName to see what kind of wind file we are using.  Used when
@@ -378,7 +390,8 @@ FUNCTION GetWindType( FileName, ErrStat )
 RETURN
 END FUNCTION GetWindType
 !====================================================================================================
-SUBROUTINE WindInf_LinearizePerturbation( LinPerturbations, ErrStat )
+!FIXME: move to subroutines.
+SUBROUTINE InflowWind_LinearizePerturbation( LinPerturbations, ErrStat )
 ! This function is used in FAST's linearization scheme.  It should be fixed at some point.
 !----------------------------------------------------------------------------------------------------
 
@@ -404,16 +417,17 @@ SUBROUTINE WindInf_LinearizePerturbation( LinPerturbations, ErrStat )
          ErrStat = 1
 
       CASE DEFAULT
-         CALL WrScr(' Error: Undefined wind type in WindInf_LinearizePerturbation(). '// &
+         CALL WrScr(' Error: Undefined wind type in InflowWind_LinearizePerturbation(). '// &
                      'Call WindInflow_Init() before calling this function.' )
          ErrStat = 1
 
    END SELECT
 
 
-END SUBROUTINE WindInf_LinearizePerturbation
+END SUBROUTINE InflowWind_LinearizePerturbation
 !====================================================================================================
-FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
+!FIXME: move to subroutines.
+FUNCTION InflowWind_ADhack_diskVel( Time, InpPosition, ErrStat )
 ! This function should be deleted ASAP.  It's purpose is to reproduce results of AeroDyn 12.57;
 ! when a consensus on the definition of "average velocity" is determined, this function will be
 ! removed.  InpPosition(2) should be the rotor radius; InpPosition(3) should be hub height
@@ -426,7 +440,7 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
    INTEGER, INTENT(OUT)       :: ErrStat
 
       ! Function definition
-   REAL(ReKi)                 :: WindInf_ADhack_diskVel(3)
+   REAL(ReKi)                 :: InflowWind_ADhack_diskVel(3)
 
       ! Local variables
    TYPE(InflIntrpOut)         :: NewVelocity             ! U, V, W velocities
@@ -447,7 +461,7 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
          Position    = (/ REAL(0.0, ReKi), REAL(0.0, ReKi), InpPosition(3) /)
          NewVelocity = HH_Get_ADHack_WindSpeed(Time, Position, ErrStat)
 
-         WindInf_ADhack_diskVel(:) = NewVelocity%Velocity(:)
+         InflowWind_ADhack_diskVel(:) = NewVelocity%Velocity(:)
 
 
       CASE (FF_Wind)
@@ -455,19 +469,19 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
 !      VYGBAR = 0.0
 !      VZGBAR = 0.0
 
-         WindInf_ADhack_diskVel(1)   = FF_GetValue('MEANFFWS', ErrStat)
-         WindInf_ADhack_diskVel(2:3) = 0.0
+         InflowWind_ADhack_diskVel(1)   = FF_GetValue('MEANFFWS', ErrStat)
+         InflowWind_ADhack_diskVel(2:3) = 0.0
 
       CASE (UD_Wind)
 !      VXGBAR = UWmeanU
 !      VYGBAR = UWmeanV
 !      VZGBAR = UWmeanW
 
-         WindInf_ADhack_diskVel(1)   = UsrWnd_GetValue('MEANU', ErrStat)
+         InflowWind_ADhack_diskVel(1)   = UsrWnd_GetValue('MEANU', ErrStat)
          IF (ErrStat /= 0) RETURN
-         WindInf_ADhack_diskVel(2)   = UsrWnd_GetValue('MEANV', ErrStat)
+         InflowWind_ADhack_diskVel(2)   = UsrWnd_GetValue('MEANV', ErrStat)
          IF (ErrStat /= 0) RETURN
-         WindInf_ADhack_diskVel(3)   = UsrWnd_GetValue('MEANW', ErrStat)
+         InflowWind_ADhack_diskVel(3)   = UsrWnd_GetValue('MEANW', ErrStat)
 
       CASE (FD_Wind)
 !      XGrnd = 0.0
@@ -504,7 +518,7 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
 
 
          Position(1) = 0.0
-         WindInf_ADhack_diskVel(:) = 0.0
+         InflowWind_ADhack_diskVel(:) = 0.0
 
          DO IY = -1,1,2
             Position(2)  =  IY*FD_GetValue('RotDiam',ErrStat)
@@ -512,18 +526,18 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
             DO IZ = -1,1,2
                Position(3)  = IZ*InpPosition(2) + InpPosition(3)
 
-               NewVelocity = WindInf_GetVelocity(Time, Position, ErrStat)
-               WindInf_ADhack_diskVel(:) = WindInf_ADhack_diskVel(:) + NewVelocity%Velocity(:)
+               NewVelocity = InflowWind_GetVelocity(Time, Position, ErrStat)
+               InflowWind_ADhack_diskVel(:) = InflowWind_ADhack_diskVel(:) + NewVelocity%Velocity(:)
             END DO
          END DO
-         WindInf_ADhack_diskVel(:) = 0.25*WindInf_ADhack_diskVel(:)
+         InflowWind_ADhack_diskVel(:) = 0.25*InflowWind_ADhack_diskVel(:)
 
       CASE (HAWC_Wind)
-         WindInf_ADhack_diskVel(1)   = HW_GetValue('UREF', ErrStat)
-         WindInf_ADhack_diskVel(2:3) = 0.0
+         InflowWind_ADhack_diskVel(1)   = HW_GetValue('UREF', ErrStat)
+         InflowWind_ADhack_diskVel(2:3) = 0.0
 
       CASE DEFAULT
-         CALL WrScr(' Error: Undefined wind type in WindInf_ADhack_diskVel(). '// &
+         CALL WrScr(' Error: Undefined wind type in InflowWind_ADhack_diskVel(). '// &
                     'Call WindInflow_Init() before calling this function.' )
          ErrStat = 1
 
@@ -531,9 +545,10 @@ FUNCTION WindInf_ADhack_diskVel( Time, InpPosition, ErrStat )
 
    RETURN
 
-END FUNCTION WindInf_ADhack_diskVel
+END FUNCTION InflowWind_ADhack_diskVel
 !====================================================================================================
-FUNCTION WindInf_ADhack_DIcheck( ErrStat )
+!FIXME: move to subroutines.
+FUNCTION InflowWind_ADhack_DIcheck( ErrStat )
 ! This function should be deleted ASAP.  It's purpose is to reproduce results of AeroDyn 12.57;
 ! it performs a wind speed check for the dynamic inflow initialization
 ! it returns MFFWS for the FF wind files; for all others, a sufficiently large number is used ( > 8 m/s)
@@ -544,7 +559,7 @@ FUNCTION WindInf_ADhack_DIcheck( ErrStat )
    INTEGER, INTENT(OUT)       :: ErrStat
 
       ! Function definition
-   REAL(ReKi)                 :: WindInf_ADhack_DIcheck
+   REAL(ReKi)                 :: InflowWind_ADhack_DIcheck
 
 
    ErrStat = 0
@@ -552,18 +567,18 @@ FUNCTION WindInf_ADhack_DIcheck( ErrStat )
    SELECT CASE ( WindType )
       CASE (HH_Wind, UD_Wind, FD_Wind )
 
-         WindInf_ADhack_DIcheck = 50  ! just return something greater than 8 m/s
+         InflowWind_ADhack_DIcheck = 50  ! just return something greater than 8 m/s
 
       CASE (FF_Wind)
 
-         WindInf_ADhack_DIcheck = FF_GetValue('MEANFFWS', ErrStat)
+         InflowWind_ADhack_DIcheck = FF_GetValue('MEANFFWS', ErrStat)
 
       CASE (HAWC_Wind)
 
-         WindInf_ADhack_DIcheck = HW_GetValue('UREF', ErrStat)
+         InflowWind_ADhack_DIcheck = HW_GetValue('UREF', ErrStat)
 
       CASE DEFAULT
-         CALL WrScr(' Error: Undefined wind type in WindInf_ADhack_DIcheck(). '// &
+         CALL WrScr(' Error: Undefined wind type in InflowWind_ADhack_DIcheck(). '// &
                     'Call WindInflow_Init() before calling this function.' )
          ErrStat = 1
 
@@ -571,9 +586,10 @@ FUNCTION WindInf_ADhack_DIcheck( ErrStat )
 
    RETURN
 
-END FUNCTION WindInf_ADhack_DIcheck
+END FUNCTION InflowWind_ADhack_DIcheck
 !====================================================================================================
-SUBROUTINE WindInf_Terminate( ErrStat )
+!FIXME: rename as per framework.
+SUBROUTINE InflowWind_Terminate( ErrStat )
 ! Clean up the allocated variables and close all open files.  Reset the initialization flag so
 ! that we have to reinitialize before calling the routines again.
 !----------------------------------------------------------------------------------------------------
@@ -609,7 +625,7 @@ SUBROUTINE WindInf_Terminate( ErrStat )
          ! Do nothing
 
       CASE DEFAULT  ! keep this check to make sure that all new wind types have a terminate function
-         CALL WrScr(' Undefined wind type in WindInf_Terminate().' )
+         CALL WrScr(' Undefined wind type in InflowWind_Terminate().' )
          ErrStat = 1
 
    END SELECT
@@ -623,7 +639,7 @@ SUBROUTINE WindInf_Terminate( ErrStat )
    CT_Flag  = .FALSE.
 
 
-END SUBROUTINE WindInf_Terminate
+END SUBROUTINE InflowWind_Terminate
 !====================================================================================================
 END MODULE InflowWind
 
@@ -632,7 +648,8 @@ END MODULE InflowWind
 
 
 !!----Remove this functionality for now. Might put it back in sometime after the conversion to the new framework ----
-!!    FUNCTION WindInf_GetMean(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!FIXME: Move these to subroutines.
+!!    FUNCTION InflowWind_GetMean(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
 !!    !  This function returns the mean wind speed
 !!    !----------------------------------------------------------------------------------------------------
 !!
@@ -644,7 +661,7 @@ END MODULE InflowWind
 !!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
 !!
 !!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetMean(3)      ! MEAN U, V, W
+!!       REAL(ReKi)                    :: InflowWind_GetMean(3)      ! MEAN U, V, W
 !!
 !!          ! local variables
 !!       REAL(ReKi)                    :: Time
@@ -665,9 +682,9 @@ END MODULE InflowWind
 !!
 !!          Time = StartTime + (I-1)*delta_time
 !!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          NewVelocity = InflowWind_GetVelocity(Time, InputPosition, ErrStat)
 !!          IF ( ErrStat /= 0 ) THEN
-!!             WindInf_GetMean(:) = SumVel(:) / REAL(I-1, ReKi)
+!!             InflowWind_GetMean(:) = SumVel(:) / REAL(I-1, ReKi)
 !!             RETURN
 !!          ELSE
 !!             SumVel(:) = SumVel(:) + NewVelocity%Velocity(:)
@@ -675,12 +692,12 @@ END MODULE InflowWind
 !!
 !!       END DO
 !!
-!!       WindInf_GetMean(:) = SumVel(:) / REAL(Nt, ReKi)
+!!       InflowWind_GetMean(:) = SumVel(:) / REAL(Nt, ReKi)
 !!
 !!
-!!    END FUNCTION WindInf_GetMean
+!!    END FUNCTION InflowWind_GetMean
 !!    !====================================================================================================
-!!    FUNCTION WindInf_GetStdDev(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!!    FUNCTION InflowWind_GetStdDev(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
 !!    !  This function returns the mean wind speed (mean, std, TI, etc)
 !!    !----------------------------------------------------------------------------------------------------
 !!
@@ -692,7 +709,7 @@ END MODULE InflowWind
 !!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
 !!
 !!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetStdDev(3)    ! STD U, V, W
+!!       REAL(ReKi)                    :: InflowWind_GetStdDev(3)    ! STD U, V, W
 !!
 !!          ! local variables
 !!       REAL(ReKi)                    :: Time
@@ -709,7 +726,7 @@ END MODULE InflowWind
 !!       ! Initialize
 !!       !-------------------------------------------------------------------------------------------------
 !!
-!!       WindInf_GetStdDev(:) = 0.0
+!!       InflowWind_GetStdDev(:) = 0.0
 !!
 !!       Nt = (EndTime - StartTime) / delta_time
 !!
@@ -736,7 +753,7 @@ END MODULE InflowWind
 !!
 !!          Time = StartTime + (I-1)*delta_time
 !!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          NewVelocity = InflowWind_GetVelocity(Time, InputPosition, ErrStat)
 !!          IF ( ErrStat /= 0 ) RETURN
 !!          Velocity(:,I) = NewVelocity%Velocity(:)
 !!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
@@ -757,7 +774,7 @@ END MODULE InflowWind
 !!
 !!       END DO ! I
 !!
-!!       WindInf_GetStdDev(:) = SQRT( SumAry(:) / ( Nt - 1 ) )
+!!       InflowWind_GetStdDev(:) = SQRT( SumAry(:) / ( Nt - 1 ) )
 !!
 !!
 !!       !-------------------------------------------------------------------------------------------------
@@ -766,10 +783,10 @@ END MODULE InflowWind
 !!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
 !!
 !!
-!!    END FUNCTION WindInf_GetStdDev
+!!    END FUNCTION InflowWind_GetStdDev
 !!    !====================================================================================================
-!!    FUNCTION WindInf_GetTI(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
-!!    !  This function returns the TI of the wind speed.  It's basically a copy of WindInf_GetStdDev,
+!!    FUNCTION InflowWind_GetTI(StartTime, EndTime, delta_time, InputPosition,  ErrStat )
+!!    !  This function returns the TI of the wind speed.  It's basically a copy of InflowWind_GetStdDev,
 !!    !  except the return value is divided by the mean U-component wind speed.
 !!    !----------------------------------------------------------------------------------------------------
 !!
@@ -781,7 +798,7 @@ END MODULE InflowWind
 !!       INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
 !!
 !!          ! function definition
-!!       REAL(ReKi)                    :: WindInf_GetTI(3)        ! TI U, V, W
+!!       REAL(ReKi)                    :: InflowWind_GetTI(3)        ! TI U, V, W
 !!
 !!          ! local variables
 !!       REAL(ReKi)                    :: Time
@@ -798,7 +815,7 @@ END MODULE InflowWind
 !!       ! Initialize
 !!       !-------------------------------------------------------------------------------------------------
 !!
-!!       WindInf_GetTI(:) = 0.0
+!!       InflowWind_GetTI(:) = 0.0
 !!
 !!       Nt = (EndTime - StartTime) / delta_time
 !!
@@ -825,7 +842,7 @@ END MODULE InflowWind
 !!
 !!          Time = StartTime + (I-1)*delta_time
 !!
-!!          NewVelocity = WindInf_GetVelocity(Time, InputPosition, ErrStat)
+!!          NewVelocity = InflowWind_GetVelocity(Time, InputPosition, ErrStat)
 !!          IF ( ErrStat /= 0 ) RETURN
 !!          Velocity(:,I) = NewVelocity%Velocity(:)
 !!          SumAry(:)     = SumAry(:) + NewVelocity%Velocity(:)
@@ -835,7 +852,7 @@ END MODULE InflowWind
 !!       MeanVel(:) = SumAry(:) / REAL(Nt, ReKi)
 !!
 !!       IF ( ABS(MeanVel(1)) <= EPSILON(MeanVel(1)) ) THEN
-!!          CALL WrScr( ' Wind speed is small in WindInf_GetTI(). TI is undefined.' )
+!!          CALL WrScr( ' Wind speed is small in InflowWind_GetTI(). TI is undefined.' )
 !!          ErrStat = 1
 !!          RETURN
 !!       END IF
@@ -851,7 +868,7 @@ END MODULE InflowWind
 !!
 !!       END DO ! I
 !!
-!!       WindInf_GetTI(:) = SQRT( SumAry(:) / ( Nt - 1 ) ) / MeanVel(1)
+!!       InflowWind_GetTI(:) = SQRT( SumAry(:) / ( Nt - 1 ) ) / MeanVel(1)
 !!
 !!
 !!       !-------------------------------------------------------------------------------------------------
@@ -860,4 +877,4 @@ END MODULE InflowWind
 !!       IF ( ALLOCATED(Velocity) ) DEALLOCATE( Velocity )
 !!
 !!
-!!    END FUNCTION WindInf_GetTI
+!!    END FUNCTION InflowWind_GetTI
