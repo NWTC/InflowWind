@@ -49,13 +49,14 @@ InflowWind_Driver	:= InflowWind_Test.f90
 
 #The source files for InflowWind
 InflowWind_SOURCES  := \
-	SharedInflowDefs.f90\
-	CTWind.f90\
-	FDWind.f90\
-	FFWind.f90\
-	HAWCWind.f90\
-	HHWind.f90\
-	UserWind.f90\
+	SharedInflowDefs.f90 \
+	CTWind.f90 \
+	FDWind.f90 \
+	FFWind.f90 \
+	HAWCWind.f90 \
+	HHWind.f90 \
+	UserWind.f90 \
+   InflowWind_Subs.f90 \
 	InflowWindMod.f90
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR)
@@ -82,8 +83,8 @@ NWTC_IO.o:        SysGnuLinux.o
 NWTC_Num.o:       NWTC_IO.o
 NWTC_Aero.o:      NWTC_IO.o NWTC_Num.o
 NWTC_Library.o:   NWTC_Aero.o ModMesh.o
-InflowWind_Subs.o:      InflowWind_SharedDefns.o
-InflowWind_Module.o:    InflowWind_SharedDefns.o InflowWind_Subs.o
+InflowWindMod.o:    SharedInflowDefs.o InflowWind_Subs.o
+InflowWind_Subs.o:      SharedInflowDefs.o
 
 #Make sure the destination directory exists
 $(DEST_DIR):

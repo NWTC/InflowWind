@@ -9,7 +9,7 @@
 !
 !----------------------------------------------------------------------------------------------------
 !FIXME: rename
-MODULE SharedInflowDefns
+MODULE SharedInflowDefs
 ! This module is used to define shared types and parameters that are used in the module InflowWind.
 ! 7 Oct 2009    B. Jonkman, NREL/NWTC
 !----------------------------------------------------------------------------------------------------
@@ -35,6 +35,7 @@ MODULE SharedInflowDefns
    ! Shared parameters, defining the wind types
    ! THEY MUST BE UNIQUE!
    !-------------------------------------------------------------------------------------------------
+
 !FIXME: I'm not sure what to do with these
    INTEGER, PARAMETER, PUBLIC  :: DEFAULT_Wind = -1        ! Undetermined wind type; calls internal routine to guess what type of file it is.
    INTEGER, PARAMETER, PUBLIC  :: Undef_Wind   =  0        ! This is the code for an undefined WindType
@@ -45,4 +46,9 @@ MODULE SharedInflowDefns
    INTEGER, PARAMETER, PUBLIC  :: CTP_Wind     =  5        ! Coherent turbulence wind field (superimpose KH billow on background wind)
    INTEGER, PARAMETER, PUBLIC  :: HAWC_Wind    =  6        ! Binary full-field wind file in HAWC format
 
-END MODULE SharedInflowDefns
+!The following was moved. I don't know if it will get properly stored anymore.
+   INTEGER, SAVE                  :: WindType = Undef_Wind  ! Wind Type Flag
+
+!The following was moved. I don't know if it will get properly stored anymore.
+   LOGICAL, SAVE                  :: CT_Flag  = .FALSE.     ! determines if coherent turbulence is used
+END MODULE SharedInflowDefs

@@ -7,7 +7,7 @@
 PROGRAM InflowWind_Test
 
    USE InflowWind
-   USE SharedInflowDefns
+   USE SharedInflowDefs
 
    IMPLICIT NONE
 
@@ -21,6 +21,8 @@ PROGRAM InflowWind_Test
    REAL(ReKi)          :: dt
    INTEGER             :: I
 
+
+print*, "Test of flag CT_Flag: ",CT_Flag
 
    !-------------------------------------------------------------------------------------------------
    ! Send the data required for initialization

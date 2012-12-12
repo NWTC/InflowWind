@@ -23,7 +23,7 @@ MODULE HHWind
 !----------------------------------------------------------------------------------------------------
 
    USE                     NWTC_Library
-   USE                     SharedInflowDefns
+   USE                     SharedInflowDefs
    
    IMPLICIT                NONE
    PRIVATE

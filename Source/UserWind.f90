@@ -3,7 +3,7 @@ MODULE UserWind
 !----------------------------------------------------------------------------------------------------
 
    USE                           NWTC_Library
-   USE                           SharedInflowDefns
+   USE                           SharedInflowDefs
 
    IMPLICIT                      NONE
    PRIVATE

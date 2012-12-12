@@ -11,7 +11,7 @@ MODULE HAWCWind
 !----------------------------------------------------------------------------------------------------
 
    USE      NWTC_Library
-   USE      SharedInflowDefns
+   USE      SharedInflowDefs
 
    IMPLICIT NONE
 
