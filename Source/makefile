@@ -105,8 +105,9 @@ clean:
 
 #doxygen bits
 document: all
+	rm $(Doxy_DIR)/tempassembled.f90;
 	cat $(InflowWind_Driver_DIR)$(InflowWind_Driver) >> $(Doxy_DIR)/tempassembled.f90;
-	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
 	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
 	$(MAKE) -C $(Doxy_DIR);
 
+#	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
