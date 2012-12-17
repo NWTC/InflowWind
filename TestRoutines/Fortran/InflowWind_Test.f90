@@ -7,11 +7,11 @@
 PROGRAM InflowWind_Test
 
    USE InflowWind
+   USE WindFile_Types
    USE SharedInflowDefs
 
    IMPLICIT NONE
 
-   INTEGER ErrStat
    TYPE(InflInitInfo)  :: InitWindData         ! data to initialize the module; TYPE defined in InflowWindMod.f90
 
    REAL(ReKi)          :: InpPosition(3)
@@ -21,8 +21,16 @@ PROGRAM InflowWind_Test
    REAL(ReKi)          :: dt
    INTEGER             :: I
 
+      ! Error Handling
 
-print*, "Test of flag CT_Flag: ",CT_Flag
+   INTEGER(IntKi)                                     :: ErrStat
+   CHARACTER(1024)                                    :: ErrMsg
+
+
+      ! All the shared types used in the module
+   TYPE( IfW_ParameterType )                          :: IfW_ParamData     ! Parameters
+
+
 
    !-------------------------------------------------------------------------------------------------
    ! Send the data required for initialization
@@ -30,8 +38,8 @@ print*, "Test of flag CT_Flag: ",CT_Flag
 
 !      InitWindData%WindFileName     = "D:\DATA\Fortran\IVF Projects\AeroDyn\Update\Source\InflowWind\TestData\GPLLJ_DNS\InOut.wnd"
 !      InitWindData%WindFileName     = "../TestRoutines/TestData/Periodic_Winds.wnd"    !! ff wind
-      InitWindData%WindFileName     = "Test-Data/InOut.wnd"    !! ff wind
-!      InitWindData%WindFileName     = "../Samples/Steady.wnd"  !! HH wind
+!      InitWindData%WindFileName     = "Test-Data/InOut.wnd"    !! ff wind
+      InitWindData%WindFileName     = "../Samples/Steady.wnd"  !! HH wind
 !      InitWindData%WindFileName     = "../Samples/les.fdp"  !! 4 D -- points to some other files. -- not work
       InitWindData%ReferenceHeight  = 80.   ! meters
       InitWindData%Width            = 100.  ! meters
@@ -40,7 +48,7 @@ print*, "Test of flag CT_Flag: ",CT_Flag
       InitWindData%WindFileType     = DEFAULT_Wind      ! let the module figure out what type of file it is...
 
 
-      CALL InflowWind_Init( InitWindData, ErrStat )
+      CALL IfW_Init( IfW_ParamData, InitWindData, ErrStat, ErrMsg )
 
 
       IF (errstat /=0) CALL ProgAbort('Error in Initialization routine')
@@ -59,7 +67,7 @@ print*, "Test of flag CT_Flag: ",CT_Flag
 
          Time = 0.0 + (I-1)*dt
 
-         MyWindSpeed = InflowWind_GetVelocity( Time, InpPosition, ErrStat )
+         MyWindSpeed = InflowWind_GetVelocity( IfW_ParamData, Time, InpPosition, ErrStat )
 
          !IF (ErrStat /=0) CALL ProgAbort('Error in getting wind speed')
 
@@ -70,7 +78,7 @@ print*, "Test of flag CT_Flag: ",CT_Flag
    !-------------------------------------------------------------------------------------------------
    ! Clean up the variables and close files
    !-------------------------------------------------------------------------------------------------
-    CALL InflowWind_Terminate( ErrStat )
+    CALL IfW_End( IfW_ParamData, ErrStat )
 
 
 END PROGRAM InflowWind_Test

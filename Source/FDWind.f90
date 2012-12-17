@@ -8,10 +8,11 @@ MODULE FDWind
 !  7 Oct 2009    B. Jonkman, NREL/NWTC using subroutines from AeroDyn 12.57
 !----------------------------------------------------------------------------------------------------  
 
-    USE                     NWTC_Library
-    USE                     SharedInflowDefs
+   USE                     NWTC_Library
+   USE                     SharedInflowDefs
+   USE                     WindFile_Types
 
-    IMPLICIT                NONE
+   IMPLICIT                NONE
    PRIVATE
   
       ! FD_Wind

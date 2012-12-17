@@ -12,6 +12,7 @@ MODULE HAWCWind
 
    USE      NWTC_Library
    USE      SharedInflowDefs
+   USE                     WindFile_Types
 
    IMPLICIT NONE
 

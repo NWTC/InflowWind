@@ -50,6 +50,7 @@ InflowWind_Driver	:= InflowWind_Test.f90
 #The source files for InflowWind
 InflowWind_SOURCES  := \
 	SharedInflowDefs.f90 \
+   WindFile_Types.f90 \
 	CTWind.f90 \
 	FDWind.f90 \
 	FFWind.f90 \
@@ -57,7 +58,7 @@ InflowWind_SOURCES  := \
 	HHWind.f90 \
 	UserWind.f90 \
    InflowWind_Subs.f90 \
-	InflowWindMod.f90
+	InflowWind_Module.f90
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR)
 vpath %.o $(DEST_DIR)
@@ -83,7 +84,7 @@ NWTC_IO.o:        SysGnuLinux.o
 NWTC_Num.o:       NWTC_IO.o
 NWTC_Aero.o:      NWTC_IO.o NWTC_Num.o
 NWTC_Library.o:   NWTC_Aero.o ModMesh.o
-InflowWindMod.o:    SharedInflowDefs.o InflowWind_Subs.o
+InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
 InflowWind_Subs.o:      SharedInflowDefs.o
 
 #Make sure the destination directory exists
@@ -106,8 +107,9 @@ clean:
 #doxygen bits
 document: all
 	rm $(Doxy_DIR)/tempassembled.f90;
+   #This line is for putting all the NWTC_Lib bits in the documentation;
+   #	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
 	cat $(InflowWind_Driver_DIR)$(InflowWind_Driver) >> $(Doxy_DIR)/tempassembled.f90;
 	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
 	$(MAKE) -C $(Doxy_DIR);
 
-#	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;

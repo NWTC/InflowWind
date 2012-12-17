@@ -15,13 +15,89 @@ MODULE SharedInflowDefs
 !----------------------------------------------------------------------------------------------------
 
    USE NWTC_Library                                               ! Precision module
+   IMPLICIT NONE
 
-   !-------------------------------------------------------------------------------------------------
-   ! Shared types
-   !-------------------------------------------------------------------------------------------------
 
-!FIXME: Setup the standard types here.
+      !---- Initialization data ---------------------------------------------------------------------
+   TYPE, PUBLIC :: IfW_InitInputType
+         ! Define inputs that the initialization routine may need here:
+         ! e.g., the name of the input file, the file root name, etc.
+      REAL(ReKi) :: DummyReal                                                 ! If you have initialization input data, remove this variable
+   END TYPE IfW_InitInputType
 
+
+      ! ..... States ..............................................................................................................
+
+   TYPE, PUBLIC :: IfW_ContinuousStateType
+         ! Define continuous (differentiable) states here:
+      REAL(ReKi) :: DummyContState                                            ! If you have continuous states, remove this variable
+         ! If you have loose coupling with a variable-step integrator, store the actual time associated with the continuous states
+         !    here (eg., REAL(DbKi) :: ContTime):
+   END TYPE IfW_ContinuousStateType
+
+
+   TYPE, PUBLIC :: IfW_DiscreteStateType
+         ! Define discrete (nondifferentiable) states here:
+      REAL(ReKi) :: DummyDiscState                                            ! If you have discrete states, remove this variable
+   END TYPE IfW_DiscreteStateType
+
+
+   TYPE, PUBLIC :: IfW_ConstraintStateType
+         ! Define constraint states here:
+      REAL(ReKi) :: DummyConstrState                                          !    If you have constraint states, remove this variable
+   END TYPE IfW_ConstraintStateType
+
+
+   TYPE, PUBLIC :: IfW_OtherStateType
+         ! Define any data that are not considered actual "states" here:
+         ! e.g. data used only for optimization purposes (indices for searching in an array, copies of previous calculations of output at a given time, etc.)
+      INTEGER(IntKi) :: DummyOtherState                                       !    If you have other/optimzation states, remove this variable
+   END TYPE IfW_OtherStateType
+
+
+      ! ..... Parameters ..........................................................................................................
+
+   TYPE, PUBLIC :: IfW_ParameterType
+
+         ! Define parameters here that might need to be accessed from the outside world:
+
+         ! The type of the file in use
+      INTEGER              :: WindType       = 0         ! This should be initially set to match the Undef_Wind parameter in the module
+
+         ! Flags
+      LOGICAL              :: CT_Flag        = .FALSE.   ! determines if coherent turbulence is used
+      LOGICAL              :: Initialized    = .FALSE.   ! did we run the initialization?
+
+   END TYPE IfW_ParameterType
+
+
+      ! ..... Inputs ..............................................................................................................
+
+   TYPE, PUBLIC :: IfW_InputType
+         ! Define inputs that are contained on the mesh here:
+!     TYPE(MeshType)                            ::
+         ! Define inputs that are not on this mesh here:
+      REAL(ReKi) :: DummyInput                                                ! If you have input data, remove this variable
+   END TYPE IfW_InputType
+
+
+      ! ..... Outputs .............................................................................................................
+
+   TYPE, PUBLIC :: IfW_OutputType
+         ! Define outputs that are contained on the mesh here:
+!     TYPE(MeshType)                            ::
+         ! Define outputs that are not on this mesh here:
+      REAL(ReKi) :: DummyOutput                                               ! If you have output data, remove this variable
+   END TYPE IfW_OutputType
+
+!-=-=-=-=-=-=-=-=-=-=-
+!-=-=-=-=-=-=-=-=-=-=-
+!-=-=-=-=-=-=-=-=-=-=-
+!-=-=-=-=-=-=-=-=-=-=-
+
+
+
+!This was commented out before.
 !   TYPE, PUBLIC :: InflLoc
 !      REAL(ReKi)                    :: Position(3)                ! X, Y, Z
 !   END TYPE InflLoc
@@ -36,19 +112,156 @@ MODULE SharedInflowDefs
    ! THEY MUST BE UNIQUE!
    !-------------------------------------------------------------------------------------------------
 
-!FIXME: I'm not sure what to do with these
-   INTEGER, PARAMETER, PUBLIC  :: DEFAULT_Wind = -1        ! Undetermined wind type; calls internal routine to guess what type of file it is.
-   INTEGER, PARAMETER, PUBLIC  :: Undef_Wind   =  0        ! This is the code for an undefined WindType
-   INTEGER, PARAMETER, PUBLIC  :: HH_Wind      =  1        ! Hub-Height wind file
-   INTEGER, PARAMETER, PUBLIC  :: FF_Wind      =  2        ! Binary full-field wind file
-   INTEGER, PARAMETER, PUBLIC  :: UD_Wind      =  3        ! User-defined wind
-   INTEGER, PARAMETER, PUBLIC  :: FD_Wind      =  4        ! 4-dimensional wind (LES)
-   INTEGER, PARAMETER, PUBLIC  :: CTP_Wind     =  5        ! Coherent turbulence wind field (superimpose KH billow on background wind)
-   INTEGER, PARAMETER, PUBLIC  :: HAWC_Wind    =  6        ! Binary full-field wind file in HAWC format
 
-!The following was moved. I don't know if it will get properly stored anymore.
-   INTEGER, SAVE                  :: WindType = Undef_Wind  ! Wind Type Flag
 
-!The following was moved. I don't know if it will get properly stored anymore.
-   LOGICAL, SAVE                  :: CT_Flag  = .FALSE.     ! determines if coherent turbulence is used
+
 END MODULE SharedInflowDefs
+
+
+
+!!FIXME: add these in at some point.
+!      ! ..... Jacobians ...........................................................................................................
+!
+!   TYPE, PUBLIC :: IfW_PartialOutputPInputType
+!
+!         ! Define the Jacobian of the output equations (Y) with respect to the inputs (u), dY/du (or Partial Y / Partial u):
+!
+!      TYPE(IfW_InputType) :: DummyOutput                                    ! If you have output equations and input data, update this variable
+!
+!   END TYPE IfW_PartialOutputPInputType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialContStatePInputType
+!
+!         ! Define the Jacobian of the continuous state equations (X) with respect to the inputs (u), dX/du (or Partial X / Partial u):
+!
+!      TYPE(IfW_InputType) :: DummyContState                                 ! If you have continuous state equations and input data, update this variable
+!
+!   END TYPE IfW_PartialContStatePInputType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialDiscStatePInputType
+!
+!         ! Define the Jacobian of the discrete state equations (Xd) with respect to the inputs (u), dXd/du (or Partial Xd / Partial u):
+!
+!      TYPE(IfW_InputType) :: DummyDiscState                                 ! If you have discrete state equations and input data, update this variable
+!
+!   END TYPE IfW_PartialDiscStatePInputType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialConstrStatePInputType
+!
+!         ! Define the Jacobian of the constraint state equations (Z) with respect to the inputs (u), dZ/du (or Partial Z / Partial u):
+!
+!      TYPE(IfW_InputType) :: DummyConstrState                                ! If you have constraint state equations and input data, update this variable
+!
+!   END TYPE IfW_PartialConstrStatePInputType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialOutputPContStateType
+!
+!         ! Define the Jacobian of the output equations (Y) with respect to the continuous states (x), dY/dx (or Partial Y / Partial x):
+!
+!      TYPE(IfW_ContinuousStateType) :: DummyOutput                                    ! If you have output equations and continuous states, update this variable
+!
+!   END TYPE IfW_PartialOutputPContStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialContStatePContStateType
+!
+!         ! Define the Jacobian of the continuous state equations (X) with respect to the continuous states (x), dX/dx (or Partial X / Partial x):
+!
+!      TYPE(IfW_ContinuousStateType) :: DummyContState                                 ! If you have continuous state equations and continuous states, update this variable
+!
+!   END TYPE IfW_PartialContStatePContStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialDiscStatePContStateType
+!
+!         ! Define the Jacobian of the discrete state equations (Xd) with respect to the continuous states (x), dXd/dx (or Partial Xd / Partial x):
+!
+!      TYPE(IfW_ContinuousStateType) :: DummyDiscState                                 ! If you have discrete state equations and continuous states, update this variable
+!
+!   END TYPE IfW_PartialDiscStatePContStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialConstrStatePContStateType
+!
+!         ! Define the Jacobian of the constraint state equations (Z) with respect to the continuous states (x), dZ/dx (or Partial Z / Partial x):
+!
+!      TYPE(IfW_ContinuousStateType) :: DummyConstrState                                ! If you have constraint state equations and continuous states, update this variable
+!
+!   END TYPE IfW_PartialConstrStatePContStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialOutputPDiscStateType
+!
+!         ! Define the Jacobian of the output equations (Y) with respect to the discrete states (xd), dY/dxd (or Partial Y / Partial xd):
+!
+!      TYPE(IfW_DiscreteStateType) :: DummyOutput                                    ! If you have output equations and discrete states, update this variable
+!
+!   END TYPE IfW_PartialOutputPDiscStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialContStatePDiscStateType
+!
+!         ! Define the Jacobian of the continuous state equations (X) with respect to the discrete states (xd), dX/dxd (or Partial X / Partial xd):
+!
+!      TYPE(IfW_DiscreteStateType) :: DummyContState                                 ! If you have continuous state equations and discrete states, update this variable
+!
+!   END TYPE IfW_PartialContStatePDiscStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialDiscStatePDiscStateType
+!
+!         ! Define the Jacobian of the discrete state equations (Xd) with respect to the discrete states (xd), dXd/dxd (or Partial Xd / Partial xd):
+!
+!      TYPE(IfW_DiscreteStateType) :: DummyDiscState                                 ! If you have discrete state equations and discrete states, update this variable
+!
+!   END TYPE IfW_PartialDiscStatePDiscStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialConstrStatePDiscStateType
+!
+!         ! Define the Jacobian of the constraint state equations (Z) with respect to the discrete states (xd), dZ/dxd (or Partial Z / Partial xd):
+!
+!      TYPE(IfW_DiscreteStateType) :: DummyConstrState                                ! If you have constraint state equations and discrete states, update this variable
+!
+!   END TYPE IfW_PartialConstrStatePDiscStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialOutputPConstrStateType
+!
+!         ! Define the Jacobian of the output equations (Y) with respect to the constraint states (z), dY/dz (or Partial Y / Partial z):
+!
+!      TYPE(IfW_ConstraintStateType) :: DummyOutput                                    ! If you have output equations and constraint states, update this variable
+!
+!   END TYPE IfW_PartialOutputPConstrStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialContStatePConstrStateType
+!
+!         ! Define the Jacobian of the continuous state equations (X) with respect to the constraint states (z), dX/dz (or Partial X / Partial z):
+!
+!      TYPE(IfW_ConstraintStateType) :: DummyContState                                 ! If you have continuous state equations and constraint states, update this variable
+!
+!   END TYPE IfW_PartialContStatePConstrStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialDiscStatePConstrStateType
+!
+!         ! Define the Jacobian of the discrete state equations (Xd) with respect to the constraint states (z), dXd/dz (or Partial Xd / Partial z):
+!
+!      TYPE(IfW_ConstraintStateType) :: DummyDiscState                                 ! If you have discrete state equations and constraint states, update this variable
+!
+!   END TYPE IfW_PartialDiscStatePConstrStateType
+!
+!
+!   TYPE, PUBLIC :: IfW_PartialConstrStatePConstrStateType
+!
+!         ! Define the Jacobian of the constraint state equations (Z) with respect to the constraint states (z), dZ/dz (or Partial Z / Partial z):
+!
+!      TYPE(IfW_ConstraintStateType) :: DummyConstrState                                ! If you have constraint state equations and constraint states, update this variable
+!
+!   END TYPE IfW_PartialConstrStatePConstrStateType
+!
