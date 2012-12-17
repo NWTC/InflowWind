@@ -99,7 +99,7 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
       RETURN
    ELSE
       ErrStat = 0
-      CALL NWTC_Init()
+!      CALL NWTC_Init()    ! Initialized in IfW_Init
       
       LinearizeDels(:) = 0.0
       Linearize        = .FALSE.

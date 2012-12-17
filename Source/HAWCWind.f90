@@ -93,7 +93,7 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
       RETURN
    ELSE
       ErrStat = 0
-      CALL NWTC_Init()
+!      CALL NWTC_Init()    ! Initialized in IfW_Init
    END IF   
 
 ! bjj: this (reading the file) should perhaps be in a subroutine...

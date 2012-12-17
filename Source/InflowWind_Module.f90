@@ -108,13 +108,6 @@ MODULE InflowWind
    !-------------------------------------------------------------------------------------------------
    ! Definitions of public types and routines
    !-------------------------------------------------------------------------------------------------
-!FIXME: move to types
-   TYPE, PUBLIC :: InflInitInfo
-      CHARACTER(1024)             :: WindFileName
-      INTEGER                     :: WindFileType
-      REAL(ReKi)                  :: ReferenceHeight        ! reference height for HH and/or 4D winds (was hub height), in meters
-      REAL(ReKi)                  :: Width                  ! width of the HH file (was 2*R), in meters
-   END TYPE InflInitInfo
 
 !FIXME: should not be public anymore
    PUBLIC                         :: InflowWind_GetVelocity    ! function to get wind speed at point in space and time
@@ -136,29 +129,29 @@ CONTAINS
 !====================================================================================================
 !  SUBROUTINE ModName_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
 !                            OutData, Interval, ErrStat, ErrMsg )
-   SUBROUTINE IfW_Init( ParamData, FileInfo, ErrStat, ErrMsg )
+   SUBROUTINE IfW_Init( InitData, ParamData, Interval, ErrStat, ErrMsg )
 ! This routine is called at the start of the simulation to perform initialization steps. 
 ! The parameters are set here and not changed during the simulation.
 ! The initial states and initial guess for the input are defined.
 !----------------------------------------------------------------------------------------------------
 !  Open and read the wind files, allocating space for necessary variables
-!
-!
-!      TYPE(ModName_InitInputType),       INTENT(IN   )  :: InitData          ! Input data for initialization
+
+
+         ! Initialization data and guesses
+
+      TYPE( IfW_InitInputType ),          INTENT(IN   )  :: InitData          ! Input data for initialization
 !      TYPE(ModName_InputType),           INTENT(  OUT)  :: InputGuess        ! An initial guess for the input; the input mesh must be defined
 !      TYPE(ModName_ParameterType),       INTENT(  OUT)  :: ParamData         ! Parameters      
+      TYPE( Ifw_ParameterType ),          INTENT(  OUT)  :: ParamData         ! Parameters
 !      TYPE(ModName_ContinuousStateType), INTENT(  OUT)  :: ContStates        ! Initial continuous states
 !      TYPE(ModName_DiscreteStateType),   INTENT(  OUT)  :: DiscStates        ! Initial discrete states
 !      TYPE(ModName_ConstraintStateType), INTENT(  OUT)  :: ConstrStateGuess  ! Initial guess of the constraint states
 !      TYPE(ModName_OtherStateType),      INTENT(  OUT)  :: OtherStates       ! Initial other/optimization states            
 !      TYPE(ModName_OutputType),          INTENT(  OUT)  :: OutData           ! Initial output (outputs are not calculated; only the output mesh is initialized)
-!      REAL(DbKi),                        INTENT(INOUT)  :: Interval          ! Coupling interval in seconds: the rate that (1) ModName_Step() is called in loose coupling and (2) ModName_UpdateDiscState() is called in tight coupling; Input is the suggested time from the glue code; Output is the actual coupling interval that will be used by the glue code.
-!
-         ! Passed variables
+      REAL(DbKi),                         INTENT(INOUT)  :: Interval          ! Coupling interval in seconds: InflowWind does not change this.
 
-!FIXME: this should be in the InitData of type InitInputType
-      TYPE(InflInitInfo),                    INTENT(IN   )  :: FileInfo    ! FIXME: THIS SHOULD BE ELSEWHERE
-      TYPE( Ifw_ParameterType ),             INTENT(INOUT)  :: ParamData   ! Parameters
+
+         ! Error Handling
 
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -182,12 +175,6 @@ CONTAINS
       ErrMsg  = ""               
       
       
-!FIXME: This might be done someplace else right now
-         ! Initialize the NWTC Subroutine Library (set pi constants)
-         
-      CALL NWTC_Init( )
-      CALL DispNVD( IfW_ProgDesc )
-!
 !
 !FIXME:
 !         ! Define parameters here:
@@ -224,20 +211,21 @@ CONTAINS
       ErrStat = 1
       RETURN
    ELSE
-!      WindType = FileInfo%WindFileType
-      FileName = FileInfo%WindFileName
+!      WindType = InitData%WindFileType
+      FileName = InitData%WindFileName
       CALL NWTC_Init()
       CALL DispNVD( IfW_ProgDesc )
 
    END IF
 
    !-------------------------------------------------------------------------------------------------
-   ! Get default wind type, based on file name, if requested
+   ! Get default wind type, based on file name, if requested. Otherwise store what we are given for the type
    !-------------------------------------------------------------------------------------------------
-   IF ( FileInfo%WindFileType == DEFAULT_Wind ) THEN
-!   IF ( ParamData%WindType == DEFAULT_Wind ) THEN
-      ParamData%WindType = GetWindType( FileName, ErrStat )
-      print*, "No windfile type specificed"
+   IF ( InitData%WindFileType == DEFAULT_Wind ) THEN
+      CALL GetWindType( ParamData, ErrStat, ErrMsg )
+!      ParamData%WindFileType = GetWindType( FileName, ErrStat )
+   ELSE
+      ParamData%WindFileType = InitData%WindFileType
    END IF
 
 
@@ -246,18 +234,18 @@ CONTAINS
    ! Initialize the CTWind module and initialize the module of the other wind type.
    !-------------------------------------------------------------------------------------------------
 
-   IF ( ParamData%WindType == CTP_Wind ) THEN
+   IF ( ParamData%WindFileType == CTP_Wind ) THEN
 
       CALL CT_Init(UnWind, FileName, BackGrndValues, ErrStat)
       IF (ErrStat /= 0) THEN
          CALL IfW_End( ParamData, ErrStat )
-         ParamData%WindType = Undef_Wind
+         ParamData%WindFileType = Undef_Wind
          ErrStat  = 1
          RETURN
       END IF
 
       FileName = BackGrndValues%WindFile
-      ParamData%WindType = BackGrndValues%WindFileType
+      ParamData%WindFileType = BackGrndValues%WindFileType
 !      CT_Flag  = BackGrndValues%CoherentStr
       ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
 
@@ -272,18 +260,17 @@ CONTAINS
    ! Initialize based on the wind type
    !-------------------------------------------------------------------------------------------------
 
-print*, "WindType ",ParamData%WindType
-   SELECT CASE ( ParamData%WindType )
+   SELECT CASE ( ParamData%WindFileType )
 
       CASE (HH_Wind)
 
-         HHInitInfo%ReferenceHeight = FileInfo%ReferenceHeight
-         HHInitInfo%Width           = FileInfo%Width
+         HHInitInfo%ReferenceHeight = InitData%ReferenceHeight
+         HHInitInfo%Width           = InitData%Width
 
          CALL HH_Init( UnWind, FileName, HHInitInfo, ErrStat )
 
 !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
-         IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
+         IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
 
 
       CASE (FF_Wind)
@@ -295,7 +282,7 @@ print*, "WindType ",ParamData%WindType
 
          IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
             Height     = FF_GetValue('HubHeight', ErrStat)
-            IF ( ErrStat /= 0 ) Height = FileInfo%ReferenceHeight
+            IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
 
             HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat)
             IF ( ErrStat /= 0 ) HalfWidth = 0
@@ -311,7 +298,7 @@ print*, "WindType ",ParamData%WindType
 
       CASE (FD_Wind)
 
-         CALL FD_Init(UnWind, FileName, FileInfo%ReferenceHeight, ErrStat)
+         CALL FD_Init(UnWind, FileName, InitData%ReferenceHeight, ErrStat)
 
       CASE (HAWC_Wind)
 
@@ -330,7 +317,7 @@ print*, "WindType ",ParamData%WindType
 
    IF ( ErrStat /= 0 ) THEN
       ParamData%Initialized = .FALSE.
-      ParamData%WindType    = Undef_Wind
+      ParamData%WindFileType    = Undef_Wind
       ErrStat               = 1         !FIXME: change the error status to the framework convention
       CALL IfW_End( ParamData, ErrStat )  !Just in case we've allocated something
    ELSE
@@ -359,7 +346,7 @@ FUNCTION InflowWind_GetVelocity(ParamData, Time, InputPosition, ErrStat)
 
    ErrStat = 0
 
-   SELECT CASE ( ParamData%WindType )
+   SELECT CASE ( ParamData%WindFileType )
       CASE (HH_Wind)
          InflowWind_GetVelocity = HH_GetWindSpeed(     Time, InputPosition, ErrStat )
 
@@ -423,7 +410,7 @@ SUBROUTINE IfW_End( ParamData, ErrStat )
 
       ! End the sub-modules (deallocates their arrays and closes their files):
 
-   SELECT CASE ( ParamData%WindType )
+   SELECT CASE ( ParamData%WindFileType )
 
       CASE (HH_Wind)
          CALL HH_Terminate(     ErrStat )
@@ -454,7 +441,7 @@ SUBROUTINE IfW_End( ParamData, ErrStat )
 
 
       ! Reset the wind type so that the initialization routine must be called
-   ParamData%WindType = Undef_Wind
+   ParamData%WindFileType = Undef_Wind
 !FIXME: reset the initialization flag.
    ParamData%CT_Flag  = .FALSE.
 

@@ -12,13 +12,12 @@ PROGRAM InflowWind_Test
 
    IMPLICIT NONE
 
-   TYPE(InflInitInfo)  :: InitWindData         ! data to initialize the module; TYPE defined in InflowWindMod.f90
 
    REAL(ReKi)          :: InpPosition(3)
    TYPE(InflIntrpOut)  :: MyWindSpeed
    REAL(ReKi)          :: Time
 
-   REAL(ReKi)          :: dt
+   REAL(DbKi)          :: dt
    INTEGER             :: I
 
       ! Error Handling
@@ -29,6 +28,7 @@ PROGRAM InflowWind_Test
 
       ! All the shared types used in the module
    TYPE( IfW_ParameterType )                          :: IfW_ParamData     ! Parameters
+   TYPE( IfW_InitInputType )                          :: IfW_InitData      ! data for initialization
 
 
 
@@ -36,19 +36,19 @@ PROGRAM InflowWind_Test
    ! Send the data required for initialization
    !-------------------------------------------------------------------------------------------------
 
-!      InitWindData%WindFileName     = "D:\DATA\Fortran\IVF Projects\AeroDyn\Update\Source\InflowWind\TestData\GPLLJ_DNS\InOut.wnd"
-!      InitWindData%WindFileName     = "../TestRoutines/TestData/Periodic_Winds.wnd"    !! ff wind
-!      InitWindData%WindFileName     = "Test-Data/InOut.wnd"    !! ff wind
-      InitWindData%WindFileName     = "../Samples/Steady.wnd"  !! HH wind
-!      InitWindData%WindFileName     = "../Samples/les.fdp"  !! 4 D -- points to some other files. -- not work
-      InitWindData%ReferenceHeight  = 80.   ! meters
-      InitWindData%Width            = 100.  ! meters
+!      IfW_InitData%WindFileName     = "D:\DATA\Fortran\IVF Projects\AeroDyn\Update\Source\InflowWind\TestData\GPLLJ_DNS\InOut.wnd"
+!      IfW_InitData%WindFileName     = "../TestRoutines/TestData/Periodic_Winds.wnd"    !! ff wind
+!      IfW_InitData%WindFileName     = "Test-Data/InOut.wnd"    !! ff wind
+      IfW_InitData%WindFileName     = "../Samples/Steady.wnd"  !! HH wind
+!      IfW_InitData%WindFileName     = "../Samples/les.fdp"  !! 4 D -- points to some other files. -- not work
+      IfW_InitData%ReferenceHeight  = 80.   ! meters
+      IfW_InitData%Width            = 100.  ! meters
 
-!     InitWindData%WindFileType     = FF_Wind
-      InitWindData%WindFileType     = DEFAULT_Wind      ! let the module figure out what type of file it is...
+!     IfW_InitData%WindFileType     = FF_Wind
+      IfW_InitData%WindFileType     = DEFAULT_Wind      ! let the module figure out what type of file it is...
 
 
-      CALL IfW_Init( IfW_ParamData, InitWindData, ErrStat, ErrMsg )
+      CALL IfW_Init( IfW_InitData, IfW_ParamData, dt, ErrStat, ErrMsg )
 
 
       IF (errstat /=0) CALL ProgAbort('Error in Initialization routine')
@@ -61,7 +61,7 @@ PROGRAM InflowWind_Test
 
       InpPosition(1) = 0.0                            ! longitudinal position front/back of tower
       InpPosition(2) = 0.0                            ! lateral position left/right of tower
-      InpPosition(3) = InitWindData%ReferenceHeight   ! height relative to the ground
+      InpPosition(3) = IfW_InitData%ReferenceHeight   ! height relative to the ground
 
       DO I = 1,3 !time
 

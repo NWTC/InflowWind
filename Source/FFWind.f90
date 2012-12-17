@@ -101,7 +101,7 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
       RETURN
    ELSE
       ErrStat = 0
-      CALL NWTC_Init()
+!      CALL NWTC_Init()    ! Initialized in IfW_Init
    END IF   
 
 

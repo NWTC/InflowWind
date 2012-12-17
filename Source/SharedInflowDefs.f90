@@ -20,9 +20,14 @@ MODULE SharedInflowDefs
 
       !---- Initialization data ---------------------------------------------------------------------
    TYPE, PUBLIC :: IfW_InitInputType
-         ! Define inputs that the initialization routine may need here:
-         ! e.g., the name of the input file, the file root name, etc.
-      REAL(ReKi) :: DummyReal                                                 ! If you have initialization input data, remove this variable
+      ! Define inputs that the initialization routine may need here:
+      ! e.g., the name of the input file, the file root name, etc.
+         ! Filename and type
+      CHARACTER(1024)               :: WindFileName
+      INTEGER                       :: WindFileType
+         ! Configuration Info
+      REAL(ReKi)                    :: ReferenceHeight        ! reference height for HH and/or 4D winds (was hub height), in meters
+      REAL(ReKi)                    :: Width                  ! width of the HH file (was 2*R), in meters
    END TYPE IfW_InitInputType
 
 
@@ -61,12 +66,19 @@ MODULE SharedInflowDefs
 
          ! Define parameters here that might need to be accessed from the outside world:
 
-         ! The type of the file in use
-      INTEGER              :: WindType       = 0         ! This should be initially set to match the Undef_Wind parameter in the module
+         ! Filename info
+      CHARACTER(1024)               :: WindFileName
+      CHARACTER(1024)               :: WindFileNameRoot
+      CHARACTER(3)                  :: WindFileNameExt
+      INTEGER                       :: WindFileType       = 0 ! This should be initially set to match the Undef_Wind parameter in the module
+
+         ! Location
+      REAL(ReKi)                    :: ReferenceHeight        ! reference height for HH and/or 4D winds (was hub height), in meters
+      REAL(ReKi)                    :: Width                  ! width of the HH file (was 2*R), in meters
 
          ! Flags
-      LOGICAL              :: CT_Flag        = .FALSE.   ! determines if coherent turbulence is used
-      LOGICAL              :: Initialized    = .FALSE.   ! did we run the initialization?
+      LOGICAL                       :: CT_Flag        = .FALSE.   ! determines if coherent turbulence is used
+      LOGICAL                       :: Initialized    = .FALSE.   ! did we run the initialization?
 
    END TYPE IfW_ParameterType
 
@@ -92,6 +104,7 @@ MODULE SharedInflowDefs
 
 !-=-=-=-=-=-=-=-=-=-=-
 !-=-=-=-=-=-=-=-=-=-=-
+!     Original stuff below that hasn't yet been moved.
 !-=-=-=-=-=-=-=-=-=-=-
 !-=-=-=-=-=-=-=-=-=-=-
 
