@@ -153,8 +153,8 @@ CONTAINS
 
          ! Error Handling
 
-      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
-      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+      INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
 
          ! Local variables
@@ -203,7 +203,6 @@ CONTAINS
 !      !OutData%        =         
          
 
-
       ! check to see if we are already initialized
 
    IF ( ParamData%Initialized ) THEN
@@ -211,7 +210,10 @@ CONTAINS
       ErrStat = 1
       RETURN
    ELSE
-!      WindType = InitData%WindFileType
+         ! Copy things into the ParamaterType -- InitData may not exist later and isn't accessable in some routines.
+      ParamData%WindFileType = InitData%WindFileType
+      ParamData%WindFileName = InitData%WindFileName
+!FIXME: this is temporary and should be removed once the Wind modules are done.
       FileName = InitData%WindFileName
       CALL NWTC_Init()
       CALL DispNVD( IfW_ProgDesc )
@@ -223,7 +225,6 @@ CONTAINS
    !-------------------------------------------------------------------------------------------------
    IF ( InitData%WindFileType == DEFAULT_Wind ) THEN
       CALL GetWindType( ParamData, ErrStat, ErrMsg )
-!      ParamData%WindFileType = GetWindType( FileName, ErrStat )
    ELSE
       ParamData%WindFileType = InitData%WindFileType
    END IF
@@ -236,7 +237,7 @@ CONTAINS
 
    IF ( ParamData%WindFileType == CTP_Wind ) THEN
 
-      CALL CT_Init(UnWind, FileName, BackGrndValues, ErrStat)
+      CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat)
       IF (ErrStat /= 0) THEN
          CALL IfW_End( ParamData, ErrStat )
          ParamData%WindFileType = Undef_Wind
@@ -244,7 +245,8 @@ CONTAINS
          RETURN
       END IF
 
-      FileName = BackGrndValues%WindFile
+!FIXME: check this
+      ParamData%WindFileName = BackGrndValues%WindFile
       ParamData%WindFileType = BackGrndValues%WindFileType
 !      CT_Flag  = BackGrndValues%CoherentStr
       ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
@@ -267,7 +269,7 @@ CONTAINS
          HHInitInfo%ReferenceHeight = InitData%ReferenceHeight
          HHInitInfo%Width           = InitData%Width
 
-         CALL HH_Init( UnWind, FileName, HHInitInfo, ErrStat )
+         CALL HH_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
 
 !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
          IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
@@ -275,7 +277,7 @@ CONTAINS
 
       CASE (FF_Wind)
 
-         CALL FF_Init( UnWind, FileName, ErrStat )
+         CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat )
 
 
             ! Set CT parameters
@@ -298,11 +300,11 @@ CONTAINS
 
       CASE (FD_Wind)
 
-         CALL FD_Init(UnWind, FileName, InitData%ReferenceHeight, ErrStat)
+         CALL FD_Init(UnWind, ParamData%WindFileName, InitData%ReferenceHeight, ErrStat)
 
       CASE (HAWC_Wind)
 
-         CALL HW_Init( UnWind, FileName, ErrStat )
+         CALL HW_Init( UnWind, ParamData%WindFileName, ErrStat )
 
       CASE DEFAULT
 

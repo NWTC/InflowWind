@@ -6,7 +6,7 @@ MODULE   WindFile_Types
 !
 !        --> Make these parameters within the module, but not shared to the outside world. Put in the subroutines?
    INTEGER,PARAMETER          :: DEFAULT_Wind = -1    ! Undetermined wind type; calls internal routine to guess what type it is
-   INTEGER,PARAMETER          :: Undef_Wind   =  0    ! This is the code for an undefined WindType
+   INTEGER,PARAMETER          :: Undef_Wind   =  0    ! This is the code for an undefined WindFileType
    INTEGER,PARAMETER          :: HH_Wind      =  1    ! Hub-Height wind file
    INTEGER,PARAMETER          :: FF_Wind      =  2    ! Binary full-field wind file
    INTEGER,PARAMETER          :: UD_Wind      =  3    ! User-defined wind
