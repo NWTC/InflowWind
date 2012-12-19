@@ -1,0 +1,26 @@
+##These routines are currently public. They shouldn't be in the end
+CT_GetWindSpeed            CTWind.f90
+CT_Init                    CTWind.f90
+CT_SetRefVal               CTWind.f90
+CT_Terminate               CTWind.f90
+FD_GetValue                FDWind.f90
+FD_GetWindSpeed            FDWind.f90
+FD_Init                    FDWind.f90
+FD_Terminate               FDWind.f90
+FF_GetValue                FFWind.f90
+FF_GetWindSpeed            FFWind.f90
+FF_Init                    FFWind.f90
+FF_Terminate               FFWind.f90
+HW_GetValue                HAWCWind.f90
+HW_GetWindSpeed            HAWCWind.f90
+HW_Init                    HAWCWind.f90
+HW_Terminate               HAWCWind.f90
+HH_Get_ADhack_WindSpeed    HHWind.f90
+HH_GetWindSpeed            HHWind.f90
+HH_Init                    HHWind.f90
+HH_SetLinearizeDels        HHWind.f90
+HH_Terminate               HHWind.f90
+UsrWnd_GetValue            UserWind.f90
+UsrWnd_GetWindSpeed        UserWind.f90
+UsrWnd_Init                UserWind.f90
+UsrWnd_Terminate           UserWind.f90

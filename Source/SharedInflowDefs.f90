@@ -13,9 +13,27 @@ MODULE SharedInflowDefs
 ! This module is used to define shared types and parameters that are used in the module InflowWind.
 ! 7 Oct 2009    B. Jonkman, NREL/NWTC
 !----------------------------------------------------------------------------------------------------
+!  
+!..................................................................................................................................
+! LICENSING
+! Copyright (C) 2012  National Renewable Energy Laboratory
+!
+!    This file is part of InflowWind.
+!
+!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as 
+!    published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+!
+!    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+!    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+!    
+!    You should have received a copy of the GNU General Public License along with InflowWind.  
+!    If not, see <http://www.gnu.org/licenses/>.
+!    
+!**********************************************************************************************************************************
 
    USE NWTC_Library                                               ! Precision module
    IMPLICIT NONE
+!   PRIVATE
 
 
       !---- Initialization data ---------------------------------------------------------------------
@@ -75,6 +93,8 @@ MODULE SharedInflowDefs
          ! Location
       REAL(ReKi)                    :: ReferenceHeight        ! reference height for HH and/or 4D winds (was hub height), in meters
       REAL(ReKi)                    :: Width                  ! width of the HH file (was 2*R), in meters
+!NOTE: might be only for HH file
+      REAL(ReKi)                    :: HalfWidth              ! half the width of the HH file (was 2*R), in meters
 
          ! Flags
       LOGICAL                       :: CT_Flag        = .FALSE.   ! determines if coherent turbulence is used

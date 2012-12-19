@@ -163,10 +163,12 @@ CONTAINS
       TYPE(CT_Backgr)                                    :: BackGrndValues
 
 
-!FIXME: Should these be put someplace else???
-      REAL(ReKi)                                         :: Height
-      REAL(ReKi)                                         :: HalfWidth
+!NOTE: It isn't entirely clear what the purpose of Height is. Does it sometimes occur that Height  /= ParamData%ReferenceHeight???
+      REAL(ReKi)                                         :: Height      ! Retrieved from FF
+      REAL(ReKi)                                         :: HalfWidth   ! Retrieved from FF
       CHARACTER(1024)                                    :: FileName
+
+!NOTE: I may need to revamp how data is passed to the lower modules. Might need to do that before going any further.
 
 
          ! Initialize ErrStat
@@ -193,12 +195,13 @@ CONTAINS
 !      !OtherStates%     = 
 !
 !
-!FIXME: Don't think there are any initial guesses
+!FIXME: I think there are no initial guesses
 !         ! Define initial guess for the input here:
 !
 !      !InputGuess%      = 
 !
 !
+!FIXME: setup the output data matrix.
 !         ! Define output initializations (set up mesh) here:
 !      !OutData%        =         
          
@@ -281,7 +284,6 @@ CONTAINS
 
 
             ! Set CT parameters
-
          IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
             Height     = FF_GetValue('HubHeight', ErrStat)
             IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
