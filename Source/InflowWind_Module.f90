@@ -17,31 +17,31 @@
 ! Files with this module:
 !  InflowWind_Subs.f90
 !  InflowWind.txt       -- InflowWind_Types will be auto-generated based on the descriptions found in this file.
-!  
+!
 !..................................................................................................................................
 ! LICENSING
 ! Copyright (C) 2012  National Renewable Energy Laboratory
 !
 !    This file is part of InflowWind.
 !
-!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as 
+!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as
 !    published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 !
 !    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 !    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-!    
-!    You should have received a copy of the GNU General Public License along with InflowWind.  
+!
+!    You should have received a copy of the GNU General Public License along with InflowWind.
 !    If not, see <http://www.gnu.org/licenses/>.
-!    
+!
 !**********************************************************************************************************************************
-MODULE InflowWind
+MODULE InflowWind_Module
 
 
    USE                              SharedInflowDefs
-!   USE                              InflowWind_Types   !FIXME: this file needs to be made.
+!   USE                              InflowWind_Types   !FIXME: this file will replace SharedInflowDefs when I can get it to work with the framework registry generator.
    USE                              NWTC_Library
    USE                              WindFile_Types
-      
+
       !-------------------------------------------------------------------------------------------------
       ! The included wind modules
       !-------------------------------------------------------------------------------------------------
@@ -62,7 +62,7 @@ MODULE InflowWind
 
 
 
-   
+
    IMPLICIT NONE
    PRIVATE
 
@@ -72,27 +72,27 @@ MODULE InflowWind
 
 !   CHARACTER(99),PARAMETER        :: InflowWindVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
 
-   
+
       ! ..... Public Subroutines ...................................................................................................
 
    PUBLIC :: IfW_Init                                 ! Initialization routine
    PUBLIC :: IfW_End                                  ! Ending routine (includes clean up)
-   
+
 !   PUBLIC :: InflowWind_UpdateStates                   ! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
 !   PUBLIC :: InflowWind_CalcOutput                     ! Routine for computing outputs
-!   
+!
 !   PUBLIC :: InflowWind_CalcConstrStateResidual        ! Tight coupling routine for returning the constraint state residual
 !   PUBLIC :: InflowWind_CalcContStateDeriv             ! Tight coupling routine for computing derivatives of continuous states
 !   PUBLIC :: InflowWind_UpdateDiscState                ! Tight coupling routine for updating discrete states
-!      
+!
 !   PUBLIC :: InflowWind_JacobianPInput                 ! Routine to compute the Jacobians of the output (Y), continuous- (X), discrete- (Xd), and constraint-state (Z) equations all with respect to the inputs (u)
 !   PUBLIC :: InflowWind_JacobianPContState             ! Routine to compute the Jacobians of the output (Y), continuous- (X), discrete- (Xd), and constraint-state (Z) equations all with respect to the continuous states (x)
 !   PUBLIC :: InflowWind_JacobianPDiscState             ! Routine to compute the Jacobians of the output (Y), continuous- (X), discrete- (Xd), and constraint-state (Z) equations all with respect to the discrete states (xd)
 !   PUBLIC :: InflowWind_JacobianPConstrState           ! Routine to compute the Jacobians of the output (Y), continuous- (X), discrete- (Xd), and constraint-state (Z) equations all with respect to the constraint states (z)
-!   
+!
 !   PUBLIC :: InflowWind_Pack                           ! Routine to pack (save) data into one array of bytes
 !   PUBLIC :: InflowWind_Unpack                         ! Routine to unpack an array of bytes into data structures usable by the module
-   
+
 !-=- Original bits follow -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
 
@@ -127,10 +127,10 @@ MODULE InflowWind
 
 CONTAINS
 !====================================================================================================
-!  SUBROUTINE ModName_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-!                            OutData, Interval, ErrStat, ErrMsg )
-   SUBROUTINE IfW_Init( InitData, ParamData, Interval, ErrStat, ErrMsg )
-! This routine is called at the start of the simulation to perform initialization steps. 
+  SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+                            OutData, Interval, ErrStat, ErrMsg )
+!   SUBROUTINE IfW_Init( InitData, ParamData, Interval, ErrStat, ErrMsg )
+! This routine is called at the start of the simulation to perform initialization steps.
 ! The parameters are set here and not changed during the simulation.
 ! The initial states and initial guess for the input are defined.
 !----------------------------------------------------------------------------------------------------
@@ -140,14 +140,13 @@ CONTAINS
          ! Initialization data and guesses
 
       TYPE( IfW_InitInputType ),          INTENT(IN   )  :: InitData          ! Input data for initialization
-!      TYPE(ModName_InputType),           INTENT(  OUT)  :: InputGuess        ! An initial guess for the input; the input mesh must be defined
-!      TYPE(ModName_ParameterType),       INTENT(  OUT)  :: ParamData         ! Parameters      
+      TYPE( IfW_InputType ),              INTENT(  OUT)  :: InputGuess        ! An initial guess for the input; the input mesh must be defined
       TYPE( Ifw_ParameterType ),          INTENT(  OUT)  :: ParamData         ! Parameters
-!      TYPE(ModName_ContinuousStateType), INTENT(  OUT)  :: ContStates        ! Initial continuous states
-!      TYPE(ModName_DiscreteStateType),   INTENT(  OUT)  :: DiscStates        ! Initial discrete states
-!      TYPE(ModName_ConstraintStateType), INTENT(  OUT)  :: ConstrStateGuess  ! Initial guess of the constraint states
-!      TYPE(ModName_OtherStateType),      INTENT(  OUT)  :: OtherStates       ! Initial other/optimization states            
-!      TYPE(ModName_OutputType),          INTENT(  OUT)  :: OutData           ! Initial output (outputs are not calculated; only the output mesh is initialized)
+      TYPE( IfW_ContinuousStateType ),    INTENT(  OUT)  :: ContStates        ! Initial continuous states
+      TYPE( IfW_DiscreteStateType ),      INTENT(  OUT)  :: DiscStates        ! Initial discrete states
+      TYPE( IfW_ConstraintStateType ),    INTENT(  OUT)  :: ConstrStateGuess  ! Initial guess of the constraint states
+      TYPE( IfW_OtherStateType ),         INTENT(  OUT)  :: OtherStates       ! Initial other/optimization states
+      TYPE( IfW_OutputType ),             INTENT(  OUT)  :: OutData           ! Initial output (outputs are not calculated; only the output mesh is initialized)
       REAL(DbKi),                         INTENT(INOUT)  :: Interval          ! Coupling interval in seconds: InflowWind does not change this.
 
 
@@ -172,39 +171,41 @@ CONTAINS
 
 
          ! Initialize ErrStat
-         
-      ErrStat = ErrID_None         
-      ErrMsg  = ""               
-      
-      
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+print*, "Wind Type: ",InitData%WindFileType
+
 !
 !FIXME:
 !         ! Define parameters here:
-!         
+!
 !      !ParamData%DT     = Interval             ! InflowWind does not dictate the time interval.
                                                 ! It only responds to the current time.
-!      !ParamData%       = 
+!      !ParamData%       =
 !
 !
 !FIXME: no states -- except maybe otherstates.
 !         ! Define initial states here
 !
-!      !ContStates%      = 
-!      !DiscStates%      = 
-!      !ConstrStateGuess%= 
-!      !OtherStates%     = 
+!      !ContStates%      =
+!      !DiscStates%      =
+!      !ConstrStateGuess%=
+!      !OtherStates%     =
 !
 !
 !FIXME: I think there are no initial guesses
 !         ! Define initial guess for the input here:
 !
-!      !InputGuess%      = 
+!      !InputGuess%      =
 !
 !
 !FIXME: setup the output data matrix.
 !         ! Define output initializations (set up mesh) here:
-!      !OutData%        =         
-         
+!      !OutData%        =
+
 
       ! check to see if we are already initialized
 
@@ -452,7 +453,7 @@ SUBROUTINE IfW_End( ParamData, ErrStat )
 
 END SUBROUTINE IfW_End
 !====================================================================================================
-END MODULE InflowWind
+END MODULE InflowWind_Module
 
 
 

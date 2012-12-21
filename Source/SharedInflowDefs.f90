@@ -92,7 +92,7 @@ MODULE SharedInflowDefs
 
          ! Location
       REAL(ReKi)                    :: ReferenceHeight        ! reference height for HH and/or 4D winds (was hub height), in meters
-      REAL(ReKi)                    :: Width                  ! width of the HH file (was 2*R), in meters
+      REAL(ReKi)                    :: Width                  ! width of the HH file, in meters
 !NOTE: might be only for HH file
       REAL(ReKi)                    :: HalfWidth              ! half the width of the HH file (was 2*R), in meters
 

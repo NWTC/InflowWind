@@ -8,7 +8,7 @@
 #compiler to use
 FC = gfortran
 #compiler flags
-FFLAGS = -O3 -fbounds-check #-m32 -g 
+FFLAGS = -O3 -fbounds-check -fbacktrace #-m32 -g 
 
 #Destination for compiled pieces
 DEST_DIR := compiled--linux
@@ -58,7 +58,13 @@ InflowWind_SOURCES  := \
 	UserWind.f90 \
    InflowWind_Subs.f90 \
 	InflowWind_Module.f90 \
-   InflowWind_Test.f90
+   InflowWind_Driver.f90
+
+#   InflowWind_Test.f90
+
+
+
+
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(InflowWind_Driver_DIR)
 vpath %.o $(DEST_DIR)
