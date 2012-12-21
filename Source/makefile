@@ -15,7 +15,7 @@ DEST_DIR := compiled--linux
 
 #Location of source files for the NWTC Library
 LIB_DIR := \
-	$(HOME)/software-development/NWTC_Library--source/source
+	../../../../NWTC_Library/trunk/source
 
 #Name of the executable
 Executable_NAME := InflowWind.linux
