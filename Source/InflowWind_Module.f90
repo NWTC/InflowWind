@@ -243,7 +243,10 @@ print*, "Wind Type: ",InitData%WindFileType
 
       CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat)
       IF (ErrStat /= 0) THEN
-         CALL IfW_End( ParamData, ErrStat )
+!         CALL IfW_End( ParamData, ErrStat )
+!FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
+!         CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+!                       OutData, ErrStat, ErrMsg )
          ParamData%WindFileType = Undef_Wind
          ErrStat  = 1
          RETURN
@@ -324,7 +327,9 @@ print*, "Wind Type: ",InitData%WindFileType
       ParamData%Initialized = .FALSE.
       ParamData%WindFileType    = Undef_Wind
       ErrStat               = 1         !FIXME: change the error status to the framework convention
-      CALL IfW_End( ParamData, ErrStat )  !Just in case we've allocated something
+!      CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+!                    OutData, ErrStat, ErrMsg )  ! Just in case something did get allocated
+!FIXME: cannot call IfW_End here. The problem is that InitData might must be INOUT, but that isn't allowed here by the framework
    ELSE
       ParamData%Initialized = .TRUE.
    END IF
@@ -398,14 +403,29 @@ FUNCTION InflowWind_GetVelocity(ParamData, Time, InputPosition, ErrStat)
 END FUNCTION InflowWind_GetVelocity
 !====================================================================================================
 !FIXME: rename as per framework.
-SUBROUTINE IfW_End( ParamData, ErrStat )
+!SUBROUTINE IfW_End( ParamData, ErrStat )
+SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+                    OutData, ErrStat, ErrMsg )
 ! Clean up the allocated variables and close all open files.  Reset the initialization flag so
 ! that we have to reinitialize before calling the routines again.
 !----------------------------------------------------------------------------------------------------
    USE WindFile_Types
 
-   TYPE(IfW_ParameterType),         INTENT(INOUT)  :: ParamData   ! Parameters that typically don't change
-   INTEGER, INTENT(OUT)       :: ErrStat     !bjj: do we care if there's an error on cleanup?
+         ! Initialization data and guesses
+
+      TYPE( IfW_InitInputType ),          INTENT(INOUT)  :: InitData          ! Input data for initialization
+      TYPE( Ifw_ParameterType ),          INTENT(INOUT)  :: ParamData         ! Parameters
+      TYPE( IfW_ContinuousStateType ),    INTENT(INOUT)  :: ContStates        ! Continuous states
+      TYPE( IfW_DiscreteStateType ),      INTENT(INOUT)  :: DiscStates        ! Discrete states
+      TYPE( IfW_ConstraintStateType ),    INTENT(INOUT)  :: ConstrStateGuess  ! Guess of the constraint states
+      TYPE( IfW_OtherStateType ),         INTENT(INOUT)  :: OtherStates       ! Other/optimization states
+      TYPE( IfW_OutputType ),             INTENT(INOUT)  :: OutData           ! Output data
+
+
+         ! Error Handling
+
+      INTEGER( IntKi ),                   INTENT(  OUT)  :: ErrStat
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
 
 
       ! Close the wind file, if it happens to be open

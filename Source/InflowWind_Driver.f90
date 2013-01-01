@@ -25,16 +25,20 @@ PROGRAM InflowWind_Driver
 
 !   USE NWTC_Library       !NOTE: Not sure why this doesn't need to be specified
    USE InflowWind_Module
-   USE WindFile_Types     !NOTE: would we prefer not to need this????
+   USE WindFile_Types      !NOTE: would we prefer not to need this????
    USE SharedInflowDefs
+   USE IfW_Driver_Types    ! Contains types and routines for handling the input arguments
+   USE IfW_Driver_Subs     ! Contains subroutines for the driver program
 
    IMPLICIT NONE
 
+      ! Info on this code
+   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("InflowWind_Driver","v1.00.00a-adp","31-Dec-2012")
 
-      ! Parametertypes needed
+
+      ! Types needed here (from InflowWind module)
    TYPE( IfW_InitInputType )                          :: IfW_InitInputData       ! Data for initialization -- this is where the input info goes
    TYPE( IfW_InputType )                              :: IfW_InputData           ! input     -- contains xyz coords of interest
-!   TYPE( IfW_InputType )                              :: IfW_InputGuessData      ! initial guess for the input (not needed here -- no initial conditions)
    TYPE( IfW_ParameterType )                          :: IfW_ParamData           ! Parameters
    TYPE( IfW_ContinuousStateType )                    :: IfW_ContStateData       ! Continous State Data  (not used here)
    TYPE( IfW_DiscreteStateType )                      :: IfW_DiscStateData       ! Discrete State Data   (not used here)
@@ -42,13 +46,27 @@ PROGRAM InflowWind_Driver
    TYPE( IfW_OtherStateType )                         :: IfW_OtherStateData      ! Other State Data      (might use at some point)
    TYPE( IfW_OutputType )                             :: IfW_OutputData          ! Output Data -- contains the velocities at xyz
 
-      ! Setup some variables for this code
-   REAL( DbKi )                                       :: TimeStep             ! Initial timestep (the glue code ditcates this)
-   REAL( DbKi )                                       :: Timer(1:2)           ! Keep track of how long this takes to run
-
       ! Error Handling
    INTEGER(IntKi)                                     :: ErrStat
    CHARACTER(1024)                                    :: ErrMsg
+
+
+
+      ! Local variables for this code
+   TYPE( IfW_Driver_ArgFlags )                        :: SettingsFlags        ! Flags indicating which arguments were specified
+   TYPE( IfW_Driver_Args )                            :: Settings             ! Arguments passed in
+   REAL( DbKi )                                       :: TimeStep             ! Initial timestep (the glue code ditcates this)
+   REAL( DbKi )                                       :: Timer(1:2)           ! Keep track of how long this takes to run
+   INTEGER( IntKi )                                   :: InputArgs            ! Number of arguments passed in
+
+
+
+   !--------------------------------------------------------------------------
+   !-=-=- Initialize the Library -=-=-
+   !--------------------------------------------------------------------------
+
+   CALL NWTC_Init
+   CALL DispNVD(ProgInfo)
 
 
 
@@ -59,40 +77,57 @@ PROGRAM InflowWind_Driver
       ! Start the timer
    CALL CPU_TIME( Timer(1) )
 
-      ! Temporary assign some things for now. This will be taken from the command line later
-   IfW_InitInputData%WindFileName      = "../Samples/Steady.wnd"  ! HHWind file
 
-   IfW_InitInputData%ReferenceHeight   = 80.                      ! meters
+
+   !--------------------------------------------------------------------------
+   !-=-=- Parse the command line inputs -=-=-
+   !--------------------------------------------------------------------------
+
+   CALL RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
+
+   IF ( ErrStat >= 5 ) CALL ProgAbort( ErrMsg )    !FIXME:ErrStat
+
+
+      ! Set the input file name
+
+   IfW_InitInputData%WindFileName      = Settings%InputFile
+
+
+      ! In the event things are not specified on the input line, use the following
+
+   IfW_InitInputData%ReferenceHeight   = 80.                      ! meters  -- default
    IfW_InitInputData%Width             = 100.                     ! meters
-
    IfW_InitInputData%WindFileType      = DEFAULT_Wind             ! This must be preset before calling the initialization.
+   TimeStep                            = 10                       !seconds
 
-   TimeStep                            = 0.5                      !seconds
+
+      ! If they are specified by input arguments, use the following
+
+   IF ( SettingsFlags%Height )         IfW_InitInputData%ReferenceHeight   = Settings%Height
+   IF ( SettingsFlags%Width )          IfW_InitInputData%ReferenceWidth    = Settings%Width
+   IF ( SettingsFlags%WindFileType )   IfW_InitInputData%WindFileType      = Settings%WindFileType
+   IF ( SettingsFlags%Tres )           TimeStep                            = Settings%Tres
 
 
-   !--------------------------------------------------------------------------
-   !-=-=- Parse the command line inputs etc -=-=-
-   !--------------------------------------------------------------------------
-   !  -- Grab the input filename
-   !  -- get bounds on time / timestep
-   !  -- get bounds on space coordinates from input / resolution
-   !     -- may want to be able to do just the turbine plane region
-   !     -- may want to be able to do the entire region before (maybe after -- but the turbine changes what that looks like)
 
+      ! Sanity checks on anything set:
+
+   !FIXME: check that the input wind file exists
+   !FIXME: check that the input points file exists
+   !FIXME: check that the FFT file can be made
 
 
    !--------------------------------------------------------------------------
    !-=-=- Initialize the Module -=-=-
    !--------------------------------------------------------------------------
-   !  Initialized the IfW module --> it should initialize all submodules
+   !  Initialize the IfW module --> it will initialize all its pieces
 
-!   CALL IfW_Init( IfW_InitInputData, IfW_ParamData, TimeStep, ErrStat, ErrMsg )
-   CALL IfW_Init( IfW_InitInputData, IfW_InputData, IfW_ParamData, &                                  ! Inputs and parameters
-                  IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &    ! States FIXME: might be ConstrStateGuess!!!!
+   CALL IfW_Init( IfW_InitInputData, IfW_InputData, IfW_ParamData, &
+                  IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
                   IfW_OutputData, TimeStep, ErrStat, ErrMsg )
 
       ! Some simple error checking.
-   IF (errStat /=0) CALL ProgAbort( 'Error occured during the initialization routine' )
+   IF ( ErrStat /= 0 ) CALL ProgAbort( ErrMsg )
 
 
 
@@ -100,7 +135,7 @@ PROGRAM InflowWind_Driver
    !-=-=- Other Setup -=-=-
    !--------------------------------------------------------------------------
    !  Setup any additional things
-   !  -- reset bounds to reasonable level (can't do more than
+   !  -- reset bounds to reasonable level (can't do more than what actually exists in the file)
    !  -- setup the matrices for handling the data?
 
 
@@ -138,7 +173,10 @@ PROGRAM InflowWind_Driver
    !-=-=- We are done, so close everything down -=-=-
    !--------------------------------------------------------------------------
 
-   CALL IfW_End( IfW_ParamData, ErrStat )
+!   CALL IfW_End( IfW_ParamData, ErrStat )
+   CALL IfW_End(  IfW_InitInputData, IfW_ParamData, &
+                  IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
+                  IfW_OutputData, ErrStat, ErrMsg )
 
 
 
@@ -148,4 +186,7 @@ PROGRAM InflowWind_Driver
 
 
 END PROGRAM InflowWind_Driver
+
+
+
 

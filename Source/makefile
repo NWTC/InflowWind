@@ -58,11 +58,9 @@ InflowWind_SOURCES  := \
 	UserWind.f90 \
    InflowWind_Subs.f90 \
 	InflowWind_Module.f90 \
+   InflowWind_Driver_Types.f90 \
+   InflowWind_Driver_Subs.f90 \
    InflowWind_Driver.f90
-
-#   InflowWind_Test.f90
-
-
 
 
 
@@ -85,14 +83,15 @@ default: $(DEST_DIR) $(DEST_DIR)/$(Executable_NAME)
 
 
 #Dependency rules
-SysGnuLinux.o:    SingPrec.o
-NWTC_IO.o:        SysGnuLinux.o
-NWTC_Num.o:       NWTC_IO.o
-NWTC_Aero.o:      NWTC_IO.o NWTC_Num.o
-NWTC_Library.o:   NWTC_Aero.o ModMesh.o
+SysGnuLinux.o:          SingPrec.o
+NWTC_IO.o:              SysGnuLinux.o
+NWTC_Num.o:             NWTC_IO.o
+NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
+NWTC_Library.o:         NWTC_Aero.o ModMesh.o
 InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
 InflowWind_Subs.o:      SharedInflowDefs.o
-InflowWind_Test.o:      InflowWind_Subs.o
+InflowWind_Driver.o:    InflowWind_Subs.o
+
 
 #Make sure the destination directory exists
 $(DEST_DIR):
