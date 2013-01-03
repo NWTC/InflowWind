@@ -23,7 +23,7 @@
 
 PROGRAM InflowWind_Test
 
-   USE InflowWind
+   USE InflowWind_Module
    USE WindFile_Types
    USE SharedInflowDefs
 

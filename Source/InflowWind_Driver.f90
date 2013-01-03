@@ -58,6 +58,7 @@ PROGRAM InflowWind_Driver
    REAL( DbKi )                                       :: TimeStep             ! Initial timestep (the glue code ditcates this)
    REAL( DbKi )                                       :: Timer(1:2)           ! Keep track of how long this takes to run
    INTEGER( IntKi )                                   :: InputArgs            ! Number of arguments passed in
+   LOGICAL                                            :: TempFileExist        ! Flag for inquiring file existence
 
 
 
@@ -68,6 +69,10 @@ PROGRAM InflowWind_Driver
    CALL NWTC_Init
    CALL DispNVD(ProgInfo)
 
+
+!FIXME
+      ! Set the beep to false. This is a temporary workaround since the beepcode on linux may be incorrectly set. This may also be an artifact of my current development environment.
+   Beep = .FALSE.
 
 
    !--------------------------------------------------------------------------
@@ -85,12 +90,15 @@ PROGRAM InflowWind_Driver
 
    CALL RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
 
-   IF ( ErrStat >= 5 ) CALL ProgAbort( ErrMsg )    !FIXME:ErrStat
+   IF ( ErrStat == ErrID_Fatal ) CALL ProgAbort( ErrMsg )
 
 
-      ! Set the input file name
+      ! Set the input file name and verify it exists
 
    IfW_InitInputData%WindFileName      = Settings%InputFile
+
+   INQUIRE( file=Settings%InputFile, exist=TempFileExist )
+   IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find input file "//TRIM(Settings%InputFile))
 
 
       ! In the event things are not specified on the input line, use the following
@@ -103,18 +111,20 @@ PROGRAM InflowWind_Driver
 
       ! If they are specified by input arguments, use the following
 
-   IF ( SettingsFlags%Height )         IfW_InitInputData%ReferenceHeight   = Settings%Height
-   IF ( SettingsFlags%Width )          IfW_InitInputData%ReferenceWidth    = Settings%Width
-   IF ( SettingsFlags%WindFileType )   IfW_InitInputData%WindFileType      = Settings%WindFileType
-   IF ( SettingsFlags%Tres )           TimeStep                            = Settings%Tres
+   IF ( SettingsFlags%Height )         IfW_InitInputData%ReferenceHeight = Settings%Height
+   IF ( SettingsFlags%Width )          IfW_InitInputData%Width           = Settings%Width
+   IF ( SettingsFlags%WindFileType )   IfW_InitInputData%WindFileType    = Settings%WindFileType
+   IF ( SettingsFlags%Tres )           TimeStep                          = Settings%Tres
 
 
 
-      ! Sanity checks on anything set:
+      ! Sanity check: if an input points file is specified, make sure it actually exists.
 
-   !FIXME: check that the input wind file exists
-   !FIXME: check that the input points file exists
-   !FIXME: check that the FFT file can be made
+   IF ( SettingsFlags%PointsFile ) THEN
+      INQUIRE( file=Settings%PointsFile, exist=TempFileExist )
+      IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find the points file "//TRIM(Settings%InputFile))
+   ENDIF
+
 
 
    !--------------------------------------------------------------------------
@@ -126,8 +136,11 @@ PROGRAM InflowWind_Driver
                   IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
                   IfW_OutputData, TimeStep, ErrStat, ErrMsg )
 
-      ! Some simple error checking.
-   IF ( ErrStat /= 0 ) CALL ProgAbort( ErrMsg )
+
+      ! Make sure no errors occured that give us reason to terminate now.
+
+   IF ( ErrStat == ErrID_Severe ) CALL ProgAbort( ErrMsg )
+   IF ( ErrStat == ErrID_Fatal )  CALL ProgAbort( ErrMsg )
 
 
 
@@ -139,6 +152,10 @@ PROGRAM InflowWind_Driver
    !  -- setup the matrices for handling the data?
 
 
+
+
+
+   !FIXME: check that the FFT file can be made
 
 
    !--------------------------------------------------------------------------
@@ -173,7 +190,6 @@ PROGRAM InflowWind_Driver
    !-=-=- We are done, so close everything down -=-=-
    !--------------------------------------------------------------------------
 
-!   CALL IfW_End( IfW_ParamData, ErrStat )
    CALL IfW_End(  IfW_InitInputData, IfW_ParamData, &
                   IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
                   IfW_OutputData, ErrStat, ErrMsg )

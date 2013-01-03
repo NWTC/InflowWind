@@ -47,7 +47,7 @@ MODULE Ifw_Driver_Types
       LOGICAL                 :: ParaPrint      = .FALSE.      ! create a ParaView file?
       LOGICAL                 :: Summary        = .FALSE.      ! create a summary file?
       LOGICAL                 :: fft            = .FALSE.      ! do an FFT
-      LOGICAL                 :: pointsfile     = .FALSE.      ! points file specified
+      LOGICAL                 :: PointsFile     = .FALSE.      ! points file specified
    END TYPE    IfW_Driver_ArgFlags
 
 
@@ -65,7 +65,7 @@ MODULE Ifw_Driver_Types
       REAL( ReKi )            :: Zres                          ! resolution of z
       REAL( ReKi )            :: Tres                          ! resolution of time
       REAL( ReKi )            :: fft(1:3)                      ! Coords to do an FFT
-      CHARACTER(1024)         :: pointsfile                    ! Filename of points file
+      CHARACTER(1024)         :: PointsFile                    ! Filename of points file
       CHARACTER(1024)         :: InputFile                     ! Filename of file to process
    END TYPE    IfW_Driver_Args
 
