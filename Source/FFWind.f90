@@ -1666,7 +1666,9 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)
    INTEGER,           INTENT(OUT):: ErrStat
-   TYPE(InflIntrpOut)            :: FF_GetWindSpeed
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: FF_GetWindSpeed
+   REAL(ReKi)                    :: FF_GetWindSpeed(3)
 
    REAL(ReKi), PARAMETER         :: TOL = 1E-3
 
@@ -1688,7 +1690,9 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
    ! Find out if the location is on the grid on on tower points; interpolate and return the value.
    !-------------------------------------------------------------------------------------------------
 
-    FF_GetWindSpeed%Velocity = FF_Interp(Time,InputPosition, ErrStat)
+!FIXME:delete
+!    FF_GetWindSpeed%Velocity = FF_Interp(Time,InputPosition, ErrStat)
+    FF_GetWindSpeed = FF_Interp(Time,InputPosition, ErrStat)
 
 
 !   IF ( InputPosition(3) >= GridBase - TOL ) THEN

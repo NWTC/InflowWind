@@ -32,8 +32,5 @@ MODULE   InflowWind_Module_Types
    INTEGER,PARAMETER          :: CTP_Wind     =  5    ! Coherent turbulence wind field (superimpose KH billow on background wind)
    INTEGER,PARAMETER          :: HAWC_Wind    =  6    ! Binary full-field wind file in HAWC format
 
-   TYPE, PUBLIC :: InflIntrpOut
-      REAL(ReKi)                    :: Velocity(3)                ! U, V, W
-   END TYPE InflIntrpOut
 
 END MODULE   InflowWind_Module_Types

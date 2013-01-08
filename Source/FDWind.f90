@@ -920,7 +920,9 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time                                   ! the time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)                       ! structure that contains the position
    INTEGER,           INTENT(OUT):: ErrStat                                ! returns 0 if no error; non-zero otherwise
-   TYPE(InflIntrpOut)            :: FD_GetWindSpeed                        ! the resultant wind speed
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: FD_GetWindSpeed                        ! the resultant wind speed
+   REAL(ReKi)                 :: FD_GetWindSpeed(3)                        ! the resultant wind speed
 
 
       ! Local Variables:
@@ -950,6 +952,8 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    INTEGER                    :: IZHI_w                                    ! Index for the more-positive z value for the w component.
    INTEGER                    :: IZLO                                      ! Index for the more-negative z value.
    INTEGER                    :: IZLO_w                                    ! Index for the more-negative z value for the w component.
+
+   REAL(ReKi)                    :: TempWindSpeed(3)                       ! Temporary variable to hold the windspeed before returning
 
    !-------------------------------------------------------------------------------------------------
    ! Check that we've initialized everything first
@@ -1171,7 +1175,8 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
 
    Ixyzn = ( Ixhyz - Ixlyz )*Xgrid + Ixlyz
 
-   FD_GetWindSpeed%Velocity(1) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+!   FD_GetWindSpeed%Velocity(1) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+   TempWindSpeed(1) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
 
    !-------------------------------------------------------------------------------------------------
    ! Interpolate for v component of wind within the grid.
@@ -1197,7 +1202,9 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
 
    Ixyzn = ( Ixhyz - Ixlyz )*Xgrid + Ixlyz
 
-   FD_GetWindSpeed%Velocity(2) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+!FIXME:delete
+!   FD_GetWindSpeed%Velocity(2) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+   TempWindSpeed(2) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
 
    !-------------------------------------------------------------------------------------------------
    ! Interpolate for w component of wind within the grid.
@@ -1224,8 +1231,12 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
 
    Ixyzn = ( Ixhyz - Ixlyz )*Xgrid + Ixlyz
 
-   FD_GetWindSpeed%Velocity(3) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+!FIXME:delete
+!   FD_GetWindSpeed%Velocity(3) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
+   TempWindSpeed(3) = ( Ixyzn - Ixyzo )*Tgrid + Ixyzo
 
+   ! Copy the windspeed info to the output
+   FD_GetWindSpeed = TempWindSpeed
 
    !-------------------------------------------------------------------------------------------------
    ! Set the previous time here to compare with later...

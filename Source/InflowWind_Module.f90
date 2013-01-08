@@ -103,7 +103,7 @@ MODULE InflowWind_Module
 
 !FIXME: handle this differently -- should be allocated by the library function to get an open unit number
       ! store as parameter in parametertype
-   INTEGER                        :: UnWind   = 91          ! The unit number used for wind inflow files
+   INTEGER                                   :: UnWind          ! The unit number used for wind inflow files
 
 
    !-------------------------------------------------------------------------------------------------
@@ -136,6 +136,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 !----------------------------------------------------------------------------------------------------
 !  Open and read the wind files, allocating space for necessary variables
 
+      USE CTWind
 
          ! Initialization data and guesses
 
@@ -367,16 +368,20 @@ SUBROUTINE IfW_CalcOutput( Time, InputData, ParamData, &
       REAL( ReKi )                                       :: Position(3)       ! Current position XYZ coords
       INTEGER( IntKi )                                   :: PointCounter      ! loop counter
 
-!FIXME: may want to change how we handle this derived type
-      TYPE(InflIntrpOut)                                 :: CTWindSpeed       ! U, V, W velocities to superimpose on background wind
-      TYPE(InflIntrpOut)                                 :: TempWindSpeed     ! U, V, W velocities returned
+
+         ! Sub modules use the InflIntrpOut derived type to store the wind information
+!      TYPE(InflIntrpOut)                                 :: CTWindSpeed       ! U, V, W velocities to superimpose on background wind
+!      TYPE(InflIntrpOut)                                 :: TempWindSpeed     ! U, V, W velocities returned
+      REAL(ReKi)                                         :: CTWindSpeed(3)     ! U, V, W velocities to superimpose on background wind
+      REAL(ReKi)                                         :: TempWindSpeed(3)   ! Temporary U, V, W velocities
+
+
 
 
          ! Initialize ErrStat
       ErrStat  = ErrID_None
       ErrMsg   = ""
 
-print*,ALLOCATED(OutputData%Velocity)
          ! Check and see if the output Velocity array has been allocated. If it has, make sure it is the same size as the input position array.
       IF (.not. ALLOCATED(InputData%Position)) THEN
          ErrMsg   = 'Ifw_CalcOutput: The InputData%Position array has not been allocated.'
@@ -399,7 +404,6 @@ print*,ALLOCATED(OutputData%Velocity)
 
          ! Step through the entire set of coordinates
 
-print*," Number of rows points to process: ",SIZE(InputData%Position, 2)
    nloop: DO PointCounter = 1, SIZE(InputData%Position, 2)
 
 
@@ -424,10 +428,10 @@ print*," Number of rows points to process: ",SIZE(InputData%Position, 2)
             TempWindSpeed = HW_GetWindSpeed(     Time, Position, ErrStat )
 
          CASE DEFAULT
-            ErrMsg = ' Error: Undefined wind type in InflowWind_GetVelocity(). ' &
+            ErrMsg = ' Error: Undefined wind type in IfW_CalcOutput. ' &
                       //'Call WindInflow_Init() before calling this function.'
             ErrStat = ErrID_Warn
-            TempWindSpeed%Velocity(:) = 0.0
+            TempWindSpeed(:) = 0.0
             EXIT nloop
 
       END SELECT
@@ -447,7 +451,7 @@ print*," Number of rows points to process: ",SIZE(InputData%Position, 2)
             CTWindSpeed = CT_GetWindSpeed(Time, Position, ErrStat)
             IF (ErrStat /=0 ) RETURN
 
-            TempWindSpeed%Velocity(:) = TempWindSpeed%Velocity(:) + CTWindSpeed%Velocity(:)
+            TempWindSpeed = TempWindSpeed + CTWindSpeed
 
          ENDIF
 
@@ -455,7 +459,7 @@ print*," Number of rows points to process: ",SIZE(InputData%Position, 2)
 
 
          ! Copy the Velocity data over to the output
-      OutputData%Velocity(:,PointCounter) = TempWindSpeed%Velocity
+      OutputData%Velocity(:,PointCounter) = TempWindSpeed
 
    ENDDO nloop
 

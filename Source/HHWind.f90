@@ -337,7 +337,9 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time                 ! time from the start of the simulation
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)     ! input information: positions X,Y,Z
    INTEGER,           INTENT(OUT):: ErrStat              ! error status
-   TYPE(InflIntrpOut)            :: HH_GetWindSpeed      ! return velocities (U,V,W)
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: HH_GetWindSpeed      ! return velocities (U,V,W)
+   REAL(ReKi)                    :: HH_GetWindSpeed(3)   ! return velocities (U,V,W)
 
    REAL(ReKi)                    :: CosDelta             ! cosine of Delta_tmp
    REAL(ReKi)                    :: Delta_tmp            ! interpolated Delta   at input TIME
@@ -350,6 +352,7 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(ReKi)                    :: VShr_tmp             ! interpolated VShr    at input TIME
    REAL(ReKi)                    :: VZ_tmp               ! interpolated VZ      at input TIME
    REAL(ReKi)                    :: V1                   ! temporary storage for horizontal velocity
+
 
 
    !-------------------------------------------------------------------------------------------------
@@ -449,9 +452,9 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
         + ( HShr_tmp   * ( InputPosition(2) * CosDelta + InputPosition(1) * SinDelta ) &    ! horizontal linear shear
         +  VLinShr_tmp * ( InputPosition(3)-RefHt ) )/RefWid  ) &                           ! vertical linear shear
         + VGUST_tmp                                                                         ! gust speed
-   HH_GetWindSpeed%Velocity(1) =  V1 * CosDelta
-   HH_GetWindSpeed%Velocity(2) = -V1 * SinDelta
-   HH_GetWindSpeed%Velocity(3) =  VZ_tmp
+   HH_GetWindSpeed(1) =  V1 * CosDelta
+   HH_GetWindSpeed(2) = -V1 * SinDelta
+   HH_GetWindSpeed(3) =  VZ_tmp
 
 
    RETURN

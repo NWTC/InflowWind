@@ -77,6 +77,7 @@ MODULE CTWind
 
 
    TYPE, PUBLIC :: CT_Backgr
+!   TYPE :: CT_Backgr
       CHARACTER(1024)           :: WindFile                                   ! The name of the background wind file
       INTEGER                   :: WindFileType                               ! The type of background wind file (currently only FF)
       LOGICAL                   :: CoherentStr                                ! If the coherent time step file is blank or doesn't exist, this is FALSE (use the background only)
@@ -312,7 +313,9 @@ FUNCTION CT_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time                                   ! the time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)                       ! the position (X,Y,Z)
    INTEGER,           INTENT(OUT):: ErrStat                                ! returns 0 if no error; non-zero otherwise
-   TYPE(InflIntrpOut)            :: CT_GetWindSpeed                        ! the resultant wind speed
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: CT_GetWindSpeed                        ! the resultant wind speed
+   REAL(ReKi)                    :: CT_GetWindSpeed                        ! the resultant wind speed
 
 
       ! Local Variables:
@@ -527,7 +530,9 @@ FUNCTION CT_GetWindSpeed(Time, InputPosition, ErrStat)
       Iyhz   = ( CTvelU(IYHi,IZHi(I),IndCT_hi) - CTvelU(IYHi,IZLo(I),IndCT_hi) )*Zgrid(I) + CTvelU(IYHi,IZLo(I),IndCT_hi)
       Iyz_th = ( Iyhz - Iylz )*Ygrid + Iylz
 
-      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+!FIXME:delete
+!      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+      CT_GetWindSpeed = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
 
 
    !-------------------------------------------------------------------------------------------------
@@ -546,7 +551,9 @@ FUNCTION CT_GetWindSpeed(Time, InputPosition, ErrStat)
       Iyhz   = ( CTvelV(IYHi,IZHi(I),IndCT_hi) - CTvelV(IYHi,IZLo(I),IndCT_hi) )*Zgrid(I) + CTvelV(IYHi,IZLo(I),IndCT_hi)
       Iyz_th = ( Iyhz - Iylz )*Ygrid + Iylz
 
-      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+!FIXME:delete
+!      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+      CT_GetWindSpeed = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
 
 
    !-------------------------------------------------------------------------------------------------
@@ -565,7 +572,9 @@ FUNCTION CT_GetWindSpeed(Time, InputPosition, ErrStat)
       Iyhz   = ( CTvelW(IYHi,IZHi(I),IndCT_hi) - CTvelW(IYHi,IZLo(I),IndCT_hi) )*Zgrid(I) + CTvelW(IYHi,IZLo(I),IndCT_hi)
       Iyz_th = ( Iyhz - Iylz )*Ygrid + Iylz
 
-      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+!FIXME:delete
+!      CT_GetWindSpeed%Velocity(I) = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
+      CT_GetWindSpeed = ( Iyz_th - Iyz_tl )*Tgrid + Iyz_tl
 
 
    RETURN

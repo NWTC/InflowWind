@@ -134,7 +134,9 @@ FUNCTION UsrWnd_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)        ! X,Y,Z (z is 0 at ground level)
    INTEGER,           INTENT(OUT):: ErrStat                 ! return 0 if no errors; non-zero otherwise
-   TYPE(InflIntrpOut)            :: UsrWnd_GetWindSpeed
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: UsrWnd_GetWindSpeed
+   REAL(ReKi)                    :: UsrWnd_GetWindSpeed(3)
 
 
    !-------------------------------------------------------------------------------------------------
@@ -159,9 +161,13 @@ FUNCTION UsrWnd_GetWindSpeed(Time, InputPosition, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
       ! We'll test this with steady winds for now.
-   UsrWnd_GetWindSpeed%Velocity(1) = 10.0    ! U velocity (along positive X)
-   UsrWnd_GetWindSpeed%Velocity(2) =  0.0    ! V velocity (along positive Y)
-   UsrWnd_GetWindSpeed%Velocity(3) =  0.0    ! V velocity (along positive Z)
+!FIXME:delete
+!   UsrWnd_GetWindSpeed%Velocity(1) = 10.0    ! U velocity (along positive X)
+!   UsrWnd_GetWindSpeed%Velocity(2) =  0.0    ! V velocity (along positive Y)
+!   UsrWnd_GetWindSpeed%Velocity(3) =  0.0    ! V velocity (along positive Z)
+   UsrWnd_GetWindSpeed(1) = 10.0    ! U velocity (along positive X)
+   UsrWnd_GetWindSpeed(2) =  0.0    ! V velocity (along positive Y)
+   UsrWnd_GetWindSpeed(3) =  0.0    ! V velocity (along positive Z)
 
 
 END FUNCTION UsrWnd_GetWindSpeed

@@ -100,6 +100,8 @@ MODULE SharedInflowDefs
       LOGICAL                       :: CT_Flag        = .FALSE.   ! determines if coherent turbulence is used
       LOGICAL                       :: Initialized    = .FALSE.   ! did we run the initialization?
 
+      INTEGER( IntKi )              :: UnWind                 ! Unit number for wind files
+
    END TYPE IfW_ParameterType
 
 

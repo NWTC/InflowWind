@@ -432,7 +432,9 @@ FUNCTION HW_GetWindSpeed(Time, InputPosition, ErrStat)
    REAL(DbKi),        INTENT(IN) :: Time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)
    INTEGER,           INTENT(OUT):: ErrStat
-   TYPE(InflIntrpOut)            :: HW_GetWindSpeed
+!FIXME:delete
+!   TYPE(InflIntrpOut)            :: HW_GetWindSpeed
+   REAL(ReKi)                    :: HW_GetWindSpeed(3)
 
 
    !-------------------------------------------------------------------------------------------------
@@ -452,7 +454,7 @@ FUNCTION HW_GetWindSpeed(Time, InputPosition, ErrStat)
    ! interpolate and return the value.
    !-------------------------------------------------------------------------------------------------
 
-    HW_GetWindSpeed%Velocity = HW_LinearInterp(Time,InputPosition, ErrStat)
+    HW_GetWindSpeed = HW_LinearInterp(Time,InputPosition, ErrStat)
 
 
 END FUNCTION HW_GetWindSpeed
