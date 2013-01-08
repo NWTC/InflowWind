@@ -400,73 +400,126 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
 
 
-         ! Step through the entire set of coordinates
-      pointsloop: DO PointCounter = 1, SIZE(InputData%Position, 2)
+         ! Compute the wind velocities by stepping through all the data points and calling the appropriate GetWindSpeed routine
+      SELECT CASE ( ParamData%WindFileType )
+         CASE (HH_Wind)
 
-            ! Compute the wind velocities by calling the appropriate routine
-         SELECT CASE ( ParamData%WindFileType )
-            CASE (HH_Wind)
-               TempWindSpeed = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-            CASE (FF_Wind)
-               TempWindSpeed = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+               OutputData%Velocity(:,PointCounter) = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
-            CASE (UD_Wind)
-               TempWindSpeed = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )
-
-            CASE (FD_Wind)
-               TempWindSpeed = FD_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
-
-            CASE (HAWC_Wind)
-               TempWindSpeed = HW_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
-
-               ! If it isn't one of the above cases, we have a problem and won't be able to continue
-
-            CASE DEFAULT
-               ErrMsg = ' Error: Undefined wind type in IfW_CalcOutput. ' &
-                         //'Call WindInflow_Init() before calling this function.'
-               ErrStat = ErrID_Fatal               ! No data returned
-               OutputData%Velocity(:,:) = 0.0
-
-!FIXME:IfW_End? -- Can't due to the INTENT. this must be handled by the glue code. Put in note.
-               EXIT pointsloop
-
-         END SELECT
+                  ! Error Handling -- move ErrMsg inside HH_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in HH_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+            ENDDO
 
 
+         CASE (FF_Wind)
 
-            ! If we had a severe or fatal error, we need to exit
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-         IF (ErrStat >= ErrID_Severe) THEN
+               OutputData%Velocity(:,PointCounter) = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
+                  ! Error Handling -- move ErrMsg inside FF_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in FF_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+            ENDDO
+
+
+         CASE (UD_Wind)
+
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
+
+               OutputData%Velocity(:,PointCounter) = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )
+
+                  ! Error Handling -- move ErrMsg inside UsrWind_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in UsrWnd_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+            ENDDO
+
+
+         CASE (FD_Wind)
+
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
+
+               OutputData%Velocity(:,PointCounter) = FD_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+
+                  ! Error Handling -- move ErrMsg inside FD_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in FD_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+            ENDDO
+
+
+         CASE (HAWC_Wind)
+
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
+
+               OutputData%Velocity(:,PointCounter) = HW_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+
+                  ! Error Handling -- move ErrMsg inside HW_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in HW_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+            ENDDO
+
+
+
+            ! If it isn't one of the above cases, we have a problem and won't be able to continue
+
+         CASE DEFAULT
+
+            ErrMsg = ' Error: Undefined wind type in IfW_CalcOutput. ' &
+                      //'Call WindInflow_Init() before calling this function.'
+            ErrStat = ErrID_Fatal               ! No data returned
             OutputData%Velocity(:,:) = 0.0
+            RETURN
 
-!FIXME:IfW_End? -- Can't due to the INTENT. this must be handled by the glue code. Put in note.
-            EXIT pointsloop       ! exit the loop
-
-         ELSE
-
-               ! Add coherent turbulence to background wind
-
-            IF (ParamData%CT_Flag) THEN
-
-               CTWindSpeed = CT_GetWindSpeed(Time, Position, ErrStat)
-
-               TempWindSpeed = TempWindSpeed + CTWindSpeed
-
-                  ! Return if only a recoverable warning or less severe
-               IF (ErrStat <= ErrID_Warn ) RETURN
+      END SELECT
 
 
-            ENDIF
+         ! If we had a severe or fatal error, we need to make sure we zero out the result and return.
+
+      IF (ErrStat >= ErrID_Severe) THEN
+
+         OutputData%Velocity(:,:) = 0.0
+         RETURN
+
+      ELSE
+
+            ! Add coherent turbulence to background wind
+
+         IF (ParamData%CT_Flag) THEN
+
+            DO PointCounter = 1, SIZE(InputData%Position, 2)
+
+               TempWindSpeed = CT_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+
+                  ! Error Handling -- move ErrMsg inside CT_GetWindSPeed and simplify
+               IF (ErrStat >= ErrID_Severe) THEN
+                  ErrMsg   = 'IfW_CalcOutput: Error in CT_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+                  EXIT        ! Exit the loop
+               ENDIF
+
+               OutputData%Velocity(:,PointCounter) = OutputData%Velocity(:,PointCounter) + TempWindSpeed
+
+            ENDDO
+
+               ! If something went badly wrong, Return
+            IF (ErrStat >= ErrID_Severe ) RETURN
 
          ENDIF
 
+      ENDIF
 
-            ! Copy the Velocity data over to the output
-         OutputData%Velocity(:,PointCounter) = TempWindSpeed
-
-      ENDDO pointsloop
 
 
 END SUBROUTINE IfW_CalcOutput
