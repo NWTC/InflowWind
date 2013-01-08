@@ -6,17 +6,17 @@ MODULE FDWind
 ! Data are assumed to be in units of meters and seconds.
 !
 !  7 Oct 2009    B. Jonkman, NREL/NWTC using subroutines from AeroDyn 12.57
-!----------------------------------------------------------------------------------------------------  
+!----------------------------------------------------------------------------------------------------
 
    USE                     NWTC_Library
    USE                     SharedInflowDefs
-   USE                     WindFile_Types
+   USE                     InflowWind_Module_Types
 
    IMPLICIT                NONE
    PRIVATE
-  
+
       ! FD_Wind
-      
+
    REAL(ReKi)                   :: DelXgrid                                   ! The nondimensional distance between grid points in the x direction.
    REAL(ReKi)                   :: DelYgrid                                   ! The nondimensional distance between grid points in the y direction.
    REAL(ReKi)                   :: DelZgrid                                   ! The nondimensional distance between grid points in the z direction.
@@ -74,7 +74,7 @@ MODULE FDWind
 
    INTEGER                      :: FDUnit                                     ! Unit number for reading wind files
 
-   LOGICAL                      :: Advect                                     ! Flag to indicate whether or not to advect a given data set or to just use the time step files 
+   LOGICAL                      :: Advect                                     ! Flag to indicate whether or not to advect a given data set or to just use the time step files
    LOGICAL                      :: VertShft                                   ! Flag to indicate whether or not to shift the z values for the w component.
 
    LOGICAL, SAVE                :: Initialized = .FALSE.
@@ -92,11 +92,11 @@ MODULE FDWind
 CONTAINS
 !====================================================================================================
 SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
-!  This subroutine is called at the beginning of a simulation to initialize the module.  
+!  This subroutine is called at the beginning of a simulation to initialize the module.
 !----------------------------------------------------------------------------------------------------
 
       ! Passed variables
-      
+
    INTEGER,         INTENT(IN)    :: UnWind                       ! unit number for reading wind files
    CHARACTER(*),    INTENT(IN)    :: WindFile                     ! Name of the 4D wind parameter file (.fdp)
    REAL(ReKi),      INTENT(IN)    :: RefHt                        ! The reference height for the billow (should be hub height)
@@ -107,12 +107,12 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
    CHARACTER(1024)                :: FDTSfile                     ! name of the 4D time step file
    REAL(ReKi)                     :: FDTimStp                     ! Average time step for 4D wind data.
    INTEGER                        :: IT
-   
+
    !-------------------------------------------------------------------------------------------------
    ! Check that the module hasn't already been initialized.
    !-------------------------------------------------------------------------------------------------
-      
-   IF ( Initialized ) THEN  
+
+   IF ( Initialized ) THEN
       CALL WrScr( ' FDWind has already been initialized.' )
       ErrStat = 1
       RETURN
@@ -126,23 +126,23 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
    ! Set the reference height for the wind file (this takes the place of HH that was used earlier)
    !-------------------------------------------------------------------------------------------------
 
-   ZRef = RefHt         
-   
+   ZRef = RefHt
+
    !-------------------------------------------------------------------------------------------------
    ! Read the main 4D input file
    !-------------------------------------------------------------------------------------------------
-   
+
    CALL ReadFDP( UnWind, WindFile, FDTSfile, ErrStat )
    IF ( ErrStat /= 0 ) RETURN
-   
+
    !-------------------------------------------------------------------------------------------------
    ! Get the times array, which must be scaled and shifted later using TSclFact and T_4D_St
    !-------------------------------------------------------------------------------------------------
 
    CALL Read4Dtimes ( UnWind, FDTSfile, ErrStat )
    IF ( ErrStat /= 0 ) RETURN
-   
-   
+
+
    !-------------------------------------------------------------------------------------------------
    ! Calculate some values that don't change during the run.
    !-------------------------------------------------------------------------------------------------
@@ -179,7 +179,7 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
    DO IT=1,Num4Dt
-      
+
       Times4D(IT) = TSclFact*Times4D(IT) + T_4D_St
 
    ENDDO ! IT
@@ -198,7 +198,7 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
          RETURN
       END IF
    END IF
-   
+
    IF (.NOT. ALLOCATED(FDv) ) THEN
 !      CALL AllocAry ( FDv, Num4DxD, Num4DyD, Num4DzD, 2, 'V-component velocity array (FDv)', ErrStat)
       ALLOCATE ( FDv(Num4DxD,Num4DyD,Num4DzD,2), STAT=ErrStat )
@@ -256,7 +256,7 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
 
    ENDIF
 
-     
+
    !-------------------------------------------------------------------------------------------------
    ! Determine the first file needed for this simulation.
    !-------------------------------------------------------------------------------------------------
@@ -315,7 +315,7 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
 
       CALL Load4DData( Ind4Dnew )    ! shift the data
 
-   ELSE   
+   ELSE
       FDTime(Ind4Dnew) = Times4D(FDFileNo)                                           ! Set the time for this file.
 
       CALL LoadLESData( UnWind, FDFileNo, Ind4Dnew, ErrStat )
@@ -327,9 +327,9 @@ SUBROUTINE FD_Init(UnWind, WindFile, RefHt, ErrStat)
    !-------------------------------------------------------------------------------------------------
    FDUnit      = UnWind
    PrevTime    = 0.0
-   
+
    Initialized = .TRUE.
-   
+
    RETURN
 
 END SUBROUTINE FD_Init
@@ -369,7 +369,7 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
    ! Open the 4D parameter file for reading
    !-------------------------------------------------------------------------------------------------
    CALL OpenFInpFile ( UnWind, TRIM( FileName ), ErrStat)
-   IF (ErrStat /= 0) RETURN   
+   IF (ErrStat /= 0) RETURN
 
 
    !-------------------------------------------------------------------------------------------------
@@ -377,23 +377,23 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
    !-------------------------------------------------------------------------------------------------
 
       !..............................................................................................
-      ! Read the 4D wind parameters specific to this turbine simulation.  
+      ! Read the 4D wind parameters specific to this turbine simulation.
       !..............................................................................................
 
    CALL ReadStr( UnWind, TRIM( FileName ), HeaderLine, 'Header line', 'The header line in the FTP file', ErrStat )
-   IF (ErrStat /= 0) RETURN   
+   IF (ErrStat /= 0) RETURN
    CALL WrScr ( ' Heading of the 4D-wind-parameter file: "'//TRIM(HeaderLine)//'"' )
 
 
    CALL ReadCom( UnWind, TRIM( FileName ), 'Header line', ErrStat )
    IF (ErrStat /= 0) RETURN
-      
+
 
    CALL ReadVar( UnWind, TRIM( FileName ), FDSpath,  'FDSpath', 'Location (path) of the binary dataset', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), FDTSfile,  'FDTSfile', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), FDTSfile,  'FDTSfile', &
                                   'Name of the file containing the time-step history of the wind files', ErrStat )
    IF (ErrStat /= 0) RETURN
 
@@ -450,52 +450,52 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
    IF (ErrStat /= 0) RETURN
 
       !..............................................................................................
-      ! Read the 4D wind parameters specific to the K-H billow simulation being used.  
+      ! Read the 4D wind parameters specific to the K-H billow simulation being used.
       !..............................................................................................
 
    CALL ReadCom( UnWind, TRIM( FileName ), 'LES parameters specific to the K-H billow simulation being used', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), VertShft,  'VertShft', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), VertShft,  'VertShft', &
                            'Flag to indicate whether or not to shift the z values for the w component', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), Xm_max,  'Xm_max', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), Xm_max,  'Xm_max', &
                            'Maximum nondimensional downwind distance from center of dataset', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), Ym_max,  'Ym_max', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), Ym_max,  'Ym_max', &
                            'Maximum nondimensional lateral distance from center of dataset', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), Zm_max,  'Zm_max', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), Zm_max,  'Zm_max', &
                            'Maximum nondimensional vertical distance from center of dataset', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), Zm_maxo,  'Zm_maxo', & 
+   CALL ReadVar( UnWind, TRIM( FileName ), Zm_maxo,  'Zm_maxo', &
                  'Maximum nondimensional vertical distance from center of untrimmed dataset', ErrStat )
    IF (ErrStat /= 0) RETURN
 
 
    DO I = 1,3
 
-      CALL ReadVar( UnWind, TRIM( FileName ), ScalFact(I),  Comp(I)//'Scl', & 
+      CALL ReadVar( UnWind, TRIM( FileName ), ScalFact(I),  Comp(I)//'Scl', &
                     Comp(I)//'-component scale factor for converting from integers to reals', ErrStat )
       IF (ErrStat /= 0) RETURN
       ScalFact(I) = ScalFact(I) * ScaleVel
 
 
-      CALL ReadVar( UnWind, TRIM( FileName ), Offsets(I), Comp(I)//'Off', & 
+      CALL ReadVar( UnWind, TRIM( FileName ), Offsets(I), Comp(I)//'Off', &
                     Comp(I)//'-component offset for converting from integers to reals', ErrStat )
       IF (ErrStat /= 0) RETURN
       Offsets(I) = Offsets(I) * ScaleVel
-      
-   END DO   
+
+   END DO
    Offsets (1) = Offsets (1) + ScaleVel + Ubot                           ! u-component offset to convert integer data to actual wind speeds.
 
 
@@ -528,25 +528,25 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
 
 
    CALL ReadVar( UnWind, TRIM( FileName ), Advect, 'Advect', 'Advection flag', ErrStat )
-   
+
    IF (ErrStat /= 0) THEN
-   
+
       Advect   = .FALSE.
       Ind4DAdv = 0
       ErrStat  = 0
       CALL WrScr( ' Advection will not be used.')
-      
+
    ELSE
-   
+
       IF (Advect) THEN
          IF ( FD_DF_X /= 1 ) THEN
             CALL WrScr( ' FD_DF_X must be 1 when using advection. ' )
-            FD_DF_X = 1            
+            FD_DF_X = 1
          ENDIF
 
          CALL ReadVar( UnWind, TRIM( FileName ), NumAdvect, 'NumAdvect', 'Number of 4D files for advection', ErrStat )
          IF (ErrStat /= 0) RETURN
-         
+
 
          IF ( NumAdvect < 1 ) THEN
             CALL WrScr( ' NumAdvect in 4D-wind-parameter file, "'//TRIM( FileName )//'," must be at least 1.' )
@@ -567,18 +567,18 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
          CALL ReadAryLines( UnWind, TRIM( FileName ), AdvFiles, NumAdvect, 'AdvFiles', 'Advection file names', ErrStat )
          IF (ErrStat /= 0) RETURN
          Ind4DAdv = 1
-         
+
       ELSE
          Ind4DAdv = 0
       ENDIF !Advect == .TRUE.
-   
+
    END IF
 
    !-------------------------------------------------------------------------------------------------
    ! Close the 4D parameter input file
    !-------------------------------------------------------------------------------------------------
    CLOSE ( UnWind )
-   
+
    !-------------------------------------------------------------------------------------------------
    ! Close the 4D parameter input file
    !-------------------------------------------------------------------------------------------------
@@ -589,14 +589,14 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
    Zmax        = Zm_max*LenScale                                     ! The dimensional vertical height of the dataset.
    TSclFact    = LenScale/ScaleVel                                   ! Scale factor for time (h/U0).
 
-   
+
 
    RETURN
 
 END SUBROUTINE ReadFDP
 !====================================================================================================
 SUBROUTINE Read4Dtimes ( UnWind, FileName, ErrStat )
-!  This subroutine is used to read the time array for the 4D data.  The times in the file are 
+!  This subroutine is used to read the time array for the 4D data.  The times in the file are
 !  non-dimensional and non-uniformly spaced. They are scaled using TSclFact to obtain units of seconds
 !  and T_4D_St is added to allow the billow to start at non-zero time.
 !----------------------------------------------------------------------------------------------------
@@ -615,7 +615,7 @@ SUBROUTINE Read4Dtimes ( UnWind, FileName, ErrStat )
    !-------------------------------------------------------------------------------------------------
    ! Allocate arrays to store the data in
    !-------------------------------------------------------------------------------------------------
-   
+
    IF (.NOT. ALLOCATED( Times4D) ) THEN
 !      CALL AllocAry( Times4D, Num4Dt, '4D time array', ErrStat)
       ALLOCATE ( Times4D(Num4Dt), STAT=ErrStat )
@@ -625,7 +625,7 @@ SUBROUTINE Read4Dtimes ( UnWind, FileName, ErrStat )
          RETURN
       END IF
    END IF
-      
+
    IF (.NOT. ALLOCATED( Times4DIx) ) THEN
 !      CALL AllocAry( Times4DIx, Num4Dt, '4D time array', ErrStat)
       ALLOCATE ( Times4DIx(Num4Dt), STAT=ErrStat )
@@ -657,30 +657,30 @@ SUBROUTINE Read4Dtimes ( UnWind, FileName, ErrStat )
 
          CALL WrScr( ' Error reading line '//TRIM( Num2LStr( I+1 ) )// &
                         ' of the 4D-wind time-steps file, "'//TRIM( FileName )//'."')
-         RETURN                        
+         RETURN
 
       ENDIF
-      
+
    ENDDO ! I
 
-   
+
    !-------------------------------------------------------------------------------------------------
    ! Close the 4D times file
    !-------------------------------------------------------------------------------------------------
-   
-   CLOSE ( UnWind )  
-   
-   RETURN     
-   
+
+   CLOSE ( UnWind )
+
+   RETURN
+
 END SUBROUTINE Read4Dtimes
 !====================================================================================================
 SUBROUTINE ReadAll4DData(UnWind, ErrStat)
-! This subroutine reads the data into one array to be accessed later when ADVECT=.TRUE. Since there 
+! This subroutine reads the data into one array to be accessed later when ADVECT=.TRUE. Since there
 ! are just a few time steps, we'll load them into memory to (hopefully) save I/O time.
 !----------------------------------------------------------------------------------------------------
 
    INTEGER, INTENT(IN)        :: UnWind
-   INTEGER, INTENT(OUT)       :: ErrStat                            ! 
+   INTEGER, INTENT(OUT)       :: ErrStat                            !
    INTEGER                    :: IT
 
    CHARACTER(1)               :: FDNum
@@ -719,40 +719,40 @@ SUBROUTINE LoadLESData( UnWind, FileNo, Indx, ErrStat )
    INTEGER,         INTENT(IN)    :: FileNo                       ! current file number to read
    INTEGER,         INTENT(IN)    :: Indx                         ! index into the data arrays
    INTEGER,         INTENT(OUT)   :: ErrStat                      ! return 0 if no errors encountered; non-zero otherwise
-   
+
       ! local variables
    CHARACTER(5)                   :: FDNum
-   CHARACTER(20)                  :: LESFileName                  ! String containing part of the current file name.      
-   
-      
+   CHARACTER(20)                  :: LESFileName                  ! String containing part of the current file name.
+
+
       ! get the file name for the file number
-      
+
    WRITE(FDNum,'(I5.5)', IOStat=ErrStat) FileNo
    IF ( ErrStat /= 0 ) RETURN
-   
+
    LESFileName = TRIM(FDNum)//'.les'
 
 
       ! set the paths and read the data for each component
-      
+
    CALL Read4DData ( UnWind, TRIM( FDSpath )//'\u\u_16i_'//TRIM(LESFileName), FDu, Indx, ScalFact(1), Offsets(1), ErrStat )
    IF ( ErrStat /= 0 ) RETURN
-   
+
    CALL Read4DData ( UnWind, TRIM( FDSpath )//'\v\v_16i_'//TRIM(LESFileName), FDv, Indx, ScalFact(2), Offsets(2), ErrStat )
    IF ( ErrStat /= 0 ) RETURN
-   
+
    CALL Read4DData ( UnWind, TRIM( FDSpath )//'\w\w_16i_'//TRIM(LESFileName), FDw, Indx, ScalFact(3), Offsets(3), ErrStat )
 
 
 END SUBROUTINE LoadLESData
 !====================================================================================================
 SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
-! This subroutine is used to read one time-step's worth of large-eddy wind data for one component 
+! This subroutine is used to read one time-step's worth of large-eddy wind data for one component
 ! from a file.
 !----------------------------------------------------------------------------------------------------
 
       ! Passed variables
-      
+
    INTEGER,     INTENT(IN)    :: UnWind               ! The I/O unit of the LE file.
    CHARACTER(*),INTENT(IN)    :: FileName             ! Then name of the LE data file.
 
@@ -762,7 +762,7 @@ SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
    REAL(ReKi),  INTENT(IN)    :: Offset               ! The offset for converting from intergers to non-normalized reals.
 
    INTEGER,     INTENT(OUT)   :: ErrStat              ! The returned status of a READ.
-      
+
       ! Local variables
 
    INTEGER                    :: IX                   ! A DO index for indexing the arrays in the x direction.
@@ -793,7 +793,7 @@ SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
 
       IF ( ErrStat /= 0 )  THEN
 
-         CALL WrScr( ' Error reading record '//TRIM( Num2LStr( IZ ) )// & 
+         CALL WrScr( ' Error reading record '//TRIM( Num2LStr( IZ ) )// &
                                             ' of the binary 4D wind file, "'//TRIM( FileName )//'".')
          RETURN
 
@@ -801,22 +801,22 @@ SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
 
       IZK = IZK + 1                                ! IZK = ( IZ - 1 + FD_DF_Z )/FD_DF_Z
       IYK = 0
-      
+
       DO IY=1,Num4Dy,FD_DF_Y
-         
+
          IYK = IYK + 1                             ! IYK = ( IY - 1 + FD_DF_Y )/FD_DF_Y
-         
+
          DO IX=1,Num4Dx,FD_DF_X
-         
+
                ! shift the x-index, if necessary, to perform Advection
-               
+
             !IXK = ( IX + FD_DF_X - 1 )/FD_DF_X
             IXK = ( MOD(IX+Shft4Dnew-1,Num4Dx) + FD_DF_X )/FD_DF_X
-         
+
             Comp(IXK,IYK,IZK,Indx4) = Scale*Com(IX,IY) + Offset
-         
+
          ENDDO ! IX
-         
+
       ENDDO ! IY
 
    ENDDO ! IZ
@@ -832,7 +832,7 @@ SUBROUTINE Read4DData ( UnWind, FileName, Comp, Indx4, Scale, Offset,  ErrStat)
 END SUBROUTINE Read4DData
 !====================================================================================================
 SUBROUTINE Load4DData( InpIndx )
-! This subroutine takes the data from the storage array (used when ADVECT=.TRUE., shifts it if necessary, 
+! This subroutine takes the data from the storage array (used when ADVECT=.TRUE., shifts it if necessary,
 ! and loads it into the array for the time slice indexed by InpIndx.
 !----------------------------------------------------------------------------------------------------
 
@@ -867,57 +867,57 @@ FUNCTION FD_GetValue(RVarName, ErrStat)
    INTEGER,        INTENT(OUT)   :: ErrStat
    REAL(ReKi)                    :: FD_GetValue
 
-   
+
    CHARACTER(20)                 :: VarNameUC
-   
+
 
    !-------------------------------------------------------------------------------------------------
    ! Check that the module has been initialized.
-   !-------------------------------------------------------------------------------------------------   
+   !-------------------------------------------------------------------------------------------------
 
    IF ( .NOT. Initialized ) THEN
       CALL WrScr( ' Initialialize the FDWind module before calling its subroutines.' )
       ErrStat = 1
       RETURN
    ELSE
-      ErrStat = 0   
-   END IF      
+      ErrStat = 0
+   END IF
 
 
    !-------------------------------------------------------------------------------------------------
    ! Return the requested values.
-   !-------------------------------------------------------------------------------------------------   
+   !-------------------------------------------------------------------------------------------------
 
    VarNameUC = RVarName
    CALL Conv2UC( VarNameUC )
 
    SELECT CASE ( TRIM(VarNameUC) )
-            
+
       CASE ('ROTDIAM' )
-         FD_GetValue = RotDiam         
-         
+         FD_GetValue = RotDiam
+
       CASE DEFAULT
          CALL WrScr( ' Invalid variable name in FD_GetRValue().' )
          ErrStat = 1
-         
+
    END SELECT
 
 END FUNCTION FD_GetValue
 !====================================================================================================
 FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
-! This function is used to interpolate into the 4D wind arrays.  It receives X, Y, Z and TIME from the 
-! calling routine.  The time since the start of the 4D data is used to decide which pair of time slices 
-! to interpolate within and between.  After finding the two time slices, it decides which eight grid 
-! points bound the (X,Y,Z) pair. It does a trilinear interpolation for each time slice. Linear 
-! interpolation is then used to interpolate between time slices.  This routine assumes that X is 
-! downwind, Y is to the left when looking downwind and Z is up.  It also assumes that no 
+! This function is used to interpolate into the 4D wind arrays.  It receives X, Y, Z and TIME from the
+! calling routine.  The time since the start of the 4D data is used to decide which pair of time slices
+! to interpolate within and between.  After finding the two time slices, it decides which eight grid
+! points bound the (X,Y,Z) pair. It does a trilinear interpolation for each time slice. Linear
+! interpolation is then used to interpolate between time slices.  This routine assumes that X is
+! downwind, Y is to the left when looking downwind and Z is up.  It also assumes that no
 ! extrapolation will be needed except in time and the Z direction.  In those cases, the appropriate
 ! steady winds are used.
 !----------------------------------------------------------------------------------------------------
 
       ! Passed variables:
-      
-   REAL(ReKi),        INTENT(IN) :: Time                                   ! the time
+
+   REAL(DbKi),        INTENT(IN) :: Time                                   ! the time
    REAL(ReKi),        INTENT(IN) :: InputPosition(3)                       ! structure that contains the position
    INTEGER,           INTENT(OUT):: ErrStat                                ! returns 0 if no error; non-zero otherwise
    TYPE(InflIntrpOut)            :: FD_GetWindSpeed                        ! the resultant wind speed
@@ -951,32 +951,32 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    INTEGER                    :: IZLO                                      ! Index for the more-negative z value.
    INTEGER                    :: IZLO_w                                    ! Index for the more-negative z value for the w component.
 
-   !-------------------------------------------------------------------------------------------------     
+   !-------------------------------------------------------------------------------------------------
    ! Check that we've initialized everything first
-   !-------------------------------------------------------------------------------------------------     
-     
+   !-------------------------------------------------------------------------------------------------
+
    IF ( .NOT. Initialized ) THEN
       CALL WrScr( ' Initialialize the FDWind module before calling its subroutines.' )
       ErrStat = 1
       RETURN
-   ELSE 
-      ErrStat = 0   
-   END IF      
+   ELSE
+      ErrStat = 0
+   END IF
 
-   !-------------------------------------------------------------------------------------------------     
+   !-------------------------------------------------------------------------------------------------
    ! If the TIME is greater than the time for the last file read, read another set of files until we straddle the current time.
    ! Stick with the last file if we've exhausted the data.
    ! We're assuming here that the simulation time step is smaller than the wind-file time step.
-   !-------------------------------------------------------------------------------------------------     
+   !-------------------------------------------------------------------------------------------------
 
    IF ( Time < PrevTime .AND. Time < FDTime(Ind4Dold) ) THEN  ! bjj: GET THE CORRECT TIME if we're going backward!
-     
+
       !----------------------------------------------------------------------------------------------
       ! Determine the first file needed for this simulation.
       !----------------------------------------------------------------------------------------------
       Ind4Dold  = 1                                                           ! Put the old stuff in the first part of the array.
       Ind4Dnew  = 2                                                           ! Put the new stuff in the second part of the array.
-      
+
       FDFileNo  = Num4Dt
       DO IT=1,Num4Dt
          IF ( Times4D(IT) > Time )  THEN
@@ -984,7 +984,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
             EXIT
          END IF
       END DO ! IT
-         
+
       !----------------------------------------------------------------------------------------------
       ! Open, read, and close the first set of files.
       !----------------------------------------------------------------------------------------------
@@ -995,13 +995,13 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
       ELSE
          CALL LoadLESData( FDUnit, FDFileNo, Ind4Dold, ErrStat )
       END IF
-            
+
       !----------------------------------------------------------------------------------------------
       ! Open, read, and close the second set of files.
       !----------------------------------------------------------------------------------------------
       FDFileNo  = MIN(FDFileNo + 1, Num4Dt)
       Shft4Dnew = 0
-      
+
       IF ( ADVECT ) THEN
          FDFileNo = MOD(FDFileNo-1,Num4Dt) + 1
 
@@ -1021,12 +1021,12 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
 
          CALL Load4DData( Ind4Dnew )    ! shift the data
 
-      ELSE   
+      ELSE
          FDTime(Ind4Dnew) = Times4D(FDFileNo)                                           ! Set the time for this file.
 !
          CALL LoadLESData( FDUnit, FDFileNo, Ind4Dnew, ErrStat )
       ENDIF
-                     
+
    END IF
 
    !-------------------------------------------------------------------------------------------------
@@ -1050,7 +1050,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
                   IF ( MOD( Shft4Dnew, Num4Dx ) == 0 ) THEN
                      CALL ReadAll4DData(FDUnit, ErrStat)
                      IF ( ErrStat /= 0 ) RETURN
-                  END IF                  
+                  END IF
                ENDIF
 
          ENDIF
@@ -1068,7 +1068,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
 
 
    !.................................................................................................
-   ! Find the bounding rows, columns, and planes for the X,Y,Z position.  The near, lower-right  
+   ! Find the bounding rows, columns, and planes for the X,Y,Z position.  The near, lower-right
    ! corner is (1,1,1) when looking downwind. Make sure the lowest possible value is 1.
    !.................................................................................................
 
@@ -1110,7 +1110,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    IYHi  = MOD( IYLo, Num4DyD ) + 1
 
    !-------------------------------------------------------------------------------------------------
-   ! get values of Z for interpolation.  Linear interpolation; Nearest-neighbor extrapolation.  
+   ! get values of Z for interpolation.  Linear interpolation; Nearest-neighbor extrapolation.
    !-------------------------------------------------------------------------------------------------
    Znorm = MIN( MAX( ( Zt + InputPosition(3) - ZRef )/Zmax, 0.0 ), 1.0 ) !bjj: define ZRef
 
@@ -1203,7 +1203,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    ! Interpolate for w component of wind within the grid.
    !-------------------------------------------------------------------------------------------------
    !bjj: should Zgrid actually be Zgrid_w here?  I changed it so that it's consistent
-   
+
    Iylz  = ( FDw(IXLo,IYLo,IZHi_w,Ind4Dold) - FDw(IXLo,IYLo,IZLo_w,Ind4Dold) )*Zgrid_w + FDw(IXLo,IYLo,IZLo_w,Ind4Dold)
    Iyhz  = ( FDw(IXLo,IYHi,IZHi_w,Ind4Dold) - FDw(IXLo,IYHi,IZLo_w,Ind4Dold) )*Zgrid_w + FDw(IXLo,IYHi,IZLo_w,Ind4Dold)
    Ixlyz = ( Iyhz - Iylz )*Ygrid + Iylz
@@ -1233,7 +1233,7 @@ FUNCTION FD_GetWindSpeed(Time, InputPosition, ErrStat)
    PrevTime = Time
 
    RETURN
-   
+
 END FUNCTION FD_GetWindSpeed
 !====================================================================================================
 SUBROUTINE FD_Terminate( ErrStat )
@@ -1250,7 +1250,7 @@ SUBROUTINE FD_Terminate( ErrStat )
    IF ( ALLOCATED( FDu       ) )   DEALLOCATE( FDu,       STAT=ErrStat )
    IF ( ALLOCATED( FDv       ) )   DEALLOCATE( FDv,       STAT=ErrStat )
    IF ( ALLOCATED( FDw       ) )   DEALLOCATE( FDw,       STAT=ErrStat )
-   IF ( ALLOCATED( FDuData   ) )   DEALLOCATE( FDuData,   STAT=ErrStat )  
+   IF ( ALLOCATED( FDuData   ) )   DEALLOCATE( FDuData,   STAT=ErrStat )
    IF ( ALLOCATED( FDvData   ) )   DEALLOCATE( FDvData,   STAT=ErrStat )
    IF ( ALLOCATED( FDwData   ) )   DEALLOCATE( FDwData,   STAT=ErrStat )
    IF ( ALLOCATED( Times4D   ) )   DEALLOCATE( Times4D,   STAT=ErrStat )

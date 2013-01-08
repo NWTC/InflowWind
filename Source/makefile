@@ -15,7 +15,9 @@ DEST_DIR := compiled--linux
 
 #Location of source files for the NWTC Library
 LIB_DIR := \
-	../../../../NWTC_Library/trunk/source
+   ../../../../NWTC_Library/branches/BJonkman/source
+
+#	../../../../NWTC_Library/trunk/source
 
 #Name of the executable
 Executable_NAME := InflowWind.linux
@@ -49,7 +51,7 @@ Other_DIR	:= \
 #The source files for InflowWind
 InflowWind_SOURCES  := \
 	SharedInflowDefs.f90 \
-   WindFile_Types.f90 \
+   InflowWind_Module_Types.f90 \
 	CTWind.f90 \
 	FDWind.f90 \
 	FFWind.f90 \

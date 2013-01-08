@@ -13,22 +13,22 @@ MODULE SharedInflowDefs
 ! This module is used to define shared types and parameters that are used in the module InflowWind.
 ! 7 Oct 2009    B. Jonkman, NREL/NWTC
 !----------------------------------------------------------------------------------------------------
-!  
+!
 !..................................................................................................................................
 ! LICENSING
 ! Copyright (C) 2012  National Renewable Energy Laboratory
 !
 !    This file is part of InflowWind.
 !
-!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as 
+!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as
 !    published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
 !
 !    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 !    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
-!    
-!    You should have received a copy of the GNU General Public License along with InflowWind.  
+!
+!    You should have received a copy of the GNU General Public License along with InflowWind.
 !    If not, see <http://www.gnu.org/licenses/>.
-!    
+!
 !**********************************************************************************************************************************
 
    USE NWTC_Library                                               ! Precision module
@@ -109,7 +109,7 @@ MODULE SharedInflowDefs
          ! Define inputs that are contained on the mesh here:
 !     TYPE(MeshType)                            ::
          ! Define inputs that are not on this mesh here:
-      REAL(ReKi) :: DummyInput                                                ! If you have input data, remove this variable
+      Real(ReKi),ALLOCATABLE        :: Position(:,:)
    END TYPE IfW_InputType
 
 
@@ -119,7 +119,7 @@ MODULE SharedInflowDefs
          ! Define outputs that are contained on the mesh here:
 !     TYPE(MeshType)                            ::
          ! Define outputs that are not on this mesh here:
-      REAL(ReKi) :: DummyOutput                                               ! If you have output data, remove this variable
+      REAL(ReKi),ALLOCATABLE        :: Velocity(:,:)
    END TYPE IfW_OutputType
 
 !-=-=-=-=-=-=-=-=-=-=-
@@ -136,9 +136,10 @@ MODULE SharedInflowDefs
 !   END TYPE InflLoc
 
 
-   TYPE, PUBLIC :: InflIntrpOut
-      REAL(ReKi)                    :: Velocity(3)                ! U, V, W
-   END TYPE InflIntrpOut
+!This was moved to the submodules types
+!   TYPE, PUBLIC :: InflIntrpOut
+!      REAL(ReKi)                    :: Velocity(3)                ! U, V, W
+!   END TYPE InflIntrpOut
 
    !-------------------------------------------------------------------------------------------------
    ! Shared parameters, defining the wind types

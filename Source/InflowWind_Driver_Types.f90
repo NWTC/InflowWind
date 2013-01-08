@@ -27,7 +27,7 @@
 MODULE Ifw_Driver_Types
 
    USE NWTC_Library
-   USE WindFile_Types
+   USE InflowWind_Module_Types
 
    IMPLICIT NONE
 
@@ -36,14 +36,14 @@ MODULE Ifw_Driver_Types
       LOGICAL                 :: WindFileType   = .FALSE.      ! specified a windfiletype
       LOGICAL                 :: Height         = .FALSE.      ! specified a height
       LOGICAL                 :: Width          = .FALSE.      ! specified a width
-      LOGICAL                 :: Xrange         = .FALSE.      ! specified a range of x
-      LOGICAL                 :: Yrange         = .FALSE.      ! specified a range of y
-      LOGICAL                 :: Zrange         = .FALSE.      ! specified a range of z
-      LOGICAL                 :: Trange         = .FALSE.      ! specified a range of time
-      LOGICAL                 :: Xres           = .FALSE.      ! specified a resolution in x
-      LOGICAL                 :: Yres           = .FALSE.      ! speficied a resolution in y
-      LOGICAL                 :: Zres           = .FALSE.      ! specified a resolution in z
-      LOGICAL                 :: Tres           = .FALSE.      ! specified a resolution in time
+      LOGICAL                 :: XRange         = .FALSE.      ! specified a range of x
+      LOGICAL                 :: YRange         = .FALSE.      ! specified a range of y
+      LOGICAL                 :: ZRange         = .FALSE.      ! specified a range of z
+      LOGICAL                 :: TRange         = .FALSE.      ! specified a range of time
+      LOGICAL                 :: XRes           = .FALSE.      ! specified a resolution in x
+      LOGICAL                 :: YRes           = .FALSE.      ! speficied a resolution in y
+      LOGICAL                 :: ZRes           = .FALSE.      ! specified a resolution in z
+      LOGICAL                 :: TRes           = .FALSE.      ! specified a resolution in time
       LOGICAL                 :: ParaPrint      = .FALSE.      ! create a ParaView file?
       LOGICAL                 :: Summary        = .FALSE.      ! create a summary file?
       LOGICAL                 :: fft            = .FALSE.      ! do an FFT
@@ -56,14 +56,14 @@ MODULE Ifw_Driver_Types
       INTEGER                 :: WindFileType   = DEFAULT_WIND ! the kind of windfile     -- set default to simplify things later
       REAL( ReKi )            :: Height                        ! Reference height
       REAL( ReKi )            :: Width                         ! Reference width
-      REAL( ReKi )            :: Xrange(1:2)                   ! range of x
-      REAL( ReKi )            :: Yrange(1:2)                   ! range of y
-      REAL( ReKi )            :: Zrange(1:2)                   ! range of z
-      REAL( ReKi )            :: Trange(1:2)                   ! range of time
-      REAL( ReKi )            :: Xres                          ! resolution of x
-      REAL( ReKi )            :: Yres                          ! resolution of y
-      REAL( ReKi )            :: Zres                          ! resolution of z
-      REAL( ReKi )            :: Tres                          ! resolution of time
+      REAL( ReKi )            :: XRange(1:2)                   ! range of x
+      REAL( ReKi )            :: YRange(1:2)                   ! range of y
+      REAL( ReKi )            :: ZRange(1:2)                   ! range of z
+      REAL( DbKi )            :: TRange(1:2)                   ! range of time
+      REAL( ReKi )            :: XRes                          ! resolution of x
+      REAL( ReKi )            :: YRes                          ! resolution of y
+      REAL( ReKi )            :: ZRes                          ! resolution of z
+      REAL( DbKi )            :: TRes                          ! resolution of time
       REAL( ReKi )            :: fft(1:3)                      ! Coords to do an FFT
       CHARACTER(1024)         :: PointsFile                    ! Filename of points file
       CHARACTER(1024)         :: InputFile                     ! Filename of file to process

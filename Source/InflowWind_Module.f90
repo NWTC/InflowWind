@@ -40,7 +40,7 @@ MODULE InflowWind_Module
    USE                              SharedInflowDefs
 !   USE                              InflowWind_Types   !FIXME: this file will replace SharedInflowDefs when I can get it to work with the framework registry generator.
    USE                              NWTC_Library
-   USE                              WindFile_Types
+   USE                              InflowWind_Module_Types
 
       !-------------------------------------------------------------------------------------------------
       ! The included wind modules
@@ -76,6 +76,7 @@ MODULE InflowWind_Module
       ! ..... Public Subroutines ...................................................................................................
 
    PUBLIC :: IfW_Init                                 ! Initialization routine
+   PUBLIC :: IfW_CalcOutput                           ! Calculate the wind velocities
    PUBLIC :: IfW_End                                  ! Ending routine (includes clean up)
 
 !   PUBLIC :: InflowWind_UpdateStates                   ! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
@@ -110,7 +111,7 @@ MODULE InflowWind_Module
    !-------------------------------------------------------------------------------------------------
 
 !FIXME: should not be public anymore
-   PUBLIC                         :: InflowWind_GetVelocity    ! function to get wind speed at point in space and time
+!   PUBLIC                         :: InflowWind_GetVelocity    ! function to get wind speed at point in space and time
 
 !FIXME: not public anymore. may not even exist when done.
 !   PUBLIC                         :: InflowWind_ADhack_diskVel ! used to keep old AeroDyn functionality--remove soon!
@@ -127,9 +128,8 @@ MODULE InflowWind_Module
 
 CONTAINS
 !====================================================================================================
-  SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-                            OutData, Interval, ErrStat, ErrMsg )
-!   SUBROUTINE IfW_Init( InitData, ParamData, Interval, ErrStat, ErrMsg )
+SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+                     OutData, Interval, ErrStat, ErrMsg )
 ! This routine is called at the start of the simulation to perform initialization steps.
 ! The parameters are set here and not changed during the simulation.
 ! The initial states and initial guess for the input are defined.
@@ -152,8 +152,8 @@ CONTAINS
 
          ! Error Handling
 
-      INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat     ! Error status of the operation
-      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+      INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat           ! Error status of the operation
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg            ! Error message if ErrStat /= ErrID_None
 
 
          ! Local variables
@@ -338,78 +338,137 @@ print*, "Wind Type: ",InitData%WindFileType
 
 END SUBROUTINE IfW_Init
 !====================================================================================================
-!FIXME: this becomes part of InflowWind_CalcOutput
-FUNCTION InflowWind_GetVelocity(ParamData, Time, InputPosition, ErrStat)
-! Get the wind speed at a point in space and time
+SUBROUTINE IfW_CalcOutput( Time, InputData, ParamData, &
+                           ContStates, DiscStates, ConstrStates, OtherStates, &   ! States -- none in this case
+                           OutputData, ErrStat, ErrMsg )
+! This routine takes an input dataset of type InputType which contains a position array of dimensions 3*n. It then calculates
+! and returns the output dataset of type OutputType which contains a corresponding velocity array of dimensions 3*n. The input
+
+! array contains XYZ triplets for each position of interest (first index is X/Y/Z for values 1/2/3, second index is the point
+! number to evaluate). The returned values in the OutputData are similar with U/V/W for the first index of 1/2/3.
 !----------------------------------------------------------------------------------------------------
 
-      ! passed variables
-   TYPE(IfW_ParameterType),               INTENT(IN   )  :: ParamData
-   REAL(ReKi),       INTENT(IN)  :: Time
-   REAL(ReKi),       INTENT(IN)  :: InputPosition(3)        ! X, Y, Z positions
-   INTEGER,          INTENT(OUT) :: ErrStat                 ! Return 0 if no error; non-zero otherwise
+         ! Inputs / Outputs
 
-      ! local variables
-   TYPE(InflIntrpOut)            :: InflowWind_GetVelocity     ! U, V, W velocities
-   TYPE(InflIntrpOut)            :: CTWindSpeed             ! U, V, W velocities to superimpose on background wind
+      REAL( DbKi ),                       INTENT(IN   )  :: Time              ! Current simulation time in seconds
+      TYPE( IfW_InputType ),              INTENT(IN   )  :: InputData         ! Inputs at Time
+      TYPE( Ifw_ParameterType ),          INTENT(IN   )  :: ParamData         ! Parameters
+      TYPE( IfW_ContinuousStateType ),    INTENT(IN   )  :: ContStates        ! Continuous states at Time
+      TYPE( IfW_DiscreteStateType ),      INTENT(IN   )  :: DiscStates        ! Discrete states at Time
+      TYPE( IfW_ConstraintStateType ),    INTENT(IN   )  :: ConstrStates      ! Constraint states at Time
+      TYPE( IfW_OtherStateType ),         INTENT(INOUT)  :: OtherStates       ! Other/optimization states at Time
+      TYPE( IfW_OutputType ),             INTENT(INOUT)  :: OutputData        ! Outputs computed at Time (IN for mesh reasons -- not used here)
 
-
-   ErrStat = 0
-
-   SELECT CASE ( ParamData%WindFileType )
-      CASE (HH_Wind)
-         InflowWind_GetVelocity = HH_GetWindSpeed(     Time, InputPosition, ErrStat )
-
-      CASE (FF_Wind)
-         InflowWind_GetVelocity = FF_GetWindSpeed(     Time, InputPosition, ErrStat )
-
-      CASE (UD_Wind)
-         InflowWind_GetVelocity = UsrWnd_GetWindSpeed( Time, InputPosition, ErrStat )
-
-      CASE (FD_Wind)
-         InflowWind_GetVelocity = FD_GetWindSpeed(     Time, InputPosition, ErrStat )
-
-      CASE (HAWC_Wind)
-         InflowWind_GetVelocity = HW_GetWindSpeed(     Time, InputPosition, ErrStat )
-
-      CASE DEFAULT
-         CALL WrScr(' Error: Undefined wind type in InflowWind_GetVelocity(). ' &
-                   //'Call WindInflow_Init() before calling this function.' )
-         ErrStat = 1
-         InflowWind_GetVelocity%Velocity(:) = 0.0
-
-   END SELECT
+      INTEGER( IntKi ),                   INTENT(  OUT)  :: ErrStat           ! Error status of the operation
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg            ! Error message if ErrStat /= ErrID_None
 
 
-   IF (ErrStat /= 0) THEN
+         ! Local variables
+      REAL( ReKi )                                       :: Position(3)       ! Current position XYZ coords
+      INTEGER( IntKi )                                   :: PointCounter      ! loop counter
 
-      InflowWind_GetVelocity%Velocity(:) = 0.0
+!FIXME: may want to change how we handle this derived type
+      TYPE(InflIntrpOut)                                 :: CTWindSpeed       ! U, V, W velocities to superimpose on background wind
+      TYPE(InflIntrpOut)                                 :: TempWindSpeed     ! U, V, W velocities returned
 
-   ELSE
 
-         ! Add coherent turbulence to background wind
+         ! Initialize ErrStat
+      ErrStat  = ErrID_None
+      ErrMsg   = ""
 
-      IF (ParamData%CT_Flag) THEN
+print*,ALLOCATED(OutputData%Velocity)
+         ! Check and see if the output Velocity array has been allocated. If it has, make sure it is the same size as the input position array.
+      IF (.not. ALLOCATED(InputData%Position)) THEN
+         ErrMsg   = 'Ifw_CalcOutput: The InputData%Position array has not been allocated.'
+         ErrStat  = ErrID_Fatal
+         RETURN
+      ENDIF
+      IF (ALLOCATED(OutputData%Velocity)) THEN
+         IF ( SIZE(InputData%Position, 2) /= SIZE(OutputData%Velocity, 2) ) THEN
+            ErrMsg   = 'IfW_CalcOutput: The InputData%Position and OutputData%Velocity arrays are different sizes'
+            ErrStat  = ErrID_Fatal
+            RETURN
+         ENDIF
+      ELSE
+         ErrMsg   = 'IfW_CalcOutput: The OutputData%Velocity array has not been allocated.'
+         ErrStat  = ErrID_Fatal
+         RETURN
+      ENDIF
 
-         CTWindSpeed = CT_GetWindSpeed(Time, InputPosition, ErrStat)
-         IF (ErrStat /=0 ) RETURN
 
-         InflowWind_GetVelocity%Velocity(:) = InflowWind_GetVelocity%Velocity(:) + CTWindSpeed%Velocity(:)
+
+         ! Step through the entire set of coordinates
+
+print*," Number of rows points to process: ",SIZE(InputData%Position, 2)
+   nloop: DO PointCounter = 1, SIZE(InputData%Position, 2)
+
+
+         ! Copy the current points over to the array
+      Position(:) = InputData%Position(:,PointCounter)
+
+         ! Compute the wind velocities here
+      SELECT CASE ( ParamData%WindFileType )
+         CASE (HH_Wind)
+            TempWindSpeed = HH_GetWindSpeed(     Time, Position, ErrStat )
+
+         CASE (FF_Wind)
+            TempWindSpeed = FF_GetWindSpeed(     Time, Position, ErrStat )
+
+         CASE (UD_Wind)
+            TempWindSpeed = UsrWnd_GetWindSpeed( Time, Position, ErrStat )
+
+         CASE (FD_Wind)
+            TempWindSpeed = FD_GetWindSpeed(     Time, Position, ErrStat )
+
+         CASE (HAWC_Wind)
+            TempWindSpeed = HW_GetWindSpeed(     Time, Position, ErrStat )
+
+         CASE DEFAULT
+            ErrMsg = ' Error: Undefined wind type in InflowWind_GetVelocity(). ' &
+                      //'Call WindInflow_Init() before calling this function.'
+            ErrStat = ErrID_Warn
+            TempWindSpeed%Velocity(:) = 0.0
+            EXIT nloop
+
+      END SELECT
+
+
+
+      IF (ErrStat /= 0) THEN
+
+         OutputData%Velocity(:,:) = 0.0
+
+      ELSE
+
+            ! Add coherent turbulence to background wind
+
+         IF (ParamData%CT_Flag) THEN
+
+            CTWindSpeed = CT_GetWindSpeed(Time, Position, ErrStat)
+            IF (ErrStat /=0 ) RETURN
+
+            TempWindSpeed%Velocity(:) = TempWindSpeed%Velocity(:) + CTWindSpeed%Velocity(:)
+
+         ENDIF
 
       ENDIF
 
-   ENDIF
 
-END FUNCTION InflowWind_GetVelocity
+         ! Copy the Velocity data over to the output
+      OutputData%Velocity(:,PointCounter) = TempWindSpeed%Velocity
+
+   ENDDO nloop
+
+
+END SUBROUTINE IfW_CalcOutput
+
 !====================================================================================================
-!FIXME: rename as per framework.
-!SUBROUTINE IfW_End( ParamData, ErrStat )
 SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
                     OutData, ErrStat, ErrMsg )
 ! Clean up the allocated variables and close all open files.  Reset the initialization flag so
 ! that we have to reinitialize before calling the routines again.
 !----------------------------------------------------------------------------------------------------
-   USE WindFile_Types
+   USE InflowWind_Module_Types
 
          ! Initialization data and guesses
 
