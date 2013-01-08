@@ -177,8 +177,6 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
       ErrMsg  = ""
 
 
-print*, "Wind Type: ",InitData%WindFileType
-
 !
 !FIXME:
 !         ! Define parameters here:
@@ -208,146 +206,146 @@ print*, "Wind Type: ",InitData%WindFileType
 !      !OutData%        =
 
 
-      ! check to see if we are already initialized
+         ! check to see if we are already initialized
 
-   IF ( ParamData%Initialized ) THEN
-      CALL WrScr( ' Wind inflow has already been initialized.' )
-      ErrStat = 1
-      RETURN
-   ELSE
-         ! Copy things into the ParamaterType -- InitData may not exist later and isn't accessable in some routines.
-      ParamData%WindFileType = InitData%WindFileType
-      ParamData%WindFileName = InitData%WindFileName
-!FIXME: this is temporary and should be removed once the Wind modules are done.
-      FileName = InitData%WindFileName
-      CALL NWTC_Init()
-      CALL DispNVD( IfW_ProgDesc )
-
-   END IF
-
-   !-------------------------------------------------------------------------------------------------
-   ! Get default wind type, based on file name, if requested. Otherwise store what we are given for the type
-   !-------------------------------------------------------------------------------------------------
-   IF ( InitData%WindFileType == DEFAULT_Wind ) THEN
-      CALL GetWindType( ParamData, ErrStat, ErrMsg )
-   ELSE
-      ParamData%WindFileType = InitData%WindFileType
-   END IF
-
-
-   !-------------------------------------------------------------------------------------------------
-   ! Check for coherent turbulence file (KH superimposed on a background wind file)
-   ! Initialize the CTWind module and initialize the module of the other wind type.
-   !-------------------------------------------------------------------------------------------------
-
-   IF ( ParamData%WindFileType == CTP_Wind ) THEN
-
-      CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat)
-      IF (ErrStat /= 0) THEN
-!         CALL IfW_End( ParamData, ErrStat )
-!FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
-!         CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-!                       OutData, ErrStat, ErrMsg )
-         ParamData%WindFileType = Undef_Wind
-         ErrStat  = 1
-         RETURN
-      END IF
-
-!FIXME: check this
-      ParamData%WindFileName = BackGrndValues%WindFile
-      ParamData%WindFileType = BackGrndValues%WindFileType
-!      CT_Flag  = BackGrndValues%CoherentStr
-      ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
-
-   ELSE
-
-!      CT_Flag  = .FALSE.
-      ParamData%CT_Flag  = .FALSE.
-
-   END IF
-
-   !-------------------------------------------------------------------------------------------------
-   ! Initialize based on the wind type
-   !-------------------------------------------------------------------------------------------------
-
-   SELECT CASE ( ParamData%WindFileType )
-
-      CASE (HH_Wind)
-
-         HHInitInfo%ReferenceHeight = InitData%ReferenceHeight
-         HHInitInfo%Width           = InitData%Width
-
-         CALL HH_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
-
-!        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
-         IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
-
-
-      CASE (FF_Wind)
-
-         CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat )
-
-
-            ! Set CT parameters
-         IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
-            Height     = FF_GetValue('HubHeight', ErrStat)
-            IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
-
-            HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat)
-            IF ( ErrStat /= 0 ) HalfWidth = 0
-
-            CALL CT_SetRefVal(Height, HalfWidth, ErrStat)
-         END IF
-
-
-      CASE (UD_Wind)
-
-         CALL UsrWnd_Init(ErrStat)
-
-
-      CASE (FD_Wind)
-
-         CALL FD_Init(UnWind, ParamData%WindFileName, InitData%ReferenceHeight, ErrStat)
-
-      CASE (HAWC_Wind)
-
-         CALL HW_Init( UnWind, ParamData%WindFileName, ErrStat )
-
-      CASE DEFAULT
-
-         CALL WrScr(' Error: Undefined wind type in WindInflow_Init()' )
+      IF ( ParamData%Initialized ) THEN
+         CALL WrScr( ' Wind inflow has already been initialized.' )
          ErrStat = 1
          RETURN
+      ELSE
+            ! Copy things into the ParamaterType -- InitData may not exist later and isn't accessable in some routines.
+         ParamData%WindFileType = InitData%WindFileType
+         ParamData%WindFileName = InitData%WindFileName
+   !FIXME: this is temporary and should be removed once the Wind modules are done.
+         FileName = InitData%WindFileName
+         CALL NWTC_Init()
+         CALL DispNVD( IfW_ProgDesc )
 
-   END SELECT
+      END IF
+
+      !-------------------------------------------------------------------------------------------------
+      ! Get default wind type, based on file name, if requested. Otherwise store what we are given for the type
+      !-------------------------------------------------------------------------------------------------
+      IF ( InitData%WindFileType == DEFAULT_Wind ) THEN
+         CALL GetWindType( ParamData, ErrStat, ErrMsg )
+      ELSE
+         ParamData%WindFileType = InitData%WindFileType
+      END IF
 
 
-      ! check error status. If no error, set flag to indicate we are initialized.
+      !-------------------------------------------------------------------------------------------------
+      ! Check for coherent turbulence file (KH superimposed on a background wind file)
+      ! Initialize the CTWind module and initialize the module of the other wind type.
+      !-------------------------------------------------------------------------------------------------
 
-   IF ( ErrStat /= 0 ) THEN
-      ParamData%Initialized = .FALSE.
-      ParamData%WindFileType    = Undef_Wind
-      ErrStat               = 1         !FIXME: change the error status to the framework convention
-!      CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-!                    OutData, ErrStat, ErrMsg )  ! Just in case something did get allocated
-!FIXME: cannot call IfW_End here. The problem is that InitData might must be INOUT, but that isn't allowed here by the framework
-   ELSE
-      ParamData%Initialized = .TRUE.
-   END IF
+      IF ( ParamData%WindFileType == CTP_Wind ) THEN
 
-   RETURN
+         CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat)
+         IF (ErrStat /= 0) THEN
+   !         CALL IfW_End( ParamData, ErrStat )
+   !FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
+   !         CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+   !                       OutData, ErrStat, ErrMsg )
+            ParamData%WindFileType = Undef_Wind
+            ErrStat  = 1
+            RETURN
+         END IF
 
-END SUBROUTINE IfW_Init
-!====================================================================================================
-SUBROUTINE IfW_CalcOutput( Time, InputData, ParamData, &
-                           ContStates, DiscStates, ConstrStates, OtherStates, &   ! States -- none in this case
-                           OutputData, ErrStat, ErrMsg )
-! This routine takes an input dataset of type InputType which contains a position array of dimensions 3*n. It then calculates
-! and returns the output dataset of type OutputType which contains a corresponding velocity array of dimensions 3*n. The input
+   !FIXME: check this
+         ParamData%WindFileName = BackGrndValues%WindFile
+         ParamData%WindFileType = BackGrndValues%WindFileType
+   !      CT_Flag  = BackGrndValues%CoherentStr
+         ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
 
-! array contains XYZ triplets for each position of interest (first index is X/Y/Z for values 1/2/3, second index is the point
-! number to evaluate). The returned values in the OutputData are similar with U/V/W for the first index of 1/2/3.
-!----------------------------------------------------------------------------------------------------
+      ELSE
+
+   !      CT_Flag  = .FALSE.
+         ParamData%CT_Flag  = .FALSE.
+
+      END IF
+
+      !-------------------------------------------------------------------------------------------------
+      ! Initialize based on the wind type
+      !-------------------------------------------------------------------------------------------------
+
+      SELECT CASE ( ParamData%WindFileType )
+
+         CASE (HH_Wind)
+
+            HHInitInfo%ReferenceHeight = InitData%ReferenceHeight
+            HHInitInfo%Width           = InitData%Width
+
+            CALL HH_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
+
+   !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
+            IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
+
+
+         CASE (FF_Wind)
+
+            CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat )
+
+
+               ! Set CT parameters
+            IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
+               Height     = FF_GetValue('HubHeight', ErrStat)
+               IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
+
+               HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat)
+               IF ( ErrStat /= 0 ) HalfWidth = 0
+
+               CALL CT_SetRefVal(Height, HalfWidth, ErrStat)
+            END IF
+
+
+         CASE (UD_Wind)
+
+            CALL UsrWnd_Init(ErrStat)
+
+
+         CASE (FD_Wind)
+
+            CALL FD_Init(UnWind, ParamData%WindFileName, InitData%ReferenceHeight, ErrStat)
+
+         CASE (HAWC_Wind)
+
+            CALL HW_Init( UnWind, ParamData%WindFileName, ErrStat )
+
+         CASE DEFAULT
+
+            CALL WrScr(' Error: Undefined wind type in WindInflow_Init()' )
+            ErrStat = 1
+            RETURN
+
+      END SELECT
+
+
+         ! check error status. If the error is recoverable (ErrID_Warn or less), set flag to indicate we are initialized.
+
+      IF ( ErrStat >= ErrID_Severe ) THEN
+         ParamData%Initialized = .FALSE.
+         ParamData%WindFileType    = Undef_Wind
+
+            ! Just in case something was allocated
+         CALL IfW_End( InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+                       OutData, ErrStat, ErrMsg )
+      ELSE
+         ParamData%Initialized = .TRUE.
+      END IF
+
+      RETURN
+
+ END SUBROUTINE IfW_Init
+ !====================================================================================================
+ SUBROUTINE IfW_CalcOutput( Time, InputData, ParamData, &
+                              ContStates, DiscStates, ConstrStates, OtherStates, &   ! States -- none in this case
+                              OutputData, ErrStat, ErrMsg )
+   ! This routine takes an input dataset of type InputType which contains a position array of dimensions 3*n. It then calculates
+   ! and returns the output dataset of type OutputType which contains a corresponding velocity array of dimensions 3*n. The input
+
+   ! array contains XYZ triplets for each position of interest (first index is X/Y/Z for values 1/2/3, second index is the point
+   ! number to evaluate). The returned values in the OutputData are similar with U/V/W for the first index of 1/2/3.
+   !----------------------------------------------------------------------------------------------------
 
          ! Inputs / Outputs
 
@@ -403,80 +401,87 @@ SUBROUTINE IfW_CalcOutput( Time, InputData, ParamData, &
 
 
          ! Step through the entire set of coordinates
+      pointsloop: DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-   nloop: DO PointCounter = 1, SIZE(InputData%Position, 2)
+            ! Compute the wind velocities by calling the appropriate routine
+         SELECT CASE ( ParamData%WindFileType )
+            CASE (HH_Wind)
+               TempWindSpeed = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
+            CASE (FF_Wind)
+               TempWindSpeed = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
-         ! Copy the current points over to the array
-      Position(:) = InputData%Position(:,PointCounter)
+            CASE (UD_Wind)
+               TempWindSpeed = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )
 
-         ! Compute the wind velocities here
-      SELECT CASE ( ParamData%WindFileType )
-         CASE (HH_Wind)
-            TempWindSpeed = HH_GetWindSpeed(     Time, Position, ErrStat )
+            CASE (FD_Wind)
+               TempWindSpeed = FD_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
-         CASE (FF_Wind)
-            TempWindSpeed = FF_GetWindSpeed(     Time, Position, ErrStat )
+            CASE (HAWC_Wind)
+               TempWindSpeed = HW_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
 
-         CASE (UD_Wind)
-            TempWindSpeed = UsrWnd_GetWindSpeed( Time, Position, ErrStat )
+               ! If it isn't one of the above cases, we have a problem and won't be able to continue
 
-         CASE (FD_Wind)
-            TempWindSpeed = FD_GetWindSpeed(     Time, Position, ErrStat )
+            CASE DEFAULT
+               ErrMsg = ' Error: Undefined wind type in IfW_CalcOutput. ' &
+                         //'Call WindInflow_Init() before calling this function.'
+               ErrStat = ErrID_Fatal               ! No data returned
+               OutputData%Velocity(:,:) = 0.0
 
-         CASE (HAWC_Wind)
-            TempWindSpeed = HW_GetWindSpeed(     Time, Position, ErrStat )
+!FIXME:IfW_End? -- Can't due to the INTENT. this must be handled by the glue code. Put in note.
+               EXIT pointsloop
 
-         CASE DEFAULT
-            ErrMsg = ' Error: Undefined wind type in IfW_CalcOutput. ' &
-                      //'Call WindInflow_Init() before calling this function.'
-            ErrStat = ErrID_Warn
-            TempWindSpeed(:) = 0.0
-            EXIT nloop
-
-      END SELECT
-
+         END SELECT
 
 
-      IF (ErrStat /= 0) THEN
 
-         OutputData%Velocity(:,:) = 0.0
+            ! If we had a severe or fatal error, we need to exit
 
-      ELSE
+         IF (ErrStat >= ErrID_Severe) THEN
 
-            ! Add coherent turbulence to background wind
+            OutputData%Velocity(:,:) = 0.0
 
-         IF (ParamData%CT_Flag) THEN
+!FIXME:IfW_End? -- Can't due to the INTENT. this must be handled by the glue code. Put in note.
+            EXIT pointsloop       ! exit the loop
 
-            CTWindSpeed = CT_GetWindSpeed(Time, Position, ErrStat)
-            IF (ErrStat /=0 ) RETURN
+         ELSE
 
-            TempWindSpeed = TempWindSpeed + CTWindSpeed
+               ! Add coherent turbulence to background wind
+
+            IF (ParamData%CT_Flag) THEN
+
+               CTWindSpeed = CT_GetWindSpeed(Time, Position, ErrStat)
+
+               TempWindSpeed = TempWindSpeed + CTWindSpeed
+
+                  ! Return if only a recoverable warning or less severe
+               IF (ErrStat <= ErrID_Warn ) RETURN
+
+
+            ENDIF
 
          ENDIF
 
-      ENDIF
 
+            ! Copy the Velocity data over to the output
+         OutputData%Velocity(:,PointCounter) = TempWindSpeed
 
-         ! Copy the Velocity data over to the output
-      OutputData%Velocity(:,PointCounter) = TempWindSpeed
-
-   ENDDO nloop
+      ENDDO pointsloop
 
 
 END SUBROUTINE IfW_CalcOutput
 
 !====================================================================================================
 SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-                    OutData, ErrStat, ErrMsg )
-! Clean up the allocated variables and close all open files.  Reset the initialization flag so
-! that we have to reinitialize before calling the routines again.
-!----------------------------------------------------------------------------------------------------
-   USE InflowWind_Module_Types
+                       OutData, ErrStat, ErrMsg )
+   ! Clean up the allocated variables and close all open files.  Reset the initialization flag so
+   ! that we have to reinitialize before calling the routines again.
+   !----------------------------------------------------------------------------------------------------
+      USE InflowWind_Module_Types
 
          ! Initialization data and guesses
 
-      TYPE( IfW_InitInputType ),          INTENT(INOUT)  :: InitData          ! Input data for initialization
+      TYPE( IfW_InputType ),              INTENT(INOUT)  :: InitData          ! Input data for initialization
       TYPE( Ifw_ParameterType ),          INTENT(INOUT)  :: ParamData         ! Parameters
       TYPE( IfW_ContinuousStateType ),    INTENT(INOUT)  :: ContStates        ! Continuous states
       TYPE( IfW_DiscreteStateType ),      INTENT(INOUT)  :: DiscStates        ! Discrete states
@@ -491,47 +496,48 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
       CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
 
 
-      ! Close the wind file, if it happens to be open
+         ! Close the wind file, if it happens to be open
 
-   CLOSE( UnWind )
-
-
-      ! End the sub-modules (deallocates their arrays and closes their files):
-
-   SELECT CASE ( ParamData%WindFileType )
-
-      CASE (HH_Wind)
-         CALL HH_Terminate(     ErrStat )
-
-      CASE (FF_Wind)
-         CALL FF_Terminate(     ErrStat )
-
-      CASE (UD_Wind)
-         CALL UsrWnd_Terminate( ErrStat )
-
-      CASE (FD_Wind)
-         CALL FD_Terminate(     ErrStat )
-
-      CASE (HAWC_Wind)
-         CALL HW_Terminate(     ErrStat )
-
-      CASE ( Undef_Wind )
-         ! Do nothing
-
-      CASE DEFAULT  ! keep this check to make sure that all new wind types have a terminate function
-         CALL WrScr(' InflowWind: Undefined wind type in IfW_End().' )
-         ErrStat = 1
-
-   END SELECT
-
-!   IF (CT_Flag) CALL CT_Terminate( ErrStat )
-   CALL CT_Terminate( ErrStat )
+      CLOSE( UnWind )
 
 
-      ! Reset the wind type so that the initialization routine must be called
-   ParamData%WindFileType = Undef_Wind
+         ! End the sub-modules (deallocates their arrays and closes their files):
+
+      SELECT CASE ( ParamData%WindFileType )
+
+         CASE (HH_Wind)
+            CALL HH_Terminate(     ErrStat )
+
+         CASE (FF_Wind)
+            CALL FF_Terminate(     ErrStat )
+
+         CASE (UD_Wind)
+            CALL UsrWnd_Terminate( ErrStat )
+
+         CASE (FD_Wind)
+            CALL FD_Terminate(     ErrStat )
+
+         CASE (HAWC_Wind)
+            CALL HW_Terminate(     ErrStat )
+
+         CASE ( Undef_Wind )
+            ! Do nothing
+
+         CASE DEFAULT  ! keep this check to make sure that all new wind types have a terminate function
+            CALL WrScr(' InflowWind: Undefined wind type in IfW_End().' )
+            ErrStat = 1
+
+      END SELECT
+
+  !   IF (CT_Flag) CALL CT_Terminate( ErrStat )
+         CALL CT_Terminate( ErrStat )
+
+
+         ! Reset the wind type so that the initialization routine must be called
+      ParamData%WindFileType = Undef_Wind
+      ParamData%Initialized = .FALSE.
 !FIXME: reset the initialization flag.
-   ParamData%CT_Flag  = .FALSE.
+      ParamData%CT_Flag  = .FALSE.
 
 
 END SUBROUTINE IfW_End

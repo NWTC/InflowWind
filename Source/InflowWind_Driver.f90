@@ -347,7 +347,7 @@ print*, " Time: ",TimeNow
    !-=-=- We are done, so close everything down -=-=-
    !--------------------------------------------------------------------------------------------------------------------------------
 
-   CALL IfW_End(  IfW_InitInputData, IfW_ParamData, &
+   CALL IfW_End(  IfW_InputData, IfW_ParamData, &
                   IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
                   IfW_OutputData, ErrStat, ErrMsg )
 
