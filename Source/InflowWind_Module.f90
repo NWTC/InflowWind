@@ -283,15 +283,15 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
          CASE (FF_Wind)
 
-            CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat )
+            CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat, ErrMsg )
 
 
                ! Set CT parameters
             IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
-               Height     = FF_GetValue('HubHeight', ErrStat)
+               Height     = FF_GetValue('HubHeight', ErrStat, ErrMsg)
                IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
 
-               HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat)
+               HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat, ErrMsg)
                IF ( ErrStat /= 0 ) HalfWidth = 0
 
                CALL CT_SetRefVal(Height, HalfWidth, ErrStat)
@@ -406,7 +406,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
             DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-               OutputData%Velocity(:,PointCounter) = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+               OutputData%Velocity(:,PointCounter) = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
 
                   ! Error Handling -- move ErrMsg inside HH_GetWindSPeed and simplify
                IF (ErrStat >= ErrID_Severe) THEN
@@ -420,7 +420,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
             DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-               OutputData%Velocity(:,PointCounter) = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+               OutputData%Velocity(:,PointCounter) = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
 
                   ! Error Handling -- move ErrMsg inside FF_GetWindSPeed and simplify
                IF (ErrStat >= ErrID_Severe) THEN
@@ -434,7 +434,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
             DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-               OutputData%Velocity(:,PointCounter) = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )
+               OutputData%Velocity(:,PointCounter) = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )!, ErrMsg)
 
                   ! Error Handling -- move ErrMsg inside UsrWind_GetWindSPeed and simplify
                IF (ErrStat >= ErrID_Severe) THEN
@@ -562,7 +562,7 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
             CALL HH_Terminate(     ErrStat )
 
          CASE (FF_Wind)
-            CALL FF_Terminate(     ErrStat )
+            CALL FF_Terminate(     ErrStat, ErrMsg )
 
          CASE (UD_Wind)
             CALL UsrWnd_Terminate( ErrStat )

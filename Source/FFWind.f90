@@ -43,6 +43,7 @@ MODULE FFWind
    INTEGER                          :: NZGrids                    ! number of points in the vertical (z) direction of the grids
    INTEGER                          :: NTGrids                    ! number of points in the vertical (z) direction on the tower (below the grids)
 
+!FIXME: should not be save -- move to the parameters?
    LOGICAL, SAVE                    :: Initialized = .FALSE.      ! flag that determines if the module has been initialized
    LOGICAL                          :: Periodic    = .FALSE.      ! flag that determines if the wind is periodic
 
@@ -59,7 +60,7 @@ MODULE FFWind
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
+SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat, ErrMsg )
 !  This routine is used read the full-field turbulence data.
 !  09/25/97 - Created by M. Buhl from GETFILES in ViewWind.
 !  09/23/09 - modified by B. Jonkman: this subroutine was split into several subroutines (was ReadFF)
@@ -70,25 +71,28 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
 
       ! Passed Variables:
 
-   INTEGER,      INTENT(IN)    :: UnWind                       ! unit number for reading wind files
-   INTEGER,      INTENT(OUT)   :: ErrStat                      ! determines if an error has been encountered
+   INTEGER,       INTENT(IN)  :: UnWind                        ! unit number for reading wind files
+   INTEGER,       INTENT(OUT) :: ErrStat                       ! determines if an error has been encountered
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg                        ! Error message about what caused the errstat
 
-   CHARACTER(*), INTENT(IN)    :: BinFile                      ! Name of the binary FF wind file
+   CHARACTER(*),  INTENT(IN)  :: BinFile                       ! Name of the binary FF wind file
 
       ! Local Variables:
 
-   REAL(ReKi)                  :: TI      (3)                  ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
-   REAL(ReKi)                  :: BinTI   (3)                  ! turbulence intensities of the wind components as defined in the FF binary file, not necessarially the actual TI
-   REAL(ReKi)                  :: UBar
-   REAL(ReKi)                  :: ZCenter
+   REAL(ReKi)                 :: TI      (3)                   ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
+   REAL(ReKi)                 :: BinTI   (3)                   ! turbulence intensities of the wind components as defined in the FF binary file, not necessarially the actual TI
+   REAL(ReKi)                 :: UBar
+   REAL(ReKi)                 :: ZCenter
 
-   INTEGER(B2Ki)               :: Dum_Int2
-   INTEGER                     :: DumInt
-   INTEGER                     :: I
-   LOGICAL                     :: CWise
-   LOGICAL                     :: Exists
-   CHARACTER( 1028 )           :: SumFile                      ! length is LEN(BinFile) + the 4-character extension.
-   CHARACTER( 1028 )           :: TwrFile                      ! length is LEN(BinFile) + the 4-character extension.
+   INTEGER(B2Ki)              :: Dum_Int2
+   INTEGER                    :: DumInt
+   INTEGER                    :: I
+   LOGICAL                    :: CWise
+   LOGICAL                    :: Exists
+   CHARACTER( 1028 )          :: SumFile                       ! length is LEN(BinFile) + the 4-character extension.
+   CHARACTER( 1028 )          :: TwrFile                       ! length is LEN(BinFile) + the 4-character extension.
+
+   INTEGER( IntKi )           :: ReadStat                      ! for checking the status on the file reading
 
 
       !----------------------------------------------------------------------------------------------
@@ -96,12 +100,11 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
       !----------------------------------------------------------------------------------------------
 
    IF ( Initialized ) THEN
-      CALL WrScr( ' FFWind has already been initialized.' )
-      ErrStat = 1
+      ErrMsg   = ' FFWind has already been initialized.'
+      ErrStat  = ErrID_Warn      ! no reason to stop the program over this.
       RETURN
    ELSE
-      ErrStat = 0
-!      CALL NWTC_Init()    ! Initialized in IfW_Init
+      ErrStat = ErrID_None
    END IF
 
 
@@ -110,14 +113,19 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
       ! binary file it is, and close it.
       !----------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat)
-   IF (ErrStat /= 0) RETURN
+   CALL OpenBInpFile (UnWind, TRIM(BinFile), ReadStat)   !FIXME: Add ErrMsg when it is available.
+   IF (ReadStat /= 0) THEN
+      ErrMsg   = 'Error opening file"'//TRIM(BinFile)//'."'
+      ErrSTat  = ErrID_Fatal
+      RETURN
+   ENDIF
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2
+   READ ( UnWind, IOSTAT=ReadStat )  Dum_Int2
    CLOSE( UnWind )
 
-   IF (ErrStat /= 0) THEN
-      CALL WrScr( ' Error reading first binary integer from file "'//TRIM(BinFile)//'."' )
+   IF (ReadStat /= 0) THEN
+      ErrMsg   = ' Error reading first binary integer from file "'//TRIM(BinFile)//'."'
+      ErrStat  = ErrID_Fatal
       RETURN
    END IF
 
@@ -130,7 +138,9 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
 
       CASE ( 7, 8 )                                                    ! TurbSim binary format
 
-         CALL Read_TurbSim_FF(UnWind, TRIM(BinFile), ErrStat)
+         CALL Read_TurbSim_FF(UnWind, TRIM(BinFile), ErrStat, ErrMsg)
+
+         IF ( ErrStat >= ErrID_Fatal ) RETURN
 
       CASE ( -1, -2, -3, -99 )                                         ! Bladed-style binary format
 
@@ -148,8 +158,8 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
          ! Read the summary file to get necessary scaling information
          !...........................................................................................
 
-            CALL Read_Summary_FF (UnWind, TRIM(SumFile), CWise, ZCenter, TI, ErrStat )
-            IF (ErrStat /= 0) RETURN
+            CALL Read_Summary_FF (UnWind, TRIM(SumFile), CWise, ZCenter, TI, ErrStat, ErrMsg )
+            IF (ErrStat >= ErrID_Fatal) RETURN
 
             UBar = MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
 
@@ -157,12 +167,12 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
          ! Open the binary file and read its header
          !...........................................................................................
 
-            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat)
+            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat) !FIXME: Add ErrMsg when it is available
 
-            IF (ErrStat /= 0) RETURN
+            IF (ErrStat >= ErrID_Fatal) RETURN
 
             IF ( Dum_Int2 == -99 ) THEN                                       ! Newer-style BLADED format
-               CALL Read_Bladed_FF_Header1 (UnWind, BinTI, ErrStat)
+               CALL Read_Bladed_FF_Header1 (UnWind, BinTI, ErrStat, ErrMsg)
 
                   ! If the TIs are also in the binary file (BinTI > 0),
                   ! use those numbers instead of ones from the summary file
@@ -172,19 +182,19 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
                END DO
 
             ELSE
-               CALL Read_Bladed_FF_Header0 (UnWind, ErrStat)                  ! Older-style BLADED format
+               CALL Read_Bladed_FF_Header0 (UnWind, ErrStat, ErrMsg)          ! Older-style BLADED format
             END IF
 
-            IF (ErrStat /= 0) RETURN
+            IF (ErrStat >= ErrID_Fatal) RETURN
 
          !...........................................................................................
          ! Let's see if the summary and binary FF wind files go together before continuing.
          !...........................................................................................
 
             IF ( ABS( UBar - MeanFFWS ) > 0.1 )  THEN
-               CALL WrScr( ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
-                           '(Check that the .sum and .wnd files were generated together.)' )
-               ErrStat = 1
+               ErrMsg   = ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
+                           '(Check that the .sum and .wnd files were generated together.)'
+               ErrStat  = ErrID_Fatal      ! was '= 1'
                RETURN
             ENDIF
 
@@ -198,7 +208,7 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
          ! Read the binary grids (converted to m/s) and close the file
          !...........................................................................................
 
-            CALL Read_Bladed_Grids( UnWind, CWise, TI, ErrStat)
+            CALL Read_Bladed_Grids( UnWind, CWise, TI, ErrStat, ErrMsg)
             CLOSE ( UnWind )
 
             IF ( ErrStat /= 0 ) RETURN
@@ -210,7 +220,7 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
             INQUIRE ( FILE=TRIM(TwrFile) , EXIST=Exists )
 
             IF (  Exists )  THEN
-               CALL Read_FF_Tower( UnWind, TRIM(TwrFile), ErrStat  )
+               CALL Read_FF_Tower( UnWind, TRIM(TwrFile), ErrStat, ErrMsg )
             ELSE
                NTgrids = 0
             END IF
@@ -218,8 +228,8 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
 
       CASE DEFAULT
 
-         CALL WrScr( ' Error: Unrecognized binary wind file type.' )
-         ErrStat = 1
+         ErrMsg   = ' Error: Unrecognized binary wind file type.'
+         ErrStat  = ErrID_Fatal
          RETURN
 
    END SELECT
@@ -239,7 +249,7 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat )
 
 END SUBROUTINE FF_Init
 !====================================================================================================
-SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
+SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat, ErrMsg)
 !   Reads the binary headers from the turbulence files of the old Bladed variety.  Note that
 !   because of the normalization, neither NZGrids or NYGrids are larger than 32 points.
 !   21-Sep-2009 - B. Jonkman, NREL/NWTC.
@@ -251,8 +261,9 @@ SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
 
       ! Passed Variables:
 
-   INTEGER,   INTENT(IN)      :: UnWind
-   INTEGER,   INTENT(OUT)     :: ErrStat
+   INTEGER,       INTENT(IN)  :: UnWind
+   INTEGER,       INTENT(OUT) :: ErrStat
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg
 
       ! Local Variables:
 
@@ -263,62 +274,69 @@ SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
    INTEGER(B2Ki)              :: Dum_Int2
 
    INTEGER                    :: I
+   INTEGER                    :: ReadStat                ! for checking the IOSTAT from a READ or Open statement
 
    !-------------------------------------------------------------------------------------------------
    ! Read the header (file has just been opened)
    !-------------------------------------------------------------------------------------------------
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! -NFFC (file ID)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! -NFFC (file ID)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading number of wind components from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading number of wind components from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       NFFComp = -1*Dum_Int2
 
 
-   READ (UnWind, IOSTAT=ErrStat) Dum_Int2                                                    ! delta z (mm)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! delta z (mm)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dz from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dz from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       FFZDelt = 0.001*Dum_Int2
       InvFFZD = 1.0/FFZDelt
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! delta y (mm)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! delta y (mm)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dy from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dy from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       FFYDelt = 0.001*Dum_Int2
       InvFFYD = 1.0/FFYDelt
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! delta x (mm)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! delta x (mm)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dx from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dx from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       FFXDelt = 0.001*Dum_Int2
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! half the number of time steps
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! half the number of time steps
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading number of time steps from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading number of time steps from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       NFFSteps = 2*Dum_Int2
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! 10 times the mean full-field wind speed
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! 10 times the mean full-field wind speed
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading mean full-field wind speed from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading mean full-field wind speed from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       MeanFFWS = 0.1*Dum_Int2
@@ -329,30 +347,33 @@ SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
 
    DO I = 1,5
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                ! unused variables: zLu, yLu, xLu, dummy, random seed
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                              ! unused variables: zLu, yLu, xLu, dummy, random seed
 
-         IF (ErrStat /= 0) THEN
-            CALL WrScr( ' Error reading 2-byte integers from binary FF file.' )
+         IF (ReadStat /= 0) THEN
+            ErrMsg   = ' Error reading 2-byte integers from binary FF file.'
+            ErrStat  = ErrID_Fatal     ! no data returned
             RETURN
          END IF
 
    END DO
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! 1000*nz
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! 1000*nz
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading nz from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading nz from binary FF file.'
+         ErrStat  = ErrID_Fatal        ! no data returned
          RETURN
       END IF
       NZGrids  = Dum_Int2/1000
       FFZHWid  = 0.5*FFZDelt*( NZGrids - 1 )    ! half the vertical size of the grid
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! 1000*ny
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! 1000*ny
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading ny from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   =  ' Error reading ny from binary FF file.'
+         ErrStat  =  ErrID_Fatal       ! no data returned
          RETURN
       END IF
       NYGrids  = Dum_Int2/1000
@@ -363,10 +384,11 @@ SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
 
       DO I=1,6
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                             ! unused variables: zLv, yLv, xLv, zLw, yLw, xLw
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                           ! unused variables: zLv, yLv, xLv, zLw, yLw, xLw
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 2-byte length scales from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 2-byte length scales from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -379,7 +401,7 @@ SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat)
 
 END SUBROUTINE Read_Bladed_FF_Header0
 !====================================================================================================
-SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
+SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat, ErrMsg)
 !   Reads the binary headers from the turbulence files of the new Bladed variety.
 !   16-May-2002 - Windward Engineering.
 !   21-Sep-2009 - B. Jonkman, NREL.  updated to trap errors and add extra parameters for MANN model
@@ -391,9 +413,10 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       ! Passed Variables:
 
-   INTEGER,   INTENT(IN)      :: UnWind
-   REAL(ReKi), INTENT(OUT)    :: TI(3)
-   INTEGER,   INTENT(OUT)     :: ErrStat
+   INTEGER,       INTENT(IN)  :: UnWind
+   REAL(ReKi),    INTENT(OUT) :: TI(3)
+   INTEGER,       INTENT(OUT) :: ErrStat
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg
 
       ! Local Variables:
 
@@ -407,22 +430,25 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
    INTEGER                    :: I
    INTEGER                    :: TurbType
+   INTEGER                    :: ReadStat
 
 
    TI(:) = -1                                                                                !Initialize to -1 (not all models contain TI)
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! -99 (file ID)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! -99 (file ID)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading integer from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading integer from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int2                                                   ! turbulence type
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int2                                                 ! turbulence type
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading turbulence type from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading turbulence type from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       TurbType = Dum_Int2
@@ -447,41 +473,46 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
          !improved Von Karman
          !----------------------------------------
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Int4                                           ! number of components (should be 3)
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                        ! number of components (should be 3)
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading number of components from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading number of components from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
                NFFComp = Dum_Int4
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                          ! Latitude (deg)
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                       ! Latitude (deg)
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading latitude from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading latitude from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                          ! Roughness length (m)
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                       ! Roughness length (m)
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading roughness length from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading roughness length from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                          ! Reference height (m) = Z(1) + GridHeight / 2.0
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                       ! Reference height (m) = Z(1) + GridHeight / 2.0
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading reference height from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading reference height from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
 
 
             DO I = 1,3
-               READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                       ! TI(u, v, w) (%)
+               READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                    ! TI(u, v, w) (%)
 
-                  IF (ErrStat /= 0) THEN
-                     CALL WrScr( ' Error reading TI('//'TRIM(Num2LStr(I))'//') from binary FF file.' )
+                  IF (ReadStat /= 0) THEN
+                     ErrMsg   = ' Error reading TI('//'TRIM(Num2LStr(I))'//') from binary FF file.'
+                     ErrStat  = ErrID_Fatal     ! no data returned
                      RETURN
                   END IF
                   TI(I) = Dum_Real4                                                          ! This overwrites the TI read in the summary file
@@ -494,17 +525,19 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
          ! General Kaimal (7) or  Mann model (8)
          !----------------------------------------
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Int4                                           ! number of bytes in header
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                        ! number of bytes in header
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading number of header records from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading number of header records from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Int4                                           ! number of components
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                        ! number of components
 
-               IF (ErrStat /= 0) THEN
-                  CALL WrScr( ' Error reading number of data from binary FF file.' )
+               IF (ReadStat /= 0) THEN
+                  ErrMsg   = ' Error reading number of data from binary FF file.'
+                  ErrStat  = ErrID_Fatal     ! no data returned
                   RETURN
                END IF
                NFFComp = Dum_Int4
@@ -517,47 +550,52 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
    END SELECT !TurbType
 
 
-   READ (UnWind, IOSTAT=ErrStat) Dum_Real4                                                   ! delta z (m)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                                ! delta z (m)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dz from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dz from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       FFZDelt = Dum_Real4
       InvFFZD = 1.0/FFZDelt
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                                  ! delta y (m)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                               ! delta y (m)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dy from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dy from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       FFYDelt = Dum_Real4
       InvFFYD = 1.0/FFYDelt
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                                  ! delta x (m)
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                               ! delta x (m)
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading dx from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading dx from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       FFXDelt = Dum_Real4
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                                   ! half the number of time steps
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                                ! half the number of time steps
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading number of time steps from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading number of time steps from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       NFFSteps = 2*Dum_Int4
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                                  ! mean full-field wind speed
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                               ! mean full-field wind speed
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading mean full-field wind speed from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading mean full-field wind speed from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       MeanFFWS = Dum_Real4
@@ -568,10 +606,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
    DO I = 1,3
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                               ! unused variables: zLu, yLu, xLu
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                            ! unused variables: zLu, yLu, xLu
 
-         IF (ErrStat /= 0) THEN
-            CALL WrScr( ' Error reading 4-byte length scales from binary FF file.' )
+         IF (ReadStat /= 0) THEN
+            ErrMsg   = ' Error reading 4-byte length scales from binary FF file.'
+            ErrStat  = ErrID_Fatal     ! no data returned
             RETURN
          END IF
 
@@ -580,30 +619,33 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
    DO I = 1,2
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                                ! unused variables: dummy, random seed
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                             ! unused variables: dummy, random seed
 
-         IF (ErrStat /= 0) THEN
-            CALL WrScr( ' Error reading 4-byte integers from binary FF file.' )
+         IF (ReadStat /= 0) THEN
+            ErrMsg   = ' Error reading 4-byte integers from binary FF file.'
+            ErrStat  = ErrID_Fatal     ! no data returned
             RETURN
          END IF
 
    END DO
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                                   ! nz
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                                ! nz
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading nz from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading nz from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       NZGrids  = Dum_Int4
       FFZHWid  = 0.5*FFZDelt*( NZGrids - 1 )    ! half the vertical size of the grid
 
 
-   READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                                   ! ny
+   READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                                ! ny
 
-      IF (ErrStat /= 0) THEN
-         CALL WrScr( ' Error reading ny from binary FF file.' )
+      IF (ReadStat /= 0) THEN
+         ErrMsg   = ' Error reading ny from binary FF file.'
+         ErrStat  = ErrID_Fatal     ! no data returned
          RETURN
       END IF
       NYGrids  = Dum_Int4
@@ -614,10 +656,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,6
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables: zLv, yLv, xLv, zLw, yLw, xLw
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables: zLv, yLv, xLv, zLw, yLw, xLw
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte length scales from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte length scales from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -629,17 +672,19 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
    IF ( TurbType == 7 ) THEN     ! General Kaimal model
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variable: coherence decay constant
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variable: coherence decay constant
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading coherence decay constant from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading coherence decay constant from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables: coherence scale parameter in m
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables: coherence scale parameter in m
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading coherence scale parameter from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading coherence scale parameter from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -647,10 +692,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,2
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables: shear parameter (gamma), scale length
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables: shear parameter (gamma), scale length
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -658,10 +704,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,4
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -669,10 +716,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,3
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                            ! unused variables
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                          ! unused variables
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -680,10 +728,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,2
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -691,10 +740,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,3
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                                            ! unused variables
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                                          ! unused variables
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -702,10 +752,11 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
       DO I=1,2
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                                            ! unused variables
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Real4                                         ! unused variables
 
-            IF (ErrStat /= 0) THEN
-               CALL WrScr( ' Error reading 4-byte parameters from binary FF file.' )
+            IF (ReadStat /= 0) THEN
+               ErrMsg   = ' Error reading 4-byte parameters from binary FF file.'
+               ErrStat  = ErrID_Fatal     ! no data returned
                RETURN
             END IF
 
@@ -719,15 +770,16 @@ SUBROUTINE Read_Bladed_FF_Header1 (UnWind, TI, ErrStat)
 
 END SUBROUTINE Read_Bladed_FF_Header1
 !====================================================================================================
-SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat )
+SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat, ErrMsg )
 ! This subroutine continues reading UnWind, starting after the headers have been read.
 ! It reads the grids and converts the data to un-normalized wind speeds in m/s.
 !----------------------------------------------------------------------------------------------------
 
-   INTEGER,     INTENT(IN)    :: UnWind
-   LOGICAL,     INTENT(IN)    :: CWise
-   REAL(ReKi),  INTENT(IN)    :: TI      (3)                  ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
-   INTEGER,     INTENT(OUT)   :: ErrStat
+   INTEGER,       INTENT(IN)  :: UnWind
+   LOGICAL,       INTENT(IN)  :: CWise
+   REAL(ReKi),    INTENT(IN)  :: TI      (3)                  ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
+   INTEGER,       INTENT(OUT) :: ErrStat
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg
 
    REAL(ReKi), PARAMETER      :: FF_Offset(3) = (/ 1.0, 0.0, 0.0 /)  ! used for "un-normalizing" the data
 
@@ -741,6 +793,7 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat )
    INTEGER                    :: IT
 
    INTEGER                    :: TmpNumSteps
+   INTEGER                    :: ReadStat                      ! for checking the result of IOSTAT on READ or Open statements
 
 
    !-------------------------------------------------------------------------------------------------
@@ -761,11 +814,12 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat )
 !bjj: should we reorganize this FFData array so we access the data faster?
 
    IF ( .NOT. ALLOCATED( FFData ) ) THEN
-      ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,TmpNumSteps),STAT=ErrStat )
+      ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,TmpNumSteps),STAT=ReadStat )
 
-      IF ( ErrStat /= 0 )  THEN
+      IF ( ReadStat /= 0 )  THEN
 
-         CALL WrScr( ' Cannot allocate the full-field wind data array.' )
+         ErrMsg   = ' Cannot allocate the full-field wind data array.'
+         ErrStat  = ErrID_Fatal     ! Since won't be able to return data
          RETURN
 
       ENDIF
@@ -778,11 +832,12 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat )
 
          DEALLOCATE( FFData )
 
-         ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,TmpNumSteps),STAT=ErrStat )
+         ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,TmpNumSteps),STAT=ReadStat )
 
-         IF ( ErrStat /= 0 )  THEN
+         IF ( ReadStat /= 0 )  THEN
 
-            CALL WrScr( ' Cannot allocate the full-field wind data array.' )
+            ErrMsg   = ' Cannot allocate the full-field wind data array.'
+            ErrStat  =  ErrID_Fatal       ! Since won't be able to return data
             RETURN
 
          END IF ! Error
@@ -822,17 +877,18 @@ TIME_LOOP:  DO IT=1,TmpNumSteps     ! time (add 1 to see if there is an odd numb
 
             DO I=1,NFFComp          ! wind components (U, V, W)
 
-               READ (UnWind,IOStat=ErrStat)  Dum_Int2
-               IF (ErrStat /= 0) THEN
+               READ (UnWind,IOStat=ReadStat)  Dum_Int2
+               IF (ReadStat /= 0) THEN
                   IF ( IT == TmpNumSteps ) THEN ! There really were an even number of steps
                      NFFSteps = TmpNumSteps - 1
                      ErrStat  = 0
                      EXIT TIME_LOOP
                   ELSE
-                     CALL WrScr( ' Error reading binary data file. ic = '//TRIM(Num2LStr(ic))// &
+
+                     ErrMsg   = ' Error reading binary data file. ic = '//TRIM(Num2LStr(ic))// &
                                     ', ir = '//TRIM(Num2LStr(ir))//', it = '//TRIM(Num2LStr(it))// &
-                                    ', nffsteps = '//TRIM(Num2LStr(nffsteps)) )
-                     ErrStat = 1
+                                    ', nffsteps = '//TRIM(Num2LStr(nffsteps))
+                     ErrStat  = ErrID_Fatal        ! since can't return data
                      RETURN
                   END IF
                ELSE
@@ -857,20 +913,22 @@ TIME_LOOP:  DO IT=1,TmpNumSteps     ! time (add 1 to see if there is an odd numb
 
 END SUBROUTINE Read_Bladed_Grids
 !====================================================================================================
-SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
+SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat, ErrMsg )
 ! This subroutine reads the text summary file to get normalizing parameters, the location of the
 ! grid, and the direction the grid was written to the binary file
 !----------------------------------------------------------------------------------------------------
 
-   INTEGER,     INTENT(IN)    :: UnWind         ! unit number for the file to open
-   CHARACTER(*),INTENT(IN)    :: FileName       ! name of the summary file
-   LOGICAL,     INTENT(OUT)   :: CWise          ! rotation (for reading the order of the binary data)
-   REAL(ReKi),  INTENT(OUT)   :: ZCenter        ! the height at the center of the grid
-   REAL(ReKi),  INTENT(OUT)   :: TI      (3)    ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
-   INTEGER,     INTENT(OUT)   :: ErrStat        ! returns 0 if no error encountered in the subroutine
+      ! Passed variables
+   INTEGER,       INTENT(IN)  :: UnWind         ! unit number for the file to open
+   CHARACTER(*),  INTENT(IN)  :: FileName       ! name of the summary file
+   LOGICAL,       INTENT(OUT) :: CWise          ! rotation (for reading the order of the binary data)
+   REAL(ReKi),    INTENT(OUT) :: ZCenter        ! the height at the center of the grid
+   REAL(ReKi),    INTENT(OUT) :: TI      (3)    ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
+   INTEGER,       INTENT(OUT) :: ErrStat        ! returns 0 if no error encountered in the subroutine
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg         ! holds the error messages
 
+      ! Local variables
    REAL(ReKi)                 :: ZGOffset       ! The vertical offset of the turbine on rectangular grid (allows turbulence not centered on turbine hub)
-
 
    INTEGER, PARAMETER         :: NumStrings = 6 ! number of strings to be looking for in the file
 
@@ -878,7 +936,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
    INTEGER                    :: I              ! A loop counter
    INTEGER                    :: LastIndx       ! The last  character of a line where data is located
    INTEGER                    :: LineCount      ! Number of lines that have been read in the file
-   INTEGER                    :: Status         ! Status from I/O calls
+   INTEGER                    :: ReadStat       ! Status from I/O calls
 
    LOGICAL                    :: StrNeeded(NumStrings)   ! if the string has been found
 
@@ -888,7 +946,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
       ! Initialize some variables
       !----------------------------------------------------------------------------------------------
 
-   ErrStat      = 0
+   ErrStat      = ErrID_None
    LineCount    = 0
    StrNeeded(:) = .TRUE.
    ZGOffset     = 0.0
@@ -899,24 +957,25 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
       ! Open summary file.
       !----------------------------------------------------------------------------------------------
 
-   CALL OpenFInpFile ( UnWind, TRIM( FileName ), ErrStat)
+   CALL OpenFInpFile ( UnWind, TRIM( FileName ), ErrStat)   !FIXME: Add in ErrMsg when it is available.
 
 
       !----------------------------------------------------------------------------------------------
       ! Read the summary file.
       !----------------------------------------------------------------------------------------------
 
-   DO WHILE ( ( ErrStat == 0 ) .AND. StrNeeded(NumStrings) )
+   DO WHILE ( ( ErrStat == ErrID_None ) .AND. StrNeeded(NumStrings) )
 
       LineCount = LineCount + 1
 
-      READ ( UnWind, '(A)', IOSTAT=ErrStat ) LINE
-      IF ( ErrStat /= 0 ) THEN
+      READ ( UnWind, '(A)', IOSTAT=ReadStat ) LINE
+      IF ( ReadStat /= 0 ) THEN
 
          IF ( StrNeeded(NumStrings-1) ) THEN  ! the "HEIGHT OFFSET" StrNeeded(NumStrings) parameter is not necessary.  We'll assume it's zero if we didn't find it.
-            CALL WrScr( ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
-            CALL WrScr( 'Could not find all of the required parameters.' )
-            ErrStat = NumStrings+1
+               !FIXME: should modify how the ErrMsg is handled. See bug report 438.
+            ErrMsg   = ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'".'
+            ErrMsg   = TRIM(ErrMsg)//' Could not find all of the required parameters.'
+            ErrStat  = ErrID_Fatal   ! was 'NumStrings+1'
             RETURN
          ELSE
             EXIT
@@ -935,9 +994,9 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
          IF ( INDEX( LINE, 'CLOCKWISE' ) > 0 ) THEN
 
-            READ (LINE, *, IOSTAT = Status)  CWise          ! Look for True/False values
+            READ (LINE, *, IOSTAT = ReadStat)  CWise          ! Look for True/False values
 
-            IF ( Status /= 0 ) THEN                         ! Look for Yes/No values instead
+            IF ( ReadStat /= 0 ) THEN                         ! Look for Yes/No values instead
 
                LINE = ADJUSTL ( LINE )                      ! Remove leading spaces from input line
 
@@ -947,12 +1006,12 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
                   CASE ('N')
                      CWise = .FALSE.
                   CASE DEFAULT
-                     CALL WrScr( ' Error reading rotation direction (CLOCKWISE) from FF summary file.' )
-                     ErrStat = 1
+                     ErrMsg   = ' Error reading rotation direction (CLOCKWISE) from FF summary file.'
+                     ErrStat  = ErrID_Fatal        ! This is necessary information??
                      RETURN
                END SELECT
 
-            END IF ! Status /= 0
+            END IF ! ReadStat /= 0
             StrNeeded(1) = .FALSE.
 
          END IF   ! INDEX for "CLOCKWISE"
@@ -965,13 +1024,13 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
          IF ( INDEX( LINE, 'HUB HEIGHT' ) > 0 .OR. INDEX( LINE, 'ZHUB' ) > 0 ) THEN
 
-            READ (LINE, *, IOSTAT = Status) RefHt
+            READ (LINE, *, IOSTAT = ReadStat) RefHt
 
-            IF ( Status /= 0 ) THEN
-               CALL WrScr( ' Error reading hub height from FF summary file.' )
-               ErrStat = 2
+            IF ( ReadStat /= 0 ) THEN
+               ErrMsg   = ' Error reading hub height from FF summary file.'
+               ErrStat  = ErrID_Fatal     ! necessary information. Used to be '= 2'
                RETURN
-            END IF ! Status /= 0
+            END IF ! ReadStat /= 0
             StrNeeded(2) = .FALSE.
 
          END IF !INDEX for "HUB HEIGHT" or "ZHUB"
@@ -995,23 +1054,23 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
             FirstIndx = INDEX( LINE, '=' ) + 1        ! Look for the equal siqn to find the number we're looking for
 
-            READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=Status ) MeanFFWS
+            READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=ReadStat ) MeanFFWS
 
-            IF ( Status /= 0 ) THEN
-               CALL WrScr( ' Error reading UBar binary data normalizing parameter from FF summary file.' )
-               ErrStat = 4
+            IF ( ReadStat /= 0 ) THEN
+               ErrMsg   = ' Error reading UBar binary data normalizing parameter from FF summary file.'
+               ErrStat = ErrID_Fatal   ! used to be '= 4'
                RETURN
-            END IF ! Status /= 0
+            END IF ! ReadStat /= 0
 
             DO I = 1,3
 
                LineCount = LineCount + 1
 
-               READ ( UnWind, '(A)', IOSTAT=Status ) LINE
-               IF ( Status /= 0 ) THEN
-                  CALL WrScr( ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'"' )
-                  CALL WrScr( 'Could not find all of the required parameters.' )
-                  ErrStat = Status
+               READ ( UnWind, '(A)', IOSTAT=ReadStat ) LINE
+               IF ( ReadStat /= 0 ) THEN
+                  ErrMsg   = ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'//TRIM(FileName)//'".'
+                  ErrMsg   = TRIM(ErrMsg)//' Could not find all of the required parameters.'
+                  ErrStat = ErrID_Fatal
                   RETURN
                END IF
 
@@ -1020,12 +1079,12 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
                IF ( LastIndx <= FirstIndx ) LastIndx = LEN( LINE )   ! If there's no % sign, read to the end of the line
 
-               READ ( LINE( FirstIndx:LastIndx ), *, IOSTAT=Status ) TI(I)
-               IF ( Status /= 0 ) THEN
-                  CALL WrScr( ' Error reading TI('//TRIM(Num2LStr(I))//') binary data normalizing parameter from FF summary file.' )
-                  ErrStat = 4
+               READ ( LINE( FirstIndx:LastIndx ), *, IOSTAT=ReadStat ) TI(I)
+               IF ( ReadStat /= 0 ) THEN
+                  ErrMsg   = ' Error reading TI('//TRIM(Num2LStr(I))//') binary data normalizing parameter from FF summary file.'
+                  ErrStat  = ErrID_Fatal     ! was '= 4'
                   RETURN
-               END IF ! Status /= 0
+               END IF ! ReadStat /= 0
 
             END DO !I
 
@@ -1043,13 +1102,13 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
             FirstIndx = INDEX ( LINE, '=' ) + 1
 
-            READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=Status ) ZGOffset
+            READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=ReadStat ) ZGOffset
 
-            IF ( Status /= 0 ) THEN
-               CALL WrScr( ' Error reading height offset from FF summary file.' )
-               ErrStat = 5
+            IF ( ReadStat /= 0 ) THEN
+               ErrMsg   = ' Error reading height offset from FF summary file.'
+               ErrStat  = ErrID_Fatal     ! was '= 5'
                RETURN
-            END IF ! Status /= 0
+            END IF ! ReadStat /= 0
 
             StrNeeded(5) = .FALSE.
 
@@ -1091,7 +1150,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat )
 
 END SUBROUTINE Read_Summary_FF
 !====================================================================================================
-SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
+SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat, ErrMsg)
 ! This subroutine reads the binary TurbSim-format FF file (.bts).  It fills the FFData array with
 ! velocity data for the grids and fills the FFtower array with velocities at points on the tower
 ! (if data exists).
@@ -1099,9 +1158,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
 
       ! Passed Variables:
 
-   INTEGER,      INTENT(IN)   :: UnWind            ! unit number for the wind file
-   CHARACTER(*), INTENT(IN)   :: WindFile          ! name of the binary TurbSim file
-   INTEGER,      INTENT(OUT)  :: ErrStat           ! error status return value (0=no error; non-zero is error)
+   INTEGER,       INTENT(IN)  :: UnWind            ! unit number for the wind file
+   CHARACTER(*),  INTENT(IN)  :: WindFile          ! name of the binary TurbSim file
+   INTEGER,       INTENT(OUT) :: ErrStat           ! error status return value (0=no error; non-zero is error)
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg            ! message about the error encountered
 
       ! Local Variables:
 
@@ -1115,6 +1175,7 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    INTEGER                    :: IY                ! loop counter for y
    INTEGER                    :: IZ                ! loop counter for z
    INTEGER                    :: NChar             ! number of characters in the description string
+   INTEGER                    :: ReadStat          ! Status from file reading
 
    REAL(SiKi)                 :: Vslope(3)         ! slope  for "un-normalizing" data
    REAL(SiKi)                 :: Voffset(3)        ! offset for "un-normalizing" data
@@ -1128,99 +1189,110 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    ! Open the file
    !-------------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(WindFile), ErrStat)
+   CALL OpenBInpFile (UnWind, TRIM(WindFile), ErrStat)   !FIXME: Add in ErrMsg when it is available.
    IF (ErrStat /= 0) RETURN
 
    !-------------------------------------------------------------------------------------------------
    ! Read the header information
    !-------------------------------------------------------------------------------------------------
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int2               ! the file identifier, INT(2)
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading the file identifier in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int2             ! the file identifier, INT(2)
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading the file identifier in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          Periodic = Dum_Int2 == INT( 8, B2Ki) ! the number 7 is used for non-periodic wind files; 8 is periodic wind
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4               ! the number of grid points vertically, INT(4)
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading the number of z grid points in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4             ! the number of grid points vertically, INT(4)
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading the number of z grid points in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          NZgrids = Dum_Int4
 
 
-      READ (UnWind, IOSTAT=ErrStat) Dum_Int4                ! the number of grid points laterally, INT(4)
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading the number of y grid points in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4             ! the number of grid points laterally, INT(4)
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading the number of y grid points in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          NYgrids = Dum_Int4
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4               ! the number of tower points, INT(4)
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading the number of tower points in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4             ! the number of tower points, INT(4)
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading the number of tower points in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          NTgrids = Dum_Int4
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4               ! the number of time steps, INT(4)
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading the number of time steps in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4             ! the number of time steps, INT(4)
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading the number of time steps in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          NFFSteps = Dum_Int4
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! grid spacing in vertical direction (dz), REAL(4), in m
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading dz in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! grid spacing in vertical direction (dz), REAL(4), in m
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading dz in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          InvFFZD = 1.0/Dum_Real4                            ! 1/dz
          FFZHWid = 0.5*(NZgrids-1)*Dum_Real4                ! half the grid height
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! grid spacing in lateral direction (dy), REAL(4), in m
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading dy in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! grid spacing in lateral direction (dy), REAL(4), in m
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading dy in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          InvFFYD = 1.0 / Dum_Real4                          ! 1/dy
          FFYHWid = 0.5*(NYgrids-1)*Dum_Real4                ! half grid grid width
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! grid spacing in time (dt), REAL(4), in m/s
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading dt in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! grid spacing in time (dt), REAL(4), in m/s
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading dt in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          FFDTime = Dum_Real4
          FFRate  = 1.0/FFDTime
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! the mean wind speed at hub height, REAL(4), in m/s
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading mean wind speed in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! the mean wind speed at hub height, REAL(4), in m/s
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading mean wind speed in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          MeanFFWS = Dum_Real4
          InvMFFWS = 1.0 / MeanFFWS
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! height of the hub, REAL(4), in m
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading zHub in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! height of the hub, REAL(4), in m
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading zHub in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          RefHt = Dum_Real4
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4              ! height of the bottom of the grid, REAL(4), in m
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading GridBase in the FF binary file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4            ! height of the bottom of the grid, REAL(4), in m
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading GridBase in the FF binary file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
          GridBase = Dum_Real4
@@ -1233,16 +1305,18 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
       !----------------------------------------------------------------------------------------------
 
          DO IC = 1,NFFComp
-            READ (UnWind, IOSTAT=ErrStat)  Vslope(IC)       ! the IC-component slope for scaling, REAL(4)
-               IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr ( ' Error reading Vslope('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
+            READ (UnWind, IOSTAT=ReadStat)   Vslope(IC)     ! the IC-component slope for scaling, REAL(4)
+               IF ( ReadStat /= 0 )  THEN
+                  ErrMsg   = ' Error reading Vslope('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
                   RETURN
                ENDIF
 
 
-            READ (UnWind, IOSTAT=ErrStat)  Voffset(IC)      ! the IC-component offset for scaling, REAL(4)
-               IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr ( ' Error reading Voffset('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."' )
+            READ (UnWind, IOSTAT=ReadStat)   Voffset(IC)    ! the IC-component offset for scaling, REAL(4)
+               IF ( ReadStat /= 0 )  THEN
+                  ErrMsg   = ' Error reading Voffset('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
                   RETURN
                ENDIF
 
@@ -1253,9 +1327,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
       ! Read the description string: "Generated by TurbSim (vx.xx, dd-mmm-yyyy) on dd-mmm-yyyy at hh:mm:ss."
       !----------------------------------------------------------------------------------------------
 
-         READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                ! the number of characters in the description string, max 200, INT(4)
-            IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Error reading NCHAR in the FF binary file "'//TRIM( WindFile )//'."' )
+         READ (UnWind, IOSTAT=ReadStat)   Dum_Int4          ! the number of characters in the description string, max 200, INT(4)
+            IF ( ReadStat /= 0 )  THEN
+               ErrMsg   = ' Error reading NCHAR in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
                RETURN
             ENDIF
             nchar = Dum_Int4
@@ -1264,16 +1339,18 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
 
          DO IC=1,nchar
 
-            READ (UnWind, IOSTAT=ErrStat) Dum_Int1          ! the ASCII integer representation of the character, INT(1)
-            IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Error reading description line in the FF binary file "'//TRIM( WindFile )//'."' )
+            READ (UnWind, IOSTAT=ReadStat)   Dum_Int1       ! the ASCII integer representation of the character, INT(1)
+            IF ( ReadStat /= 0 )  THEN
+               ErrMsg   = ' Error reading description line in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
                RETURN
             ENDIF
 
             IF ( LEN(DescStr) >= IC ) THEN
                DescStr(IC:IC) = ACHAR( Dum_Int1 )              ! converted ASCII characters
             ELSE
-               CALL WrScr ( ' Description string too long.' )
+               ErrMsg   =  ' Description string too long.'   ! should this be handled by an ErrMsg?
+               ErrStat  = ErrID_Warn
                EXIT
             END IF
 
@@ -1284,10 +1361,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    ! Get the grid and tower velocities
    !-------------------------------------------------------------------------------------------------
 
-   CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
-            ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
-            TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
-            ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
+      CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+               ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
+               TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
+               ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
 
 
    !----------------------------------------------------------------------------------------------
@@ -1295,10 +1372,11 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
    !----------------------------------------------------------------------------------------------
 
       IF ( .NOT. ALLOCATED( FFData ) ) THEN
-         ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,NFFSteps), STAT=ErrStat )
+         ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,NFFSteps), STAT=ReadStat )
 
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr( ' Cannot allocate the full-field wind data array.' )
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Cannot allocate the full-field wind data array.'
+            ErrStat  = ErrID_Fatal        ! fatal since not returning data
             RETURN
          ENDIF
       ENDIF
@@ -1307,10 +1385,11 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
       IF ( NTgrids > 0 ) THEN
 
          IF ( .NOT. ALLOCATED( FFtower ) ) THEN
-            ALLOCATE( FFtower( NFFComp, NTgrids, NFFSteps ), STAT=ErrStat )
+            ALLOCATE( FFtower( NFFComp, NTgrids, NFFSteps ), STAT=ReadStat )
 
-            IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Cannot allocate the tower wind data array.' )
+            IF ( ReadStat /= 0 )  THEN
+               ErrMsg   = ' Cannot allocate the tower wind data array.'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
                RETURN
             ENDIF
          ENDIF
@@ -1337,9 +1416,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
 
                DO IC=1,NFFComp                           ! number of wind components (U, V, W)
 
-                  READ (UnWind, IOSTAT=ErrStat)  Dum_Int2      ! normalized wind-component, INT(2)
-                  IF ( ErrStat /= 0 )  THEN
-                     CALL WrScr ( ' Error reading grid wind components in the FF binary file "'//TRIM( WindFile )//'."' )
+                  READ (UnWind, IOSTAT=ReadStat)   Dum_Int2       ! normalized wind-component, INT(2)
+                  IF ( ReadStat /= 0 )  THEN
+                     ErrMsg   = ' Error reading grid wind components in the FF binary file "'//TRIM( WindFile )//'."'
+                     ErrStat  = ErrID_Fatal        ! fatal since not returning data
                      RETURN
                   ENDIF
 
@@ -1363,9 +1443,10 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
 
             DO IC=1,NFFComp   ! number of wind components
 
-               READ (UnWind, IOSTAT=ErrStat)  Dum_Int2      ! normalized wind-component, INT(2)
-               IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr ( ' Error reading tower wind components in the FF binary file "'//TRIM( WindFile )//'."' )
+               READ (UnWind, IOSTAT=ReadStat)   Dum_Int2       ! normalized wind-component, INT(2)
+               IF ( ReadStat /= 0 )  THEN
+                  ErrMsg   = ' Error reading tower wind components in the FF binary file "'//TRIM( WindFile )//'."'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
                   RETURN
                ENDIF
 
@@ -1397,7 +1478,7 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat)
 
 END SUBROUTINE READ_TurbSim_FF
 !====================================================================================================
-SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
+SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat, ErrMsg )
 ! This subroutine reads the binary tower file that corresponds with the Bladed-style FF binary file.
 ! The FF grid must be read before this subroutine is called! (many checks are made to ensure the
 ! files belong together)
@@ -1405,9 +1486,10 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
 
       ! Passed Variables:
 
-   INTEGER,      INTENT(IN)   :: UnWind            ! unit number for the wind file
-   CHARACTER(*), INTENT(IN)   :: WindFile          ! name of the binary TurbSim file
-   INTEGER,      INTENT(OUT)  :: ErrStat           ! error status return value (0=no error; non-zero is error)
+   INTEGER,       INTENT(IN)  :: UnWind            ! unit number for the wind file
+   CHARACTER(*),  INTENT(IN)  :: WindFile          ! name of the binary TurbSim file
+   INTEGER,       INTENT(OUT) :: ErrStat           ! error status return value (0=no error; non-zero is error)
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg            ! a message for errors that occur
 
       ! Local Variables:
 
@@ -1418,6 +1500,7 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
    INTEGER                    :: IC                ! loop counter for wind components
    INTEGER                    :: IT                ! loop counter for time
    INTEGER                    :: IZ                ! loop counter for z
+   INTEGER                    :: ReadStat          ! IOSTAT value.
 
    REAL(ReKi), PARAMETER      :: TOL = 1E-4        ! tolerence for wind file comparisons
 
@@ -1431,8 +1514,8 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
    NTgrids = 0
 
    IF ( NFFComp /= 3 ) THEN
-      CALL WrScr( ' Error: Tower binary files require 3 wind components.' )
-      ErrStat = 1
+      ErrMsg   = ' Error: Tower binary files require 3 wind components.'
+      ErrStat  = ErrID_Fatal     ! was '= 1'
       RETURN
    END IF
 
@@ -1440,9 +1523,10 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
    ! Open the file
    !-------------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(WindFile), ErrStat)
-   IF (ErrStat /= 0) THEN
-      ErrStat = -1
+   CALL OpenBInpFile (UnWind, TRIM(WindFile), ReadStat)   !FIXME: Add ErrMsg when it is available.
+   IF (ReadStat /= 0) THEN
+      ErrMsg   = 'Error opening file '//TRIM(WindFile)
+      ReadStat = ErrID_Fatal        ! was '= -1'
       RETURN
    END IF
 
@@ -1450,86 +1534,93 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
    ! Read the header information and check that it's compatible with the FF Bladed-style binary
    ! parameters already read.
    !-------------------------------------------------------------------------------------------------
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                 ! dz, in meters [4-byte REAL]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading dz in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4               ! dz, in meters [4-byte REAL]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading dz in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal     ! wasn't a value before
             RETURN
          ENDIF
 
          IF ( ABS(Dum_Real4*InvFFZD-1) > TOL ) THEN
-            CALL WrScr ( ' Resolution in the FF binary file does not match the tower file.' )
-            ErrStat = 1
+            ErrMsg   = ' Resolution in the FF binary file does not match the tower file.'
+            ErrStat  = ErrID_Fatal     ! was '= 1' -- should this be fatal, or just a warning?
             RETURN
          END IF
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                 ! dx, in meters [4-byte REAL]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading dx in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4               ! dx, in meters [4-byte REAL]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading dx in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal     ! fatal since returning without data
             RETURN
          ENDIF
 
          IF ( ABS(Dum_Real4*InvMFFWS/FFDTime-1) > TOL ) THEN
-            CALL WrScr ( ' Time resolution in the FF binary file does not match the tower file.' )
-            ErrStat = 1
+            ErrMsg   = ' Time resolution in the FF binary file does not match the tower file.'
+            ErrStat  = ErrID_Fatal
             RETURN
          END IF
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                 ! Zmax, in meters [4-byte REAL]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading GridBase in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4               ! Zmax, in meters [4-byte REAL]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading GridBase in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat  = ErrID_Fatal
             RETURN
          ENDIF
 
          IF ( ABS(Dum_Real4/GridBase-1) > TOL ) THEN
-            CALL WrScr ( ' Height in the FF binary file does not match the tower file.' )
-            ErrStat = 1
+            ErrMsg   = ' Height in the FF binary file does not match the tower file.'
+            ErrStat = ErrID_Fatal
             RETURN
          END IF
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                  ! NumOutSteps [4-byte INTEGER]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading NumOutSteps in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                ! NumOutSteps [4-byte INTEGER]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading NumOutSteps in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat = ErrID_Fatal
             RETURN
          ENDIF
 
          IF ( Dum_Int4 /= NFFSteps ) THEN
-            CALL WrScr ( ' Number of time steps in the FF binary file does not match the tower file.' )
-            ErrStat = 1
+            ErrMsg   = ' Number of time steps in the FF binary file does not match the tower file.'
+            ErrStat = ErrID_Fatal
             RETURN
          END IF
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Int4                  ! NumZ      [4-byte INTEGER]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading NumZ in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Int4                ! NumZ      [4-byte INTEGER]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading NumZ in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat = ErrID_Fatal
             RETURN
          ENDIF
          NTgrids = Dum_Int4
 
 
-      READ (UnWind, IOSTAT=ErrStat)  Dum_Real4                 ! UHub      [4-byte REAL]
-         IF ( ErrStat /= 0 )  THEN
-            CALL WrScr ( ' Error reading UHub in the binary tower file "'//TRIM( WindFile )//'."' )
+      READ (UnWind, IOSTAT=ReadStat)   Dum_Real4               ! UHub      [4-byte REAL]
+         IF ( ReadStat /= 0 )  THEN
+            ErrMsg   = ' Error reading UHub in the binary tower file "'//TRIM( WindFile )//'."'
+            ErrStat = ErrID_Fatal
             RETURN
          ENDIF
 
          IF ( ABS(Dum_Real4*InvMFFWS - 1) > TOL ) THEN
-            CALL WrScr ( ' Mean wind speed in the FF binary file does not match the tower file.' )
-            ErrStat = 1
+            ErrMsg   = ' Mean wind speed in the FF binary file does not match the tower file.'
+            ErrStat = ErrID_Fatal
             NTgrids = 0
             RETURN
          END IF
 
 
       DO IC=1,3
-         READ (UnWind, IOSTAT=ErrStat)  TI(IC)               ! TI(u), TI(v), TI(w)  [4-byte REAL]
-            IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Error reading TI('//TRIM(Num2LStr(IC))//') in the binary tower file "' &
-                               //TRIM( WindFile )//'."' )
-               NTgrids = 0
+         READ (UnWind, IOSTAT=ReadStat)   TI(IC)               ! TI(u), TI(v), TI(w)  [4-byte REAL]
+            IF ( ReadStat /= 0 )  THEN
+               ErrMsg   = ' Error reading TI('//TRIM(Num2LStr(IC))//') in the binary tower file "' &
+                               //TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal
+               NTgrids  = 0
                RETURN
             ENDIF
       END DO
@@ -1542,10 +1633,11 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
 
          IF ( .NOT. ALLOCATED( FFtower ) ) THEN
 !            CALL AllocAry( FFtower, NFFComp, NTgrids, NFFSteps, 'tower wind data', ErrStat )
-            ALLOCATE ( FFtower(NFFComp,NTgrids,NFFSteps), STAT=ErrStat )
+            ALLOCATE ( FFtower(NFFComp,NTgrids,NFFSteps), STAT=ReadStat )
 
-            IF ( ErrStat /= 0 )  THEN
-               CALL WrScr ( ' Error allocating memory for the tower wind data array.' )
+            IF ( ReadStat /= 0 )  THEN
+               ErrMsg   = ' Error allocating memory for the tower wind data array.'
+               ErrStat = ErrID_Fatal
                NTgrids = 0
                RETURN
             END IF
@@ -1571,12 +1663,12 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
 
             DO IC=1,NFFComp   ! number of wind components
 
-               READ (UnWind, IOSTAT=ErrStat)  Dum_Int2      ! normalized wind-component, INT(2)
-               IF ( ErrStat /= 0 )  THEN
-                  CALL WrScr( ' Error reading binary tower data file. it = '//TRIM(Num2LStr(it))// &
-                                 ', nffsteps = '//TRIM(Num2LStr(nffsteps)) )
-                  ErrStat = 1
-                  NTgrids = 0
+               READ (UnWind, IOSTAT=ReadStat)   Dum_Int2       ! normalized wind-component, INT(2)
+               IF ( ReadStat /= 0 )  THEN
+                  ErrMsg   = ' Error reading binary tower data file. it = '//TRIM(Num2LStr(it))// &
+                                 ', nffsteps = '//TRIM(Num2LStr(nffsteps))
+                  ErrStat  = ErrID_Fatal
+                  NTgrids  = 0
                   RETURN
                ENDIF
 
@@ -1602,13 +1694,14 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat )
 
 END SUBROUTINE Read_FF_Tower
 !====================================================================================================
-FUNCTION FF_GetRValue(RVarName, ErrStat)
+FUNCTION FF_GetRValue(RVarName, ErrStat, ErrMsg)
 !  This function returns a real scalar value whose name is listed in the RVarName input argument.
 !  If the name is not recognized, an error is returned in ErrStat.
 !----------------------------------------------------------------------------------------------------
 
-   CHARACTER(*),   INTENT(IN)    :: RVarName
-   INTEGER,        INTENT(OUT)   :: ErrStat
+   CHARACTER(*),     INTENT(IN)  :: RVarName
+   INTEGER,          INTENT(OUT) :: ErrStat
+   CHARACTER(*),     INTENT(OUT) :: ErrMsg
    REAL(ReKi)                    :: FF_GetRValue
 
 
@@ -1620,8 +1713,8 @@ FUNCTION FF_GetRValue(RVarName, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
    IF ( .NOT. Initialized ) THEN
-      CALL WrScr( ' Initialialize the FFWind module before calling its subroutines.' )
-      ErrStat = 1
+      ErrMsg   = ' Initialialize the FFWind module before calling its subroutines.'
+      ErrStat  = ErrID_Fatal      ! was '= 1'
       RETURN
    ELSE
       ErrStat = 0
@@ -1650,24 +1743,24 @@ FUNCTION FF_GetRValue(RVarName, ErrStat)
          FF_GetRValue = MeanFFWS
 
       CASE DEFAULT
-         CALL WrScr( ' Invalid variable name in FF_GetRValue().' )
-         ErrStat = 1
+         ErrMsg   = ' Invalid variable name in FF_GetRValue().'
+         ErrStat  = ErrID_Fatal     ! was '= 1'
 
    END SELECT
 
 END FUNCTION FF_GetRValue
 !====================================================================================================
-FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
+FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 ! This function receives time and position (in InputInfo) where (undisturbed) velocities are are
 ! requested.  It determines if the point is on the FF grid or tower points and calls the
 ! corresponding interpolation routine, which returns the velocities at the specified time and space.
 !----------------------------------------------------------------------------------------------------
 
-   REAL(DbKi),        INTENT(IN) :: Time
-   REAL(ReKi),        INTENT(IN) :: InputPosition(3)
-   INTEGER,           INTENT(OUT):: ErrStat
-!FIXME:delete
-!   TYPE(InflIntrpOut)            :: FF_GetWindSpeed
+   REAL(DbKi),       INTENT(IN)  :: Time
+   REAL(ReKi),       INTENT(IN)  :: InputPosition(3)
+   INTEGER,          INTENT(OUT) :: ErrStat
+   CHARACTER(*),     INTENT(OUT) :: ErrMsg
+
    REAL(ReKi)                    :: FF_GetWindSpeed(3)
 
    REAL(ReKi), PARAMETER         :: TOL = 1E-3
@@ -1678,8 +1771,8 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
    IF ( .NOT. Initialized ) THEN
-      CALL WrScr( ' Initialialize the FFWind module before calling its subroutines.' )
-      ErrStat = 1
+      ErrMsg   = ' Initialialize the FFWind module before calling its subroutines.'
+      ErrStat  = ErrID_Fatal     ! was '= 1'
       RETURN
    ELSE
       ErrStat = 0
@@ -1690,9 +1783,7 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
    ! Find out if the location is on the grid on on tower points; interpolate and return the value.
    !-------------------------------------------------------------------------------------------------
 
-!FIXME:delete
-!    FF_GetWindSpeed%Velocity = FF_Interp(Time,InputPosition, ErrStat)
-    FF_GetWindSpeed = FF_Interp(Time,InputPosition, ErrStat)
+    FF_GetWindSpeed = FF_Interp(Time,InputPosition, ErrStat, ErrMsg)
 
 
 !   IF ( InputPosition(3) >= GridBase - TOL ) THEN
@@ -1707,8 +1798,8 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
 !
 !      IF ( NTgrids < 1 ) THEN
 !
-!         CALL WrScr( ' Error: FF interpolation height is below the grid and no tower points have been defined.' )
-!         ErrStat = 1
+!         ErrMsg   = ' Error: FF interpolation height is below the grid and no tower points have been defined.'
+!         ErrStat = ErrID_Fatal        ! was '= 1'
 !         RETURN
 !
 !      ELSE
@@ -1723,7 +1814,7 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat)
 
 END FUNCTION FF_GetWindSpeed
 !====================================================================================================
-FUNCTION FF_Interp(Time, Position, ErrStat)
+FUNCTION FF_Interp(Time, Position, ErrStat, ErrMsg)
 !    This function is used to interpolate into the full-field wind array or tower array if it has
 !    been defined and is necessary for the given inputs.  It receives X, Y, Z and
 !    TIME from the calling routine.  It then computes a time shift due to a nonzero X based upon
@@ -1745,41 +1836,42 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
 
    IMPLICIT                      NONE
 
-   REAL(ReKi),      INTENT(IN) :: Position(3)       ! takes the place of XGrnd, YGrnd, ZGrnd
-   REAL(DbKi),      INTENT(IN) :: Time
-   REAL(ReKi)                  :: FF_Interp(3)      ! The U, V, W velocities
+   REAL(ReKi),       INTENT(IN)  :: Position(3)       ! takes the place of XGrnd, YGrnd, ZGrnd
+   REAL(DbKi),       INTENT(IN)  :: Time
+   REAL(ReKi)                    :: FF_Interp(3)      ! The U, V, W velocities
 
-   INTEGER,         INTENT(OUT):: ErrStat
+   INTEGER,          INTENT(OUT) :: ErrStat
+   CHARACTER(*),     INTENT(OUT) :: ErrMsg
 
       ! Local Variables:
 
-   REAL(ReKi)                  :: TimeShifted
-   REAL(ReKi),PARAMETER        :: Tol = 1.0E-3      ! a tolerance for determining if two reals are the same (for extrapolation)
-   REAL(ReKi)                  :: W_YH_Z
-   REAL(ReKi)                  :: W_YH_ZH
-   REAL(ReKi)                  :: W_YH_ZL
-   REAL(ReKi)                  :: W_YL_Z
-   REAL(ReKi)                  :: W_YL_ZH
-   REAL(ReKi)                  :: W_YL_ZL
-   REAL(ReKi)                  :: Wnd      (2)
-   REAL(ReKi)                  :: T
-   REAL(ReKi)                  :: TGRID
-   REAL(ReKi)                  :: Y
-   REAL(ReKi)                  :: YGRID
-   REAL(ReKi)                  :: Z
-   REAL(ReKi)                  :: ZGRID
+   REAL(ReKi)                    :: TimeShifted
+   REAL(ReKi),PARAMETER          :: Tol = 1.0E-3      ! a tolerance for determining if two reals are the same (for extrapolation)
+   REAL(ReKi)                    :: W_YH_Z
+   REAL(ReKi)                    :: W_YH_ZH
+   REAL(ReKi)                    :: W_YH_ZL
+   REAL(ReKi)                    :: W_YL_Z
+   REAL(ReKi)                    :: W_YL_ZH
+   REAL(ReKi)                    :: W_YL_ZL
+   REAL(ReKi)                    :: Wnd      (2)
+   REAL(ReKi)                    :: T
+   REAL(ReKi)                    :: TGRID
+   REAL(ReKi)                    :: Y
+   REAL(ReKi)                    :: YGRID
+   REAL(ReKi)                    :: Z
+   REAL(ReKi)                    :: ZGRID
 
-   INTEGER                    :: IDIM
-   INTEGER                    :: IG
-   INTEGER                    :: IT
-   INTEGER                    :: ITHI
-   INTEGER                    :: ITLO
-   INTEGER                    :: IYHI
-   INTEGER                    :: IYLO
-   INTEGER                    :: IZHI
-   INTEGER                    :: IZLO
+   INTEGER                       :: IDIM
+   INTEGER                       :: IG
+   INTEGER                       :: IT
+   INTEGER                       :: ITHI
+   INTEGER                       :: ITLO
+   INTEGER                       :: IYHI
+   INTEGER                       :: IYLO
+   INTEGER                       :: IZHI
+   INTEGER                       :: IZLO
 
-   LOGICAL                    :: OnGrid
+   LOGICAL                       :: OnGrid
 
    !-------------------------------------------------------------------------------------------------
    ! Initialize variables
@@ -1834,9 +1926,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
                ITLO = ITHI - 1
             END IF
          ELSE
-            CALL WrScr( ' Error: FF wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )// &
-                           ' seconds (trying to access data at '//TRIM( Num2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'  )
-            ErrStat = 1
+            ErrMsg   = ' Error: FF wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )// &
+                       ' seconds (trying to access data at '//TRIM( Num2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'
+            ErrStat  = ErrID_Fatal
             RETURN
          END IF
       ENDIF
@@ -1863,9 +1955,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
             Z    = 0.0
             IZLO = 1
          ELSE
-            CALL WrScr( ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-                        TRIM(Num2LStr(Position(3)))//' m is below the grid).' )
-            ErrStat = 1
+            ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
+                       TRIM(Num2LStr(Position(3)))//' m is below the grid).'
+            ErrStat  = ErrID_Fatal
             RETURN
          END IF
       ELSEIF ( IZLO >= NZGrids ) THEN
@@ -1873,9 +1965,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
             Z    = 0.0
             IZHI = IZLO                   ! We're right on the last point, which is still okay
          ELSE
-            CALL WrScr( ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-                        TRIM(Num2LStr(Position(3)))//' m is above the grid).' )
-            ErrStat = 3
+            ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
+                       TRIM(Num2LStr(Position(3)))//' m is above the grid).'
+            ErrStat  = ErrID_Fatal
             RETURN
          END IF
       ENDIF
@@ -1885,9 +1977,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
       OnGrid = .FALSE.  ! this is on the tower
 
       IF ( NTGrids < 1 ) THEN
-         CALL WrScr ( ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
-                       '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).' )
-         ErrStat = 1
+         ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
+                    '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).'
+         ErrStat  = ErrID_Fatal
          RETURN
       END IF
 
@@ -1927,9 +2019,9 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
                Y    = 0.0
                IYHI = IYLO                   ! We're right on the last point, which is still okay
             ELSE
-               CALL WrScr( ' Error FF wind array boundaries violated: Grid too small in Y direction. Y=' &
-                             //TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*FFYHWid)) &
-                             //', '//TRIM(Num2LStr(FFYHWid))//']' )
+               ErrMsg   = ' Error FF wind array boundaries violated: Grid too small in Y direction. Y='// &
+                          TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*FFYHWid))// &
+                          ', '//TRIM(Num2LStr(FFYHWid))//']'
                ErrStat = 2
                RETURN
             END IF
@@ -2024,12 +2116,13 @@ FUNCTION FF_Interp(Time, Position, ErrStat)
 
 END FUNCTION FF_Interp
 !====================================================================================================
-SUBROUTINE FF_Terminate( ErrStat )
+SUBROUTINE FF_Terminate( ErrStat, ErrMsg )
 !  This subroutine cleans up any data that is still allocated.  The (possibly) open files are
 !  closed in InflowWindMod.
 !----------------------------------------------------------------------------------------------------
 
-   INTEGER,    INTENT(OUT)    :: ErrStat           ! return 0 if no errors; non-zero otherwise
+   INTEGER,       INTENT(OUT) :: ErrStat           ! return 0 if no errors; non-zero otherwise
+   CHARACTER(*),  INTENT(OUT) :: ErrMsg
 
    ErrStat = 0
 

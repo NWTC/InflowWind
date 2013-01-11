@@ -118,11 +118,11 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
    IF ( TimeIndx /= 0 ) THEN
-      CALL WrScr( ' CTWind has already been initialized.' )
-      ErrStat = 1
+!      ErrMsg   = ' CTWind has already been initialized.'
+      ErrStat  = ErrID_Fatal
       RETURN
    ELSE
-      ErrStat = 0
+      ErrStat  = ErrID_None
 !      CALL NWTC_Init()    ! Initialized in IfW_Init
    END IF
 

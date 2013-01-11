@@ -57,7 +57,7 @@ MODULE HHWind
    PUBLIC                       :: HH_GetWindSpeed
    PUBLIC                       :: HH_Terminate
    PUBLIC                       :: HH_SetLinearizeDels
-   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
+!   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
 
 CONTAINS
 !====================================================================================================
@@ -328,30 +328,29 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
 
 END SUBROUTINE HH_Init
 !====================================================================================================
-FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
+FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 ! This subroutine linearly interpolates the columns in the HH input file to get the values for
 ! the requested time, then uses the interpolated values to calclate the wind speed at a point
 ! in space represented by InputPosition.
 !----------------------------------------------------------------------------------------------------
 
-   REAL(DbKi),        INTENT(IN) :: Time                 ! time from the start of the simulation
-   REAL(ReKi),        INTENT(IN) :: InputPosition(3)     ! input information: positions X,Y,Z
-   INTEGER,           INTENT(OUT):: ErrStat              ! error status
-!FIXME:delete
-!   TYPE(InflIntrpOut)            :: HH_GetWindSpeed      ! return velocities (U,V,W)
-   REAL(ReKi)                    :: HH_GetWindSpeed(3)   ! return velocities (U,V,W)
+   REAL(DbKi),          INTENT(IN)  :: Time                 ! time from the start of the simulation
+   REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z
+   INTEGER,             INTENT(OUT) :: ErrStat              ! error status
+   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
+   REAL(ReKi)                       :: HH_GetWindSpeed(3)   ! return velocities (U,V,W)
 
-   REAL(ReKi)                    :: CosDelta             ! cosine of Delta_tmp
-   REAL(ReKi)                    :: Delta_tmp            ! interpolated Delta   at input TIME
-   REAL(ReKi)                    :: HShr_tmp             ! interpolated HShr    at input TIME
-   REAL(ReKi)                    :: P                    ! temporary storage for slope (in time) used in linear interpolation
-   REAL(ReKi)                    :: SinDelta             ! sine of Delta_tmp
-   REAL(ReKi)                    :: V_tmp                ! interpolated V       at input TIME
-   REAL(ReKi)                    :: VGust_tmp            ! interpolated VGust   at input TIME
-   REAL(ReKi)                    :: VLinShr_tmp          ! interpolated VLinShr at input TIME
-   REAL(ReKi)                    :: VShr_tmp             ! interpolated VShr    at input TIME
-   REAL(ReKi)                    :: VZ_tmp               ! interpolated VZ      at input TIME
-   REAL(ReKi)                    :: V1                   ! temporary storage for horizontal velocity
+   REAL(ReKi)                       :: CosDelta             ! cosine of Delta_tmp
+   REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
+   REAL(ReKi)                       :: HShr_tmp             ! interpolated HShr    at input TIME
+   REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
+   REAL(ReKi)                       :: SinDelta             ! sine of Delta_tmp
+   REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
+   REAL(ReKi)                       :: VGust_tmp            ! interpolated VGust   at input TIME
+   REAL(ReKi)                       :: VLinShr_tmp          ! interpolated VLinShr at input TIME
+   REAL(ReKi)                       :: VShr_tmp             ! interpolated VShr    at input TIME
+   REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
+   REAL(ReKi)                       :: V1                   ! temporary storage for horizontal velocity
 
 
 
@@ -360,8 +359,8 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
    IF ( TimeIndx == 0 ) THEN
-      CALL WrScr( ' Error: Call HH_Init() before getting wind speed.')
-      ErrStat = 1
+      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+      ErrStat  = ErrID_Fatal         ! Fatal since no data returned
       RETURN
    ELSE
       ErrStat = 0
@@ -460,118 +459,115 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat)
    RETURN
 
 END FUNCTION HH_GetWindSpeed
+!!====================================================================================================
+!FUNCTION HH_Get_ADHack_WindSpeed(Time, InputPosition, ErrStat, ErrMsg)
+!! This subroutine linearly interpolates the columns in the HH input file to get the values for
+!! the requested time, then uses the interpolated values to calclate the wind speed at a point
+!! in space represented by InputPosition. THIS FUNCTION SHOULD BE REMOVED!!!!! (used for DISK VEL ONLY)
+!!----------------------------------------------------------------------------------------------------
+!
+!   REAL(ReKi),          INTENT(IN)  :: Time                 ! time from the start of the simulation
+!   REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z   -   NOT USED HERE!!!
+!   INTEGER,             INTENT(OUT) :: ErrStat              ! error status
+!   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
+!   REAL(ReKi)                       :: HH_Get_ADHack_WindSpeed(3)      ! return velocities (U,V,W)
+!
+!   REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
+!   REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
+!   REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
+!   REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
+!
+!
+!   !-------------------------------------------------------------------------------------------------
+!   ! verify the module was initialized first
+!   !-------------------------------------------------------------------------------------------------
+!
+!   IF ( TimeIndx == 0 ) THEN
+!      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+!      ErrStat  = ErrID_Fatal      ! Fatal since no data returned
+!      RETURN
+!   ELSE
+!      ErrStat = 0
+!   END IF
+!
+!
+!   !-------------------------------------------------------------------------------------------------
+!   ! Linearly interpolate in time (or use nearest-neighbor to extrapolate)
+!   ! (compare with NWTC_Num.f90\InterpStpReal)
+!   !-------------------------------------------------------------------------------------------------
+!
+!     ! Let's check the limits.
+!
+!   IF ( Time <= Tdata(1) .OR. NumDataLines == 1)  THEN
+!
+!      TimeIndx      = 1
+!      V_tmp         = V      (1)
+!      Delta_tmp     = Delta  (1)
+!      VZ_tmp        = VZ     (1)
+!
+!   ELSE IF ( Time >= Tdata(NumDataLines) )  THEN
+!
+!      TimeIndx      = NumDataLines - 1
+!      V_tmp         = V      (NumDataLines)
+!      Delta_tmp     = Delta  (NumDataLines)
+!      VZ_tmp        = VZ     (NumDataLines)
+!
+!   ELSE
+!
+!         ! Let's interpolate!
+!
+!      TimeIndx = MAX( MIN( TimeIndx, NumDataLines-1 ), 1 )
+!
+!      DO
+!
+!         IF ( Time < Tdata(TimeIndx) )  THEN
+!
+!            TimeIndx = TimeIndx - 1
+!
+!         ELSE IF ( Time >= Tdata(TimeIndx+1) )  THEN
+!
+!            TimeIndx = TimeIndx + 1
+!
+!         ELSE
+!            P           = ( Time - Tdata(TimeIndx) )/( Tdata(TimeIndx+1) - Tdata(TimeIndx) )
+!            V_tmp       = ( V(      TimeIndx+1) - V(      TimeIndx) )*P + V(      TimeIndx)
+!            Delta_tmp   = ( Delta(  TimeIndx+1) - Delta(  TimeIndx) )*P + Delta(  TimeIndx)
+!            VZ_tmp      = ( VZ(     TimeIndx+1) - VZ(     TimeIndx) )*P + VZ(     TimeIndx)
+!            EXIT
+!
+!         END IF
+!
+!      END DO
+!
+!   END IF
+!
+!   !-------------------------------------------------------------------------------------------------
+!   ! calculate the wind speed at this time
+!   !-------------------------------------------------------------------------------------------------
+!   HH_Get_ADHack_WindSpeed(1) =  V_tmp * COS( Delta_tmp )
+!   HH_Get_ADHack_WindSpeed(2) = -V_tmp * SIN( Delta_tmp )
+!   HH_Get_ADHack_WindSpeed(3) =  VZ_tmp
+!
+!
+!   RETURN
+!
+!END FUNCTION HH_Get_ADHack_WindSpeed
 !====================================================================================================
-FUNCTION HH_Get_ADHack_WindSpeed(Time, InputPosition, ErrStat)
-! This subroutine linearly interpolates the columns in the HH input file to get the values for
-! the requested time, then uses the interpolated values to calclate the wind speed at a point
-! in space represented by InputPosition. THIS FUNCTION SHOULD BE REMOVED!!!!! (used for DISK VEL ONLY)
-!----------------------------------------------------------------------------------------------------
-
-   REAL(ReKi),        INTENT(IN) :: Time                 ! time from the start of the simulation
-   REAL(ReKi),        INTENT(IN) :: InputPosition(3)     ! input information: positions X,Y,Z   -   NOT USED HERE!!!
-   INTEGER,           INTENT(OUT):: ErrStat              ! error status
-!   TYPE(InflIntrpOut)            :: HH_Get_ADHack_WindSpeed      ! return velocities (U,V,W)
-   REAL(ReKi)                    :: HH_Get_ADHack_WindSpeed(3)      ! return velocities (U,V,W)
-
-   REAL(ReKi)                    :: Delta_tmp            ! interpolated Delta   at input TIME
-   REAL(ReKi)                    :: P                    ! temporary storage for slope (in time) used in linear interpolation
-   REAL(ReKi)                    :: V_tmp                ! interpolated V       at input TIME
-   REAL(ReKi)                    :: VZ_tmp               ! interpolated VZ      at input TIME
-
-
-   !-------------------------------------------------------------------------------------------------
-   ! verify the module was initialized first
-   !-------------------------------------------------------------------------------------------------
-
-   IF ( TimeIndx == 0 ) THEN
-      CALL WrScr( ' Error: Call HH_Init() before getting wind speed.')
-      ErrStat = 1
-      RETURN
-   ELSE
-      ErrStat = 0
-   END IF
-
-
-   !-------------------------------------------------------------------------------------------------
-   ! Linearly interpolate in time (or use nearest-neighbor to extrapolate)
-   ! (compare with NWTC_Num.f90\InterpStpReal)
-   !-------------------------------------------------------------------------------------------------
-
-     ! Let's check the limits.
-
-   IF ( Time <= Tdata(1) .OR. NumDataLines == 1)  THEN
-
-      TimeIndx      = 1
-      V_tmp         = V      (1)
-      Delta_tmp     = Delta  (1)
-      VZ_tmp        = VZ     (1)
-
-   ELSE IF ( Time >= Tdata(NumDataLines) )  THEN
-
-      TimeIndx      = NumDataLines - 1
-      V_tmp         = V      (NumDataLines)
-      Delta_tmp     = Delta  (NumDataLines)
-      VZ_tmp        = VZ     (NumDataLines)
-
-   ELSE
-
-         ! Let's interpolate!
-
-      TimeIndx = MAX( MIN( TimeIndx, NumDataLines-1 ), 1 )
-
-      DO
-
-         IF ( Time < Tdata(TimeIndx) )  THEN
-
-            TimeIndx = TimeIndx - 1
-
-         ELSE IF ( Time >= Tdata(TimeIndx+1) )  THEN
-
-            TimeIndx = TimeIndx + 1
-
-         ELSE
-            P           = ( Time - Tdata(TimeIndx) )/( Tdata(TimeIndx+1) - Tdata(TimeIndx) )
-            V_tmp       = ( V(      TimeIndx+1) - V(      TimeIndx) )*P + V(      TimeIndx)
-            Delta_tmp   = ( Delta(  TimeIndx+1) - Delta(  TimeIndx) )*P + Delta(  TimeIndx)
-            VZ_tmp      = ( VZ(     TimeIndx+1) - VZ(     TimeIndx) )*P + VZ(     TimeIndx)
-            EXIT
-
-         END IF
-
-      END DO
-
-   END IF
-
-   !-------------------------------------------------------------------------------------------------
-   ! calculate the wind speed at this time
-   !-------------------------------------------------------------------------------------------------
-!FIXME: delete when done
-!   HH_Get_ADHack_WindSpeed%Velocity(1) =  V_tmp * COS( Delta_tmp )
-!   HH_Get_ADHack_WindSpeed%Velocity(2) = -V_tmp * SIN( Delta_tmp )
-!   HH_Get_ADHack_WindSpeed%Velocity(3) =  VZ_tmp
-   HH_Get_ADHack_WindSpeed(1) =  V_tmp * COS( Delta_tmp )
-   HH_Get_ADHack_WindSpeed(2) = -V_tmp * SIN( Delta_tmp )
-   HH_Get_ADHack_WindSpeed(3) =  VZ_tmp
-
-
-   RETURN
-
-END FUNCTION HH_Get_ADHack_WindSpeed
-!====================================================================================================
-SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat )
+SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 ! This subroutine sets the perturbation values for the linearization scheme.
 !----------------------------------------------------------------------------------------------------
 
-   REAL(ReKi),       INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
-   INTEGER,          INTENT(OUT) :: ErrStat              ! time from the start of the simulation
+   REAL(ReKi),          INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
+   INTEGER,             INTENT(OUT) :: ErrStat              ! time from the start of the simulation
+   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! Error Message
 
    !-------------------------------------------------------------------------------------------------
    ! verify the module was initialized first
    !-------------------------------------------------------------------------------------------------
 
    IF ( TimeIndx == 0 ) THEN
-      CALL WrScr( ' Error: Call HH_Init() before getting wind speed.')
-      ErrStat = 1
+      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
       RETURN
    ELSE
       ErrStat = 0
