@@ -44,7 +44,6 @@ SUBROUTINE UsrWnd_Init(ErrStat)
       RETURN
    ELSE
       ErrStat = 0
-!      CALL NWTC_Init()    ! Initialized in IfW_Init
    END IF
 
 
@@ -161,10 +160,6 @@ FUNCTION UsrWnd_GetWindSpeed(Time, InputPosition, ErrStat)
    !-------------------------------------------------------------------------------------------------
 
       ! We'll test this with steady winds for now.
-!FIXME:delete
-!   UsrWnd_GetWindSpeed%Velocity(1) = 10.0    ! U velocity (along positive X)
-!   UsrWnd_GetWindSpeed%Velocity(2) =  0.0    ! V velocity (along positive Y)
-!   UsrWnd_GetWindSpeed%Velocity(3) =  0.0    ! V velocity (along positive Z)
    UsrWnd_GetWindSpeed(1) = 10.0    ! U velocity (along positive X)
    UsrWnd_GetWindSpeed(2) =  0.0    ! V velocity (along positive Y)
    UsrWnd_GetWindSpeed(3) =  0.0    ! V velocity (along positive Z)

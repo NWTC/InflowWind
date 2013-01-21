@@ -240,7 +240,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
       IF ( ParamData%WindFileType == CTP_Wind ) THEN
 
-         CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat)
+         CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat, ErrMsg)
          IF (ErrStat /= 0) THEN
    !         CALL IfW_End( ParamData, ErrStat )
    !FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
@@ -278,7 +278,8 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
             CALL HH_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
 
    !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
-            IF (ErrStat == 0 .AND. ParamData%CT_Flag) CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat)
+            IF (ErrStat == ErrID_None .AND. ParamData%CT_Flag) &
+               CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat, ErrMsg)
 
 
          CASE (FF_Wind)
@@ -287,14 +288,14 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
 
                ! Set CT parameters
-            IF ( ErrStat == 0 .AND. ParamData%CT_Flag ) THEN
+            IF ( ErrStat == ErrID_None .AND. ParamData%CT_Flag ) THEN
                Height     = FF_GetValue('HubHeight', ErrStat, ErrMsg)
                IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
 
                HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat, ErrMsg)
                IF ( ErrStat /= 0 ) HalfWidth = 0
 
-               CALL CT_SetRefVal(Height, HalfWidth, ErrStat)
+               CALL CT_SetRefVal(Height, HalfWidth, ErrStat, ErrMsg)
             END IF
 
 
@@ -501,7 +502,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
             DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-               TempWindSpeed = CT_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+               TempWindSpeed = CT_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg )
 
                   ! Error Handling -- move ErrMsg inside CT_GetWindSPeed and simplify
                IF (ErrStat >= ErrID_Severe) THEN
@@ -582,8 +583,8 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
 
       END SELECT
 
-  !   IF (CT_Flag) CALL CT_Terminate( ErrStat )
-         CALL CT_Terminate( ErrStat )
+  !   IF (CT_Flag) CALL CT_Terminate( ErrStat ) !FIXME: should it be this line or the next?
+         CALL CT_Terminate( ErrStat, ErrMsg )
 
 
          ! Reset the wind type so that the initialization routine must be called

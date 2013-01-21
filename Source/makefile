@@ -118,6 +118,5 @@ document: all
 	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
 	$(MAKE) -C $(Doxy_DIR);
 
-#	cat $(InflowWind_Driver_DIR)$(InflowWind_Driver) >> $(Doxy_DIR)/tempassembled.f90;
    #This line is for putting all the NWTC_Lib bits in the documentation;
    #	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
