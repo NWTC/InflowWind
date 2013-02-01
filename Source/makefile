@@ -3,12 +3,12 @@
 #It is intended to be used with
 #     NWTC Subroutine Library (v1.06.00,      ??-Dec-2012)
 #
-#Older versions of the library and WT_Perf may not work with this makefile
+#Older versions of the library and InflowWind may not work with this makefile
 
 #compiler to use
 FC = gfortran
 #compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace #-m32 -g 
+FFLAGS = -O3 -fbounds-check -fbacktrace -m32 #-g 
 
 #Destination for compiled pieces
 DEST_DIR := compiled--linux
@@ -22,20 +22,16 @@ LIB_DIR := \
 #Name of the executable
 Executable_NAME := InflowWind.linux
 
-#Grab the current revision info and store it
-#	-- it would be nice to add one so it corresponds to the next commit
-#		-- would require calling a script though -- that becomes platform dependent though.
-REVNUM := `svn info |grep Revision: | grep -o [0-9]*`
-
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../Doxygen--documentation
 
-#Change SingPrec.f90 to DoubPrec.f90 for double precision
+##Change SingPrec.f90 to DoubPrec.f90 for double precision
 LIB_SOURCES := \
 	SingPrec.f90 \
 	SysGnuLinux.f90 \
 	NWTC_IO.f90 \
 	NWTC_Num.f90 \
+	ModMesh_Types.f90 \
 	ModMesh.f90 \
 	NWTC_Aero.f90 \
 	NWTC_Library.f90
@@ -67,7 +63,7 @@ InflowWind_SOURCES  := \
 
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(InflowWind_Driver_DIR)
-vpath %.o $(DEST_DIR)
+vpath %.o $(DEST_DIR) $(LIB_DIR)
 
 ###########
 #### You should not need to change anything beyond this point
@@ -77,28 +73,34 @@ InflowWind_OBJS = $(InflowWind_SOURCES:.f90=.o)
 #rule to do everything
 all:     default
 InflowWind:    clean default
-default: $(DEST_DIR) $(DEST_DIR)/$(Executable_NAME)
+default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 #general rule for making the files
 %.o: %.f90
-	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -J $(DEST_DIR)
+	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR)
 
 
 #Dependency rules
-SysGnuLinux.o:          SingPrec.o
-NWTC_IO.o:              SysGnuLinux.o
-NWTC_Num.o:             NWTC_IO.o
-NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
-NWTC_Library.o:         NWTC_Aero.o ModMesh.o
+#SysGnuLinux.o:          SingPrec.o
+#NWTC_IO.o:              SysGnuLinux.o
+#NWTC_Num.o:             NWTC_IO.o
+#NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
+#ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
+#NWTC_Library.o:         NWTC_Aero.o ModMesh.o
 InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
 InflowWind_Subs.o:      SharedInflowDefs.o
-InflowWind_Driver.o:    InflowWind_Subs.o
+#NWTC_Library.o
+InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 
 
 #Make sure the destination directory exists
 $(DEST_DIR):
 	mkdir -p $(DEST_DIR)
 
+#Copy library mod and .o files over
+libcopy:
+	cp $(LIB_DIR)/*.mod $(DEST_DIR);\
+	cp $(LIB_DIR)/*.o   $(DEST_DIR);
 
 #For compiling InflowWind
 $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)

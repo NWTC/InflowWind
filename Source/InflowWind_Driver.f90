@@ -25,7 +25,7 @@ PROGRAM InflowWind_Driver
 
 !   USE NWTC_Library       !NOTE: Not sure why this doesn't need to be specified
    USE InflowWind_Module
-   USE InflowWind_Module_Types      !NOTE: would we prefer not to need this????
+   USE InflowWind_Module_Types
    USE SharedInflowDefs
    USE IfW_Driver_Types    ! Contains types and routines for handling the input arguments
    USE IfW_Driver_Subs     ! Contains subroutines for the driver program

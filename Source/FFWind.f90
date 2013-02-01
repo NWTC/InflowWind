@@ -800,7 +800,7 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat, ErrMsg )
    ! Generate an informative message.
    !-------------------------------------------------------------------------------------------------
 
-   CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+   CALL WrScr( NewLine//' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
             ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
             TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
             ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. ' )
@@ -1361,7 +1361,7 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat, ErrMsg)
    ! Get the grid and tower velocities
    !-------------------------------------------------------------------------------------------------
 
-      CALL WrScr1( ' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+      CALL WrScr( NewLine//' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
                ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
                TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
                ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
