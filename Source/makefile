@@ -4,6 +4,21 @@
 #     NWTC Subroutine Library (v1.06.00,      ??-Dec-2012)
 #
 #Older versions of the library and InflowWind may not work with this makefile
+#
+#
+#THIS IS BROKEN
+#  This makefile is currently a bit broken. After several changes were made in the library,
+#  it no longer compiles properly with this makefile without modifying the FFLAGS. The correct
+#  way to deal with this is to either:
+#
+#     1) change the library so that those flags are not needed (CPP directives)
+#     2) simply include the library libnwtc.a file (didn't figure out yet)
+#
+#  Either way, this makefile will need to be fixed. Right now it copies the .mod and .o files
+#  over from the library and uses them (the -a keeps the old dates, so it kind of works).
+#
+
+
 
 #compiler to use
 FC = gfortran
@@ -81,15 +96,14 @@ default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 
 #Dependency rules
-#SysGnuLinux.o:          SingPrec.o
-#NWTC_IO.o:              SysGnuLinux.o
-#NWTC_Num.o:             NWTC_IO.o
-#NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
-#ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
-#NWTC_Library.o:         NWTC_Aero.o ModMesh.o
+SysGnuLinux.o:          SingPrec.o
+NWTC_IO.o:              SysGnuLinux.o
+NWTC_Num.o:             NWTC_IO.o
+NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
+ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
+NWTC_Library.o:         NWTC_Aero.o ModMesh.o
 InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
-InflowWind_Subs.o:      SharedInflowDefs.o
-#NWTC_Library.o
+InflowWind_Subs.o:      SharedInflowDefs.o NWTC_Library.o
 InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 
 
@@ -97,10 +111,9 @@ InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 $(DEST_DIR):
 	mkdir -p $(DEST_DIR)
 
-#Copy library mod and .o files over
+#Copy library mod and .o files over: might be able to make this a rule that checks the dates.
 libcopy:
-	cp $(LIB_DIR)/*.mod $(DEST_DIR);\
-	cp $(LIB_DIR)/*.o   $(DEST_DIR);
+	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
 
 #For compiling InflowWind
 $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)
