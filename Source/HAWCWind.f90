@@ -63,7 +63,7 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
       ! Local Variables:
 
-   REAL(SiKi)                  :: DumReal                      ! real variable to temporarially store values read from binary file
+   REAL(SiKi)                  :: TmpReal                      ! real variable to temporarially store values read from binary file
 
    REAL(ReKi)                  :: dx
    REAL(ReKi)                  :: dy
@@ -290,15 +290,16 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
    DO IC = 1,NC
 
-      CALL OpenBInpFile ( UnWind, DataFiles(IC), ErrStat )
+      CALL OpenBInpFile ( UnWind, DataFiles(IC), ErrStat, ErrMsg )
+!FIXME: ErrMsg check
 
       DO IX = NX,1,-1                  ! Time is the opposite of X ....
          DO IY = NY,1,-1
             DO IZ = 1,NZ
 
-               READ( UnWind, IOSTAT=ErrStat ) DumReal
+               READ( UnWind, IOSTAT=ErrStat ) TmpReal
 
-               WindData( IZ, IY, IX, IC ) = DumReal    ! possible type conversion here
+               WindData( IZ, IY, IX, IC ) = TmpReal    ! possible type conversion here
 
                IF (ErrStat /= 0) THEN
                   CALL WrScr( ' Error reading binary data from "'//TRIM(DataFiles(IC))//'".' )

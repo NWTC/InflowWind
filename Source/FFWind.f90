@@ -113,7 +113,8 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat, ErrMsg )
       ! binary file it is, and close it.
       !----------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(BinFile), ReadStat)   !FIXME: Add ErrMsg when it is available.
+   CALL OpenBInpFile (UnWind, TRIM(BinFile), ReadStat, ErrMsg)
+!FIXME: Add ErrMsg when it is available.
    IF (ReadStat /= 0) THEN
       ErrMsg   = 'Error opening file"'//TRIM(BinFile)//'."'
       ErrSTat  = ErrID_Fatal
@@ -167,7 +168,8 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat, ErrMsg )
          ! Open the binary file and read its header
          !...........................................................................................
 
-            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat) !FIXME: Add ErrMsg when it is available
+            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat, ErrMsg )
+!FIXME: Add ErrMsg when it is available
 
             IF (ErrStat >= ErrID_Fatal) RETURN
 
@@ -1189,7 +1191,8 @@ SUBROUTINE Read_TurbSim_FF(UnWind,WindFile, ErrStat, ErrMsg)
    ! Open the file
    !-------------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(WindFile), ErrStat)   !FIXME: Add in ErrMsg when it is available.
+   CALL OpenBInpFile (UnWind, TRIM(WindFile), ErrStat, ErrMsg)
+!FIXME: Add in ErrMsg when it is available.
    IF (ErrStat /= 0) RETURN
 
    !-------------------------------------------------------------------------------------------------
@@ -1523,7 +1526,8 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat, ErrMsg )
    ! Open the file
    !-------------------------------------------------------------------------------------------------
 
-   CALL OpenBInpFile (UnWind, TRIM(WindFile), ReadStat)   !FIXME: Add ErrMsg when it is available.
+   CALL OpenBInpFile (UnWind, TRIM(WindFile), ReadStat, ErrMsg)
+!FIXME: Add ErrMsg when it is available.
    IF (ReadStat /= 0) THEN
       ErrMsg   = 'Error opening file '//TRIM(WindFile)
       ReadStat = ErrID_Fatal        ! was '= -1'

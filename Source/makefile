@@ -26,7 +26,7 @@ FC = gfortran
 FFLAGS = -O3 -fbounds-check -fbacktrace -m32 #-g 
 
 #Destination for compiled pieces
-DEST_DIR := compiled--linux
+DEST_DIR := _compiled--linux
 
 #Location of source files for the NWTC Library
 LIB_DIR := \
@@ -92,7 +92,7 @@ default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 #general rule for making the files
 %.o: %.f90
-	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR)
+	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR) -J $(DEST_DIR)
 
 
 #Dependency rules
@@ -125,7 +125,8 @@ $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driv
 
 #cleanup afterwards
 clean:
-	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod
+	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod;
+	rmdir $(DEST_DIR)
 
 #doxygen bits
 document: all
