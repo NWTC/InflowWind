@@ -26,19 +26,17 @@ FC = gfortran
 FFLAGS = -O3 -fbounds-check -fbacktrace -m32 #-g 
 
 #Destination for compiled pieces
-DEST_DIR := _compiled--linux
+DEST_DIR := ../_compiled--linux
 
 #Location of source files for the NWTC Library
 LIB_DIR := \
-   ../../../../NWTC_Library/branches/BJonkman/source
+   ../../../../../NWTC_Library/branches/BJonkman/source
 
-#	../../../../NWTC_Library/trunk/source
+#	../../../../../NWTC_Library/trunk/source
 
 #Name of the executable
-Executable_NAME := InflowWind_lin32
+Executable_NAME := Wind_Test.lin32
 
-#Where the doxygen generated documentation is stored
-Doxy_DIR = ../Doxygen--documentation
 
 ##Change SingPrec.f90 to DoubPrec.f90 for double precision
 LIB_SOURCES := \
@@ -51,29 +49,15 @@ LIB_SOURCES := \
 	NWTC_Aero.f90 \
 	NWTC_Library.f90
 
-#Location of the source files for WT_Perf
+#Location of the source files for InflowWind
 InflowWind_DIR      := \
 	.
 
-#Location of the fortran driver code
-Other_DIR	:= \
-	../TestRoutines/Fortran/
 
 #The source files for InflowWind
 InflowWind_SOURCES  := \
-	SharedInflowDefs.f90 \
-   InflowWind_Module_Types.f90 \
-	CTWind.f90 \
-	FDWind.f90 \
-	FFWind.f90 \
-	HAWCWind.f90 \
-	HHWind.f90 \
-	UserWind.f90 \
-   InflowWind_Subs.f90 \
-	InflowWind_Module.f90 \
-   InflowWind_Driver_Types.f90 \
-   InflowWind_Driver_Subs.f90 \
-   InflowWind_Driver.f90
+	../HHWind.f90 \
+   HHWind_Test.f90
 
 
 
@@ -86,9 +70,9 @@ LIB_OBJS = $(LIB_SOURCES:.f90=.o)
 InflowWind_OBJS = $(InflowWind_SOURCES:.f90=.o)
 
 #rule to do everything
-all:     default
+all:           default
 InflowWind:    clean default
-default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
+default:       $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 #general rule for making the files
 %.o: %.f90
@@ -102,9 +86,6 @@ NWTC_Num.o:             NWTC_IO.o
 NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
 ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
 NWTC_Library.o:         NWTC_Aero.o ModMesh.o
-InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
-InflowWind_Subs.o:      SharedInflowDefs.o NWTC_Library.o
-InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 
 
 #Make sure the destination directory exists
@@ -127,12 +108,3 @@ $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driv
 clean:
 	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod;
 	rmdir $(DEST_DIR)
-
-#doxygen bits
-document: all
-	rm $(Doxy_DIR)/tempassembled.f90;
-	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
-	$(MAKE) -C $(Doxy_DIR);
-
-   #This line is for putting all the NWTC_Lib bits in the documentation;
-   #	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;

@@ -105,22 +105,22 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat, ErrMsg)
 
       ! Passed Variables:
 
-   INTEGER,          INTENT(IN)  :: UnWind                        ! unit number for reading wind files
-   CHARACTER(*),     INTENT(IN)  :: WindFile                      ! Name of the CTP (.ctp) wind file
-   TYPE(CT_Backgr),  INTENT(OUT) :: BackGrndValues                ! output background values
-   INTEGER,          INTENT(OUT) :: ErrStat                       ! return ErrID_None if no errors
-   CHARACTER(*),     INTENT(OUT) :: ErrMsg                        ! message if there was an error
+   INTEGER,          INTENT(IN)     :: UnWind                        ! unit number for reading wind files
+   CHARACTER(*),     INTENT(IN)     :: WindFile                      ! Name of the CTP (.ctp) wind file
+   TYPE(CT_Backgr),  INTENT(OUT)    :: BackGrndValues                ! output background values
+   INTEGER,          INTENT(OUT)    :: ErrStat                       ! return ErrID_None if no errors
+   CHARACTER(*),     INTENT(OUT)    :: ErrMsg                        ! message if there was an error
 
       ! Local Variables:
 
-   TYPE(CTWindFiles)             :: CTP_files
-   CHARACTER(3)                  :: CT_SC_ext                     ! extension of the scaling file
-   LOGICAL                       :: EmptyFileStat                 ! temporary variable indicating the CTTS file was empty / non-existent
+   TYPE(CTWindFiles)                :: CTP_files
+   CHARACTER(3)                     :: CT_SC_ext                     ! extension of the scaling file
+   LOGICAL                          :: EmptyFileStat                 ! temporary variable indicating the CTTS file was empty / non-existent
 
       ! Temporary error handling Variables
 
-   INTEGER                          :: TmpErrStat                             ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                              ! Temporary error message returned
+   INTEGER                          :: TmpErrStat                    ! Temporary Error Status
+   CHARACTER(1024)                  :: TmpErrMsg                     ! Temporary error message returned
 
 
 

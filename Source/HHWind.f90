@@ -22,11 +22,11 @@ MODULE HHWind
 !      + VGust                                                          ! gust speed
 !----------------------------------------------------------------------------------------------------
 
-   USE                     NWTC_Library
-   USE                     SharedInflowDefs
-   USE                     InflowWind_Module_Types
+   USE                           NWTC_Library
+   USE                           SharedInflowDefs
+   USE                           InflowWind_Module_Types
 
-   IMPLICIT                NONE
+   IMPLICIT                      NONE
    PRIVATE
 
 
@@ -48,6 +48,7 @@ MODULE HHWind
 
    LOGICAL, SAVE                :: Linearize = .FALSE.                     ! If this is TRUE, we are linearizing
 
+!FIXME: move this elsewhere
    TYPE, PUBLIC                 :: HH_Info
       REAL(ReKi)                :: ReferenceHeight
       REAL(ReKi)                :: Width
@@ -61,7 +62,7 @@ MODULE HHWind
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
+SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat, ErrMsg)
 ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
 ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
 ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
@@ -70,23 +71,30 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat)
 
       ! Passed Variables:
 
-   INTEGER,      INTENT(IN)    :: UnWind                       ! unit number for reading wind files
-   INTEGER,      INTENT(OUT)   :: ErrStat                      ! determines if an error has been encountered
-   TYPE(HH_Info),INTENT(IN)    :: WindInfo                     ! Additional information needed to initialize this wind type
+   INTEGER,       INTENT(IN)        :: UnWind                        ! unit number for reading wind files
+   TYPE(HH_Info), INTENT(IN)        :: WindInfo                      ! Additional information needed to initialize this wind type
 
-   CHARACTER(*), INTENT(IN)    :: WindFile                     ! Name of the text HH wind file
+   CHARACTER(*),  INTENT(IN)        :: WindFile                      ! Name of the text HH wind file
+
+      ! Error handling
+   INTEGER,       INTENT(OUT)       :: ErrStat                       ! determines if an error has been encountered
+   CHARACTER(*),  INTENT(OUT)       :: ErrMsg                        ! A message about the error
 
       ! local variables
 
-   INTEGER, PARAMETER          :: NumCols = 8                  ! Number of columns in the HH file
-   REAL(ReKi)                  :: TmpData(NumCols)             ! Temp variable for reading all columns from a line
-   REAL(ReKi)                  :: DelDiff                      ! Temp variable for storing the direction difference
+   INTEGER,       PARAMETER         :: NumCols = 8                   ! Number of columns in the HH file
+   REAL(ReKi)                       :: TmpData(NumCols)              ! Temp variable for reading all columns from a line
+   REAL(ReKi)                       :: DelDiff                       ! Temp variable for storing the direction difference
 
-   INTEGER                     :: I
-   INTEGER                     :: NumComments
-   INTEGER                     :: ILine                        ! Counts the line number in the file
-   INTEGER, PARAMETER          :: MaxTries = 100
-   CHARACTER(1024)             :: Line                         ! Temp variable for reading whole line from file
+   INTEGER                          :: I
+   INTEGER                          :: NumComments
+   INTEGER                          :: ILine                         ! Counts the line number in the file
+   INTEGER, PARAMETER               :: MaxTries = 100
+   CHARACTER(1024)                  :: Line                          ! Temp variable for reading whole line from file
+
+      ! Temporary variables for error handling
+   INTEGER                          :: TmpErrStat                    ! Temp variable for the error status
+   CHARACTER(1024)                  :: TmpErrMsg                     ! Temp variable for the error message
 
 
    !-------------------------------------------------------------------------------------------------
@@ -553,6 +561,8 @@ END FUNCTION HH_GetWindSpeed
 !
 !END FUNCTION HH_Get_ADHack_WindSpeed
 !====================================================================================================
+
+!FIXME: might need to move this into states???
 SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 ! This subroutine sets the perturbation values for the linearization scheme.
 !----------------------------------------------------------------------------------------------------
@@ -580,11 +590,18 @@ SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 
 END SUBROUTINE HH_SetLinearizeDels
 !====================================================================================================
-SUBROUTINE HH_Terminate(ErrStat)
+SUBROUTINE HH_Terminate(ErrStat,ErrMsg)
 
-   INTEGER,      INTENT(OUT)   :: ErrStat                      ! determines if an error has been encountered
+      ! Error Handling
 
-   INTEGER                     :: SumErrs
+   INTEGER,          INTENT(OUT)    :: ErrStat                       ! determines if an error has been encountered
+   CHARACTER(1024),  INTENT(OUT)    :: ErrMsg                        ! Message about errors
+
+      ! Local Variables
+
+   INTEGER                          :: SumErrs  !FIXME: this is depricated!!!!
+
+      !-=- Initializ the routine -=-
 
    SumErrs = 0
 
