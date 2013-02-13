@@ -48,6 +48,8 @@ PROGRAM HHWind_Test
    CALL NWTC_Init
    CALL DispNVD( ProgInfo )
 
+   Time = 2.0
+
       ! setup the file info
    WindFileName      = "../../Samples/Steady.wnd"           ! HHWind file
    HHInitInfo%ReferenceHeight = 80.                         ! meters

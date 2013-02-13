@@ -39,35 +39,44 @@ Executable_NAME := Wind_Test.lin32
 
 
 ##Change SingPrec.f90 to DoubPrec.f90 for double precision
-LIB_SOURCES := \
-	SingPrec.f90 \
-	SysGnuLinux.f90 \
-	NWTC_IO.f90 \
-	NWTC_Num.f90 \
-	ModMesh_Types.f90 \
-	ModMesh.f90 \
-	NWTC_Aero.f90 \
+LIB_SOURCES :=                   \
+	SingPrec.f90                  \
+	SysGnuLinux.f90               \
+	NWTC_IO.f90                   \
+	NWTC_Num.f90                  \
+	ModMesh_Types.f90             \
+	ModMesh.f90                   \
+	NWTC_Aero.f90                 \
 	NWTC_Library.f90
 
 #Location of the source files for InflowWind
-InflowWind_DIR      := \
-	.
+InflowWind_DIR    := \
+	..
 
+IfW_Test_DIR      := \
+   .
+
+IfW_Driver_DIR    := $(IfW_Test_DIR)
 
 #The source files for InflowWind
-InflowWind_SOURCES  := \
-	../HHWind.f90 \
-   HHWind_Test.f90
+InflowWind_SOURCES  :=           \
+	HHWind.f90                    \
+   SharedInflowDefs.f90          \
+   InflowWind_Module_Types.f90
 
 
+#Testing sources
+IfW_Test_SOURCES  :=             \
+   HHWind_Test.f90         
 
-vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(InflowWind_Driver_DIR)
+vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(IfW_Test_DIR)
 vpath %.o $(DEST_DIR) $(LIB_DIR)
 
 ###########
 #### You should not need to change anything beyond this point
-LIB_OBJS = $(LIB_SOURCES:.f90=.o)
-InflowWind_OBJS = $(InflowWind_SOURCES:.f90=.o)
+LIB_OBJS          = $(LIB_SOURCES:.f90=.o)
+InflowWind_OBJS   = $(InflowWind_SOURCES:.f90=.o)
+IfW_Test_OBJS     = $(IfW_Test_SOURCES:.f90=.o)
 
 #rule to do everything
 all:           default
@@ -87,6 +96,8 @@ NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
 ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
 NWTC_Library.o:         NWTC_Aero.o ModMesh.o
 
+HHWind.o:               SharedInflowDefs.o InflowWind_Module_Types.o
+HHWind_Test.o:          HHWind.o SharedInflowDefs.o
 
 #Make sure the destination directory exists
 $(DEST_DIR):
@@ -97,10 +108,11 @@ libcopy:
 	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
 
 #For compiling InflowWind
-$(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)
-	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(Executable_NAME) \
-		$(foreach src, $(LIB_OBJS), $(addprefix $(DEST_DIR)/,$(src))) \
-		$(foreach src, $(InflowWind_OBJS), $(addprefix $(DEST_DIR)/,$(src)));
+$(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
+	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(Executable_NAME)           \
+		$(foreach src, $(LIB_OBJS),         $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(InflowWind_OBJS),  $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(IfW_Test_OBJS),    $(addprefix $(DEST_DIR)/,$(src)));
 		cp $(DEST_DIR)/$(Executable_NAME) .
 
 
