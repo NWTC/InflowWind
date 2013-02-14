@@ -1,4 +1,4 @@
-MODULE HHWind
+MODULE IfW_HHWind
 ! This module contains all the data and procedures that define hub-height wind files. This could
 ! more accurately be called a point wind file since the wind speed at any point is calculated by
 ! shear applied to the point where wind is defined.  It is basically uniform wind over the rotor disk.
@@ -44,8 +44,10 @@ MODULE HHWind
    REAL(ReKi)                   :: RefWid                                  ! reference width; was 2*R (=rotor diameter); used to scale the linear shear
 
    INTEGER                      :: NumDataLines
+!FIXME: move to otherstates
    INTEGER, SAVE                :: TimeIndx = 0                            ! An index into the Tdata array (to allow us faster searching, starting search from previous one)
 
+!FIXME: move to parameters
    LOGICAL, SAVE                :: Linearize = .FALSE.                     ! If this is TRUE, we are linearizing
 
 !FIXME: move this elsewhere
@@ -54,15 +56,15 @@ MODULE HHWind
       REAL(ReKi)                :: Width
    END TYPE HH_Info
 
-   PUBLIC                       :: HH_Init
-   PUBLIC                       :: HH_GetWindSpeed
-   PUBLIC                       :: HH_Terminate
-   PUBLIC                       :: HH_SetLinearizeDels
+   PUBLIC                       :: IfW_HHWind_Init
+   PUBLIC                       :: IfW_HHWind_GetWindSpeed
+   PUBLIC                       :: IfW_HHWind_Terminate
+   PUBLIC                       :: IfW_HHWind_SetLinearizeDels
 !   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat, ErrMsg)
+SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, WindInfo, ErrStat, ErrMsg)
 ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
 ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
 ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
@@ -334,9 +336,9 @@ SUBROUTINE HH_Init(UnWind, WindFile, WindInfo, ErrStat, ErrMsg)
 
    RETURN
 
-END SUBROUTINE HH_Init
+END SUBROUTINE IfW_HHWind_Init
 !====================================================================================================
-FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
+FUNCTION IfW_HHWind_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 ! This subroutine linearly interpolates the columns in the HH input file to get the values for
 ! the requested time, then uses the interpolated values to calclate the wind speed at a point
 ! in space represented by InputPosition.
@@ -346,7 +348,8 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
    REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z
    INTEGER,             INTENT(OUT) :: ErrStat              ! error status
    CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
-   REAL(ReKi)                       :: HH_GetWindSpeed(3)   ! return velocities (U,V,W)
+!FIXME: make this go away when convert to subroutine
+   REAL(ReKi)                       :: IfW_HHwind_GetWindSpeed(3)   ! return velocities (U,V,W)
 
    REAL(ReKi)                       :: CosDelta             ! cosine of Delta_tmp
    REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
@@ -459,14 +462,14 @@ FUNCTION HH_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
         + ( HShr_tmp   * ( InputPosition(2) * CosDelta + InputPosition(1) * SinDelta ) &    ! horizontal linear shear
         +  VLinShr_tmp * ( InputPosition(3)-RefHt ) )/RefWid  ) &                           ! vertical linear shear
         + VGUST_tmp                                                                         ! gust speed
-   HH_GetWindSpeed(1) =  V1 * CosDelta
-   HH_GetWindSpeed(2) = -V1 * SinDelta
-   HH_GetWindSpeed(3) =  VZ_tmp
+   IfW_HHWind_GetWindSpeed(1) =  V1 * CosDelta
+   IfW_HHWind_GetWindSpeed(2) = -V1 * SinDelta
+   IfW_HHWind_GetWindSpeed(3) =  VZ_tmp
 
 
    RETURN
 
-END FUNCTION HH_GetWindSpeed
+END FUNCTION IfW_HHWind_GetWindSpeed
 !!====================================================================================================
 !FUNCTION HH_Get_ADHack_WindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 !! This subroutine linearly interpolates the columns in the HH input file to get the values for
@@ -563,7 +566,7 @@ END FUNCTION HH_GetWindSpeed
 !====================================================================================================
 
 !FIXME: might need to move this into states???
-SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
+SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 ! This subroutine sets the perturbation values for the linearization scheme.
 !----------------------------------------------------------------------------------------------------
 
@@ -588,9 +591,9 @@ SUBROUTINE HH_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 
    RETURN
 
-END SUBROUTINE HH_SetLinearizeDels
+END SUBROUTINE IfW_HHWind_SetLinearizeDels
 !====================================================================================================
-SUBROUTINE HH_Terminate(ErrStat,ErrMsg)
+SUBROUTINE IfW_HHWind_Terminate(ErrStat,ErrMsg)
 
       ! Error Handling
 
@@ -632,6 +635,6 @@ SUBROUTINE HH_Terminate(ErrStat,ErrMsg)
    ErrStat  = SumErrs
    TimeIndx = 0
 
-END SUBROUTINE HH_Terminate
+END SUBROUTINE IfW_HHWind_Terminate
 !====================================================================================================
-END MODULE HHWind
+END MODULE IfW_HHWind

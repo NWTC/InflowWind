@@ -25,6 +25,7 @@ MODULE HAWCWind
    REAL(ReKi)                       :: deltaYInv                  ! multiplicative inverse of delta Y
    REAL(ReKi)                       :: deltaZInv                  ! multiplicative inverse of delta Z
 
+!FIXME: this invokes SAVE
    INTEGER, PARAMETER               :: NC = 3                     ! number of wind components
    INTEGER                          :: NX                         ! number of points in the X direction
    INTEGER                          :: NY                         ! number of points in the Y direction
@@ -36,7 +37,7 @@ MODULE HAWCWind
    REAL(ReKi)                       :: RefHt                      ! the reference (hub) height of the grid in meters
    REAL(ReKi)                       :: URef                       ! the mean wind speed in m/s at height RefHt meters (as defined in the input file)
 
-
+!FIXME: move to otherstate or parameters
    LOGICAL, SAVE                    :: Initialized = .FALSE.      ! flag that determines if the module has been initialized
 
 
@@ -488,6 +489,7 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
       ! Local Variables:
 
    REAL(ReKi)                  :: ShiftedXPosition
+!FIXME: this invokes SAVE
    REAL(ReKi),PARAMETER        :: Tol = 1.0E-3      ! a tolerance for determining if two reals are the same (for extrapolation)
    REAL(ReKi)                  :: W_YH_Z
    REAL(ReKi)                  :: W_YH_ZH

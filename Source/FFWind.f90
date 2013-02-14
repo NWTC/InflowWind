@@ -45,6 +45,7 @@ MODULE FFWind
 
 !FIXME: should not be save -- move to the parameters?
    LOGICAL, SAVE                    :: Initialized = .FALSE.      ! flag that determines if the module has been initialized
+!FIXME: invokes SAVE
    LOGICAL                          :: Periodic    = .FALSE.      ! flag that determines if the wind is periodic
 
 
@@ -783,6 +784,7 @@ SUBROUTINE Read_Bladed_Grids ( UnWind, CWise, TI, ErrStat, ErrMsg )
    INTEGER,       INTENT(OUT) :: ErrStat
    CHARACTER(*),  INTENT(OUT) :: ErrMsg
 
+!FIXME: this invokes SAVE
    REAL(ReKi), PARAMETER      :: FF_Offset(3) = (/ 1.0, 0.0, 0.0 /)  ! used for "un-normalizing" the data
 
    INTEGER                    :: CFirst
@@ -932,6 +934,7 @@ SUBROUTINE Read_Summary_FF ( UnWind, FileName, CWise, ZCenter, TI, ErrStat, ErrM
       ! Local variables
    REAL(ReKi)                 :: ZGOffset       ! The vertical offset of the turbine on rectangular grid (allows turbulence not centered on turbine hub)
 
+!FIXME: this invokes SAVE
    INTEGER, PARAMETER         :: NumStrings = 6 ! number of strings to be looking for in the file
 
    INTEGER                    :: FirstIndx      ! The first character of a line where data is located
@@ -1505,8 +1508,10 @@ SUBROUTINE Read_FF_Tower( UnWind, WindFile, ErrStat, ErrMsg )
    INTEGER                    :: IZ                ! loop counter for z
    INTEGER                    :: ReadStat          ! IOSTAT value.
 
+!FIXME: this invokes SAVE
    REAL(ReKi), PARAMETER      :: TOL = 1E-4        ! tolerence for wind file comparisons
 
+!FIXME: this invokes SAVE
    REAL(ReKi), PARAMETER      :: FF_Offset(3) = (/ 1.0, 0.0, 0.0 /)  ! used for "un-normalizing" the data
    REAL(SiKi)                 :: TI       (3)      ! scaling values for "un-normalizing the data" [approx. turbulence intensities of the wind components]
 
@@ -1767,6 +1772,7 @@ FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 
    REAL(ReKi)                    :: FF_GetWindSpeed(3)
 
+!FIXME: this invokes SAVE
    REAL(ReKi), PARAMETER         :: TOL = 1E-3
 
 
@@ -1850,6 +1856,7 @@ FUNCTION FF_Interp(Time, Position, ErrStat, ErrMsg)
       ! Local Variables:
 
    REAL(ReKi)                    :: TimeShifted
+!FIXME: this invokes SAVE
    REAL(ReKi),PARAMETER          :: Tol = 1.0E-3      ! a tolerance for determining if two reals are the same (for extrapolation)
    REAL(ReKi)                    :: W_YH_Z
    REAL(ReKi)                    :: W_YH_ZH
@@ -1857,7 +1864,7 @@ FUNCTION FF_Interp(Time, Position, ErrStat, ErrMsg)
    REAL(ReKi)                    :: W_YL_Z
    REAL(ReKi)                    :: W_YL_ZH
    REAL(ReKi)                    :: W_YL_ZL
-   REAL(ReKi)                    :: Wnd      (2)
+   REAL(ReKi)                    :: Wnd(2)
    REAL(ReKi)                    :: T
    REAL(ReKi)                    :: TGRID
    REAL(ReKi)                    :: Y

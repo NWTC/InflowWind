@@ -32,6 +32,7 @@ MODULE FDWind
    REAL(ReKi)                   :: Ly                                         ! Fractional location of tower centerline from right (looking downwind) to left side of the dataset.
    REAL(ReKi)                   :: Lz                                         ! Fractional location of hub height from bottom to top of dataset.
    REAL(ReKi)                   :: Offsets  (3)                               ! Offsets to convert integer data to actual wind speeds.
+!FIXME: move to otherstates
    REAL(ReKi), SAVE             :: PrevTime                                   ! The previous time this was called -- so we can go back in time if necessary
    REAL(ReKi)                   :: RotDiam                                    ! Rotor diameter.
    REAL(ReKi)                   :: ScalFact (3)                               ! Scaling factors to convert integer data to actual wind speeds.
@@ -77,6 +78,7 @@ MODULE FDWind
    LOGICAL                      :: Advect                                     ! Flag to indicate whether or not to advect a given data set or to just use the time step files
    LOGICAL                      :: VertShft                                   ! Flag to indicate whether or not to shift the z values for the w component.
 
+!FIXME: move to parameters or otherstates
    LOGICAL, SAVE                :: Initialized = .FALSE.
 
    CHARACTER(5), ALLOCATABLE    :: AdvFiles (:)
@@ -349,6 +351,7 @@ SUBROUTINE ReadFDP ( UnWind, FileName, FDTSfile, ErrStat )
       ! Local variables
 
    CHARACTER(1024)                :: HeaderLine
+!FIXME: this invokes SAVE
    CHARACTER(1),PARAMETER         :: Comp(3) = (/'U', 'V', 'W' /) ! the wind components
 
    REAL(ReKi)                     :: CoefTE                       ! Coefficient of thermal expansion.

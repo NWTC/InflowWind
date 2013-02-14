@@ -15,7 +15,7 @@ PROGRAM HHWind_Test
 
 
    USE NWTC_Library
-   USE HHWind
+   USE IfW_HHWind
 
 
 
@@ -76,7 +76,7 @@ PROGRAM HHWind_Test
 
    CALL WrScr(NewLine//" Initializing HHWind"//NewLine)
 
-   CALL HH_Init( UnWind, WindFileName, HHInitInfo, ErrStat, ErrMsg )
+   CALL IfW_HHWind_Init( UnWind, WindFileName, HHInitInfo, ErrStat, ErrMsg )
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
@@ -91,7 +91,7 @@ PROGRAM HHWind_Test
 
    CALL WrScr(" Calculating wind velocity:")
 
-   WindVelocity = HH_GetWindSpeed( Time, WindPosition, ErrStat, ErrMsg )
+   WindVelocity = IfW_HHWind_GetWindSpeed( Time, WindPosition, ErrStat, ErrMsg )
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
@@ -114,7 +114,7 @@ PROGRAM HHWind_Test
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-   CALL HH_Terminate( ErrStat, ErrMsg )
+   CALL IfW_HHWind_Terminate( ErrStat, ErrMsg )
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)

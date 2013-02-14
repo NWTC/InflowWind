@@ -12,6 +12,7 @@ MODULE UserWind
 
       ! define variables for UserWind here
 
+!FIXME: move to otherstate or parameters
    LOGICAL, SAVE              :: Initialized = .FALSE.         ! This variable indicates if the initialization routine has been run
 
    REAL(ReKi)                 :: UWmeanU                       ! Possibly instantaneous, disk-averaged wind speeds.

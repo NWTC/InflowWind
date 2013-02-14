@@ -24,6 +24,7 @@ MODULE CTWind
    PRIVATE
 
 
+!fixme: this invokes SAVE
    INTEGER, PARAMETER           :: NumComps  = 3                              ! number of components
 
             ! CT_Wind
@@ -63,6 +64,7 @@ MODULE CTWind
    INTEGER                      :: NumCTz                                     ! The number of CT wind grid points in the z direction.
    INTEGER                      :: NumCTzD                                    ! The decimated number of CT wind grid points in the z direction.
    INTEGER                      :: NumCTzD1                                   ! The decimated number of CT wind grid points in the z direction minus 1.
+!FIXME: move to otherstate
    INTEGER, SAVE                :: TimeIndx  = 0                              ! Index into the time array
    INTEGER, ALLOCATABLE         :: TimeStpCT (:)                              ! The list of time steps from the original LE simulation, associated with the CT-wind times.
 
