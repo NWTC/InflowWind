@@ -114,7 +114,7 @@ PROGRAM HHWind_Test
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-   CALL IfW_HHWind_Terminate( ErrStat, ErrMsg )
+   CALL IfW_HHWind_End( ErrStat, ErrMsg )
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)

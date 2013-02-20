@@ -24,7 +24,7 @@ MODULE IfW_HHWind
 
    USE                           NWTC_Library
    USE                           SharedInflowDefs
-   USE                           InflowWind_Module_Types
+   USE                           IfW_HHWind_Types
 
    IMPLICIT                      NONE
    PRIVATE
@@ -58,7 +58,7 @@ MODULE IfW_HHWind
 
    PUBLIC                       :: IfW_HHWind_Init
    PUBLIC                       :: IfW_HHWind_GetWindSpeed
-   PUBLIC                       :: IfW_HHWind_Terminate
+   PUBLIC                       :: IfW_HHWind_End
    PUBLIC                       :: IfW_HHWind_SetLinearizeDels
 !   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
 
@@ -160,7 +160,7 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, WindInfo, ErrStat, ErrMsg)
       CALL WrScr ( ' Error reading data from HH wind file on line '//TRIM(Num2LStr(NumDataLines+NumComments))//'.' )
       RETURN
    ELSE
-      CALL WrScr ( ' Reading '//TRIM(Num2LStr(NumDataLines))//' lines of data from the HH wind file.' )
+      CALL WrScr ( ' Reading '//TRIM(Num2LStr(NumDataLines))//' lines of data from the HH wind file "'//TRIM(WindFile)//'"' )
    END IF
 
 
@@ -470,6 +470,56 @@ FUNCTION IfW_HHWind_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
    RETURN
 
 END FUNCTION IfW_HHWind_GetWindSpeed
+!====================================================================================================
+SUBROUTINE IfW_HHWind_End(ErrStat,ErrMsg)
+
+      ! Error Handling
+
+   INTEGER,          INTENT(OUT)    :: ErrStat                       ! determines if an error has been encountered
+   CHARACTER(1024),  INTENT(OUT)    :: ErrMsg                        ! Message about errors
+
+      ! Local Variables
+
+   INTEGER                          :: SumErrs  !FIXME: this is depricated!!!!
+
+      !-=- Initializ the routine -=-
+
+   SumErrs = 0
+
+   IF ( ALLOCATED(Tdata  ) ) DEALLOCATE( Tdata,   STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(DELTA  ) ) DEALLOCATE( DELTA,   STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(V      ) ) DEALLOCATE( V,       STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(VZ     ) ) DEALLOCATE( VZ,      STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(HSHR   ) ) DEALLOCATE( HSHR,    STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(VSHR   ) ) DEALLOCATE( VSHR,    STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(VGUST  ) ) DEALLOCATE( VGUST,   STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   IF ( ALLOCATED(VLINSHR) ) DEALLOCATE( VLINSHR, STAT=ErrStat )
+   SumErrs = SumErrs + ABS(ErrStat)
+
+   ErrStat  = SumErrs
+   TimeIndx = 0
+
+END SUBROUTINE IfW_HHWind_End
+!====================================================================================================
+
+
+!====================================================================================================
+!====================================================================================================
+!REMOVED:
 !!====================================================================================================
 !FUNCTION HH_Get_ADHack_WindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 !! This subroutine linearly interpolates the columns in the HH input file to get the values for
@@ -563,12 +613,19 @@ END FUNCTION IfW_HHWind_GetWindSpeed
 !   RETURN
 !
 !END FUNCTION HH_Get_ADHack_WindSpeed
-!====================================================================================================
+!----------------------------------------------------------------------------------------------------
 
+
+
+
+!====================================================================================================
+!====================================================================================================
+!====================================================================================================
+!MOVED FROM ABOVE:
+!----------------------------------------------------------------------------------------------------
 !FIXME: might need to move this into states???
 SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 ! This subroutine sets the perturbation values for the linearization scheme.
-!----------------------------------------------------------------------------------------------------
 
    REAL(ReKi),          INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
    INTEGER,             INTENT(OUT) :: ErrStat              ! time from the start of the simulation
@@ -592,49 +649,5 @@ SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
    RETURN
 
 END SUBROUTINE IfW_HHWind_SetLinearizeDels
-!====================================================================================================
-SUBROUTINE IfW_HHWind_Terminate(ErrStat,ErrMsg)
-
-      ! Error Handling
-
-   INTEGER,          INTENT(OUT)    :: ErrStat                       ! determines if an error has been encountered
-   CHARACTER(1024),  INTENT(OUT)    :: ErrMsg                        ! Message about errors
-
-      ! Local Variables
-
-   INTEGER                          :: SumErrs  !FIXME: this is depricated!!!!
-
-      !-=- Initializ the routine -=-
-
-   SumErrs = 0
-
-   IF ( ALLOCATED(Tdata  ) ) DEALLOCATE( Tdata,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(DELTA  ) ) DEALLOCATE( DELTA,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(V      ) ) DEALLOCATE( V,       STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(VZ     ) ) DEALLOCATE( VZ,      STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(HSHR   ) ) DEALLOCATE( HSHR,    STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(VSHR   ) ) DEALLOCATE( VSHR,    STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(VGUST  ) ) DEALLOCATE( VGUST,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   IF ( ALLOCATED(VLINSHR) ) DEALLOCATE( VLINSHR, STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
-
-   ErrStat  = SumErrs
-   TimeIndx = 0
-
-END SUBROUTINE IfW_HHWind_Terminate
 !====================================================================================================
 END MODULE IfW_HHWind

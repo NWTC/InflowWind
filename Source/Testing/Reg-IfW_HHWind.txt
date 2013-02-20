@@ -1,0 +1,52 @@
+###################################################################################################################################
+# Registry for IfW_HHWind, creates MODULE IfW_HHWind_Types
+# Module IfW_HHWind_Types contains all of the user-defined types needed in IfW_HHWind. It also contains copy, destroy, pack, and
+# unpack routines associated with each defined data types.
+###################################################################################################################################
+# Entries are of the form
+# keyword <IfW_HHWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
+###################################################################################################################################
+
+
+
+
+
+typedef IfW_HHWind/IfW_HHWind InitInputType CHARACTER(1024) InputFile  - - -     "Name of the input file; remove if there is no file" -
+
+typedef  ^                    ContinuousStateType ReKi     DummyContState1 - - -  "Remove this variable if you have continuous states" -
+
+
+
+# Define discrete (nondifferentiable) states here:
+typedef  ^                    DiscreteStateType   ReKi     DummyDiscState - - -  "Remove this variable if you have discrete states" -
+
+# Define constraint states here:
+typedef  ^                    ConstraintStateType ReKi     DummyConstrState - - - "Remove this variable if you have constraint states" -
+
+# Define any data that are not considered actual states here:
+#   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
+#   at a given time, etc.)
+typedef  ^                    OtherStateType      IntKi    DummyOtherState - - - "Remove this variable if you have other states" -
+
+
+# ..... Parameters ................................................................................................................
+# Define parameters here:
+# Time step for integration of continuous states (if a fixed-step integrator is used) and update of discrete states:
+typedef  ^                    ParameterType       DbKi     DT - - - "Time step for cont. state integration & disc. state update" seconds
+
+
+# ..... Inputs ....................................................................................................................
+# Define inputs that are contained on the mesh here:
+typedef  ^                    InputType           MeshType MeshedInput - - -     "Meshed data" -
+
+# Define inputs that are not on this mesh here:
+typedef  ^                    InputType           ReKi     DummyInput  - - -     "Remove this variable if you have input data" -
+
+
+# ..... Outputs ...................................................................................................................
+# Define outputs that are contained on the mesh here:
+#typedef IfW_HHWind ModName_OutputType          MeshType MeshedOutput - - -    "Meshed data" -
+# Define outputs that are not on this mesh here:
+typedef  ^                    OutputType          ReKi     DummyOutput  -  - -   "Remove this variable if you have output data" -
+typedef  ^                    OutputType          ReKi     WriteOutput {2} - -   "Example of data to be written to an output file" "s, -"
+

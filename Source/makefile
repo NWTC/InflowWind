@@ -67,7 +67,7 @@ InflowWind_SOURCES  := \
 	FDWind.f90 \
 	FFWind.f90 \
 	HAWCWind.f90 \
-	HHWind.f90 \
+	IfW_HHWind.f90 \
 	UserWind.f90 \
    InflowWind_Subs.f90 \
 	InflowWind_Module.f90 \
