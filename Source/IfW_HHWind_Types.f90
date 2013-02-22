@@ -32,6 +32,8 @@ USE NWTC_Library
 IMPLICIT NONE
   TYPE, PUBLIC :: IfW_HHWind_InitInputType
     CHARACTER(1024)  :: InputFile 
+    REAL(ReKi)  :: ReferenceHeight 
+    REAL(ReKi)  :: Width 
   END TYPE IfW_HHWind_InitInputType
   TYPE, PUBLIC :: IfW_HHWind_ContinuousStateType
     REAL(ReKi)  :: DummyContState1 
@@ -84,6 +86,8 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   DstInitInputData%InputFile = SrcInitInputData%InputFile
+  DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
+  DstInitInputData%Width = SrcInitInputData%Width
  END SUBROUTINE IfW_HHWind_CopyInitInput
 
  SUBROUTINE IfW_HHWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -130,9 +134,15 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
+  Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
+  Re_BufSz   = Re_BufSz   + 1  ! Width
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
+  Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HHWind_PackInitInput
 
  SUBROUTINE IfW_HHWind_UnpackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -168,6 +178,10 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
+  OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%Width = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1

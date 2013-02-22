@@ -15,44 +15,46 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-typedef IfW_HHWind/IfW_HHWind InitInputType CHARACTER(1024) InputFile  - - -     "Name of the input file; remove if there is no file" -
+typedef  IfW_HHWind/IfW_HHWind   InitInputType CHARACTER(1024)    InputFile         -     -     -     "Name of the input file; remove if there is no file"           -
+typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
+typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 
 
-typedef  ^                    ContinuousStateType     ReKi     DummyContState1 - - -  "Remove this variable if you have continuous states" -
+typedef  ^                       ContinuousStateType     ReKi     DummyContState1   -     -     -     "Remove this variable if you have continuous states"           -
 
 
 
 # Define discrete (nondifferentiable) states here:
-typedef  ^                    DiscreteStateType       ReKi     DummyDiscState - - -  "Remove this variable if you have discrete states" -
+typedef  ^                       DiscreteStateType       ReKi     DummyDiscState    -     -     -     "Remove this variable if you have discrete states"             -
 
 # Define constraint states here:
-typedef  ^                    ConstraintStateType     ReKi     DummyConstrState - - - "Remove this variable if you have constraint states" -
+typedef  ^                       ConstraintStateType     ReKi     DummyConstrState  -     -     -     "Remove this variable if you have constraint states"           -
 
 # Define any data that are not considered actual states here:
 #   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
 #   at a given time, etc.)
-typedef  ^                    OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
-typedef  ^                    ^                       ReKi     TData             {:}   -     -     "Time array from the HH file"                                  seconds
-typedef  ^                    ^                       ReKi     DELTA             {:}   -     -     "HH Wind direction (angle)"                                    degrees
-typedef  ^                    ^                       ReKi     V                 {:}   -     -     "HH horizontal wind speed"                                     meters/sec
-typedef  ^                    ^                       ReKi     VZ                {:}   -     -     "wind, including tower shadow, along the Z axis"               meters/sec
-typedef  ^                    ^                       ReKi     HSHR              {:}   -     -     "HH Horizontal linear shear"                                   -
-typedef  ^                    ^                       ReKi     VSHR              {:}   -     -     "HH vertical shear exponent"                                   -
-typedef  ^                    ^                       ReKi     VLINSHR           {:}   -     -     "HH vertical linear shear"                                     -
-typedef  ^                    ^                       ReKi     VGUST             {:}   -     -     "HH wind gust"                                                 -
-typedef  ^                    ^                       ReKi     LinearizeDels     7     -     -     "The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar"  -
-typedef  ^                    ^                       ReKi     RefHt             -     -     -     "reference height; was HH (hub height); used to center the wind"  -
-typedef  ^                    ^                       ReKi     RefWid            -     -     -     "reference width; was 2*R (=rotor diameter); used to scale the linear shear"  -
-typedef  ^                    ^                       IntKi    NumDataLines      -     -     -     ""                                                             -
+typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
+typedef  ^                       ^                       ReKi     TData             {:}   -     -     "Time array from the HH file"                                  seconds
+typedef  ^                       ^                       ReKi     DELTA             {:}   -     -     "HH Wind direction (angle)"                                    degrees
+typedef  ^                       ^                       ReKi     V                 {:}   -     -     "HH horizontal wind speed"                                     meters/sec
+typedef  ^                       ^                       ReKi     VZ                {:}   -     -     "wind, including tower shadow, along the Z axis"               meters/sec
+typedef  ^                       ^                       ReKi     HSHR              {:}   -     -     "HH Horizontal linear shear"                                   -
+typedef  ^                       ^                       ReKi     VSHR              {:}   -     -     "HH vertical shear exponent"                                   -
+typedef  ^                       ^                       ReKi     VLINSHR           {:}   -     -     "HH vertical linear shear"                                     -
+typedef  ^                       ^                       ReKi     VGUST             {:}   -     -     "HH wind gust"                                                 -
+typedef  ^                       ^                       ReKi     LinearizeDels     7     -     -     "The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar"  -
+typedef  ^                       ^                       ReKi     RefHt             -     -     -     "reference height; was HH (hub height); used to center the wind"  -
+typedef  ^                       ^                       ReKi     RefWid            -     -     -     "reference width; was 2*R (=rotor diameter); used to scale the linear shear"  -
+typedef  ^                       ^                       IntKi    NumDataLines      -     -     -     ""                                                             -
 
 
 # ..... Parameters ................................................................................................................
 # Define parameters here:
 # Time step for integration of continuous states (if a fixed-step integrator is used) and update of discrete states:
-typedef  ^                       ParameterType        DbKi     DT                -  -        -     "Time step for cont. state integration & disc. state update"   seconds
-typedef  ^                       ^                    ReKi     ReferenceHeight   -  -        -     "Height of the hub"                                            meters
-typedef  ^                       ^                    ReKi     Width             -  -        -     "Width of the wind field"                                      meters
-typedef  ^                       ^                    Logical  Linearize         -  .FALSE.  -     "If this is true, we are linearizing"                          -
+typedef  ^                       ParameterType           DbKi     DT                -     -     -     "Time step for cont. state integration & disc. state update"   seconds
+typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Height of the hub"                                            meters
+typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field"                                      meters
+typedef  ^                       ^                       Logical  Linearize         -  .FALSE.  -     "If this is true, we are linearizing"                          -
 
 
 

@@ -65,12 +65,12 @@ PROGRAM HHWind_Test
       ! setup the file info
    WindFileName      = "../../Samples/Steady.wnd"           ! HHWind file
 !   WindFileName      = "../../Samples/SampleCase/Sample1.hh"
-   HH_ParamData%ReferenceHeight = 80.                       ! meters
-   HH_ParamData%Width           = 100.                      ! meters
+   HH_InitData%ReferenceHeight = 80.                        ! meters
+   HH_InitData%Width           = 100.                       ! meters
 
    WindPosition(1)   = 0.0                                  ! longitudinal front/back of tower
    WindPosition(2)   = 0.0                                  ! lateral position left/right of tower
-   WindPosition(3)   = HH_ParamData%ReferenceHeight           ! Height above ground
+   WindPosition(3)   = HH_InitData%ReferenceHeight          ! Height above ground
 
       ! find a unit number to use, then check the errors
    CALL GetNewUnit(UnWind,ErrStat,ErrMsg)
@@ -94,7 +94,6 @@ PROGRAM HHWind_Test
                         HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
                         HH_OutData,    HH_Interval,                                       &
                         ErrStat, ErrMsg )
-
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
    ELSEIF ( ErrStat /= ErrID_None ) THEN

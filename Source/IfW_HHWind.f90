@@ -106,6 +106,14 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
 
 
    !-------------------------------------------------------------------------------------------------
+   ! Copy things from the InitData to the ParamData
+   !-------------------------------------------------------------------------------------------------
+
+   ParamData%ReferenceHeight  =  InitData%ReferenceHeight
+   ParamData%Width            =  InitData%Width
+!FIXME: add in any others that we need to keep around.
+
+   !-------------------------------------------------------------------------------------------------
    ! Open the file for reading
    !-------------------------------------------------------------------------------------------------
    CALL OpenFInpFile (UnWind, TRIM(WindFile), ErrStat, ErrMsg)
@@ -381,7 +389,6 @@ FUNCTION IfW_HHWind_GetWindSpeed(Time, InputPosition,                           
       ErrStat = 0
    END IF
 
-
    !-------------------------------------------------------------------------------------------------
    ! Linearly interpolate in time (or used nearest-neighbor to extrapolate)
    ! (compare with NWTC_Num.f90\InterpStpReal)
@@ -469,7 +476,6 @@ FUNCTION IfW_HHWind_GetWindSpeed(Time, InputPosition,                           
 
    CosDelta = COS( Delta_tmp )
    SinDelta = SIN( Delta_tmp )
-
    V1 = V_tmp * ( ( InputPosition(3)/OtherStates%RefHt ) ** VShr_tmp &                                  ! power-law wind shear
         + ( HShr_tmp   * ( InputPosition(2) * CosDelta + InputPosition(1) * SinDelta ) &    ! horizontal linear shear
         +  VLinShr_tmp * ( InputPosition(3)-OtherStates%RefHt ) )/OtherStates%RefWid  ) &                           ! vertical linear shear
