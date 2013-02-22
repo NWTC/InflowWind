@@ -40,8 +40,10 @@ LIB_DIR := \
 Executable_NAME := Wind_Test.lin32
 
 #Name of the registry file
+RegistryDIR := ..
 RegistryTXT := Reg-IfW_HHWind.txt
 RegistryF90	:= IfW_HHWind_Types.f90
+RegistryOBJ := $(RegistryF90:.f90=.o)
 
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../../Doxygen--documentation
@@ -70,40 +72,40 @@ IfW_Driver_DIR    := $(IfW_Test_DIR)
 #The source files for InflowWind
 InflowWind_SOURCES  :=           \
 	IfW_HHWind.f90                \
+   $(RegistryF90)                \
    SharedInflowDefs.f90          \
    InflowWind_Module_Types.f90
 
 
 #Testing sources
 IfW_Test_SOURCES  :=             \
-   IfW_HHWind_Test.f90           \
-   IfW_HHWind_Types.f90 
+   IfW_HHWind_Test.f90
 
 #Registry program
-RegistryProgram   := $(HOME)/software-development/modularization_registry/registry.exe
-RegistryNWTC      := $(HOME)/software-development/modularization_registry/Registry_NWTC_Library.txt
+RegistryProgram   := ../../../../../modularization_registry/registry.exe
+RegistryNWTC      := ../../../../../modularization_registry/Registry_NWTC_Library.txt
 ###########
 #### You should not need to change anything beyond this point
-vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(IfW_Test_DIR)
-vpath %.o $(DEST_DIR) $(LIB_DIR)
+#rule to do everything
+all:           default
+InflowWind:    clean default
+default:       $(RegistryF90) $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 LIB_OBJS          = $(LIB_SOURCES:.f90=.o)
 InflowWind_OBJS   = $(InflowWind_SOURCES:.f90=.o)
 IfW_Test_OBJS     = $(IfW_Test_SOURCES:.f90=.o)
 
-#rule to do everything
-all:           default
-InflowWind:    clean default
-default:       $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
+vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(IfW_Test_DIR)
+vpath %.o $(DEST_DIR) $(LIB_DIR)
 
 #general rule for making the files
 %.o: %.f90
 	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR) -J $(DEST_DIR)
 
 #specific rule for the registry file
-$(RegistryF90):   $(RegistryTXT)
-	$(RegistryProgram) $<
-
+$(RegistryF90):   $(RegistryDIR)/$(RegistryTXT)
+	$(RegistryProgram) $<;
+	mv $@ $(RegistryDIR);
 
 #Dependency rules
 SysGnuLinux.o:          SingPrec.o
@@ -137,8 +139,8 @@ $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(IfW_Test_OBJS) 
 #cleanup afterwards
 clean:
 	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_NAME);
-	rm -f $(RegistryF90);
-	rmdir $(DEST_DIR)
+	rmdir $(DEST_DIR);
+	rm -f $(RegistryDIR)/$(RegistryF90);
 
 #doxygen bits
 document: all

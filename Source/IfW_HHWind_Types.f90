@@ -43,10 +43,25 @@ IMPLICIT NONE
     REAL(ReKi)  :: DummyConstrState 
   END TYPE IfW_HHWind_ConstraintStateType
   TYPE, PUBLIC :: IfW_HHWind_OtherStateType
-    INTEGER(IntKi)  :: DummyOtherState 
+    INTEGER(IntKi)  :: TimeIndex = 0 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: TData 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: DELTA 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: V 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VZ 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: HSHR 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VSHR 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VLINSHR 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VGUST 
+    REAL(ReKi) , DIMENSION(1:7)  :: LinearizeDels 
+    REAL(ReKi)  :: RefHt 
+    REAL(ReKi)  :: RefWid 
+    INTEGER(IntKi)  :: NumDataLines 
   END TYPE IfW_HHWind_OtherStateType
   TYPE, PUBLIC :: IfW_HHWind_ParameterType
     REAL(DbKi)  :: DT 
+    REAL(ReKi)  :: ReferenceHeight 
+    REAL(ReKi)  :: Width 
+    LOGICAL  :: Linearize = .FALSE. 
   END TYPE IfW_HHWind_ParameterType
   TYPE, PUBLIC :: IfW_HHWind_InputType
     TYPE(MeshType)  :: MeshedInput 
@@ -487,7 +502,35 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  DstOtherStateData%DummyOtherState = SrcOtherStateData%DummyOtherState
+  DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
+  i1 = SIZE(SrcOtherStateData%TData,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%TData)) ALLOCATE(DstOtherStateData%TData(i1))
+  DstOtherStateData%TData = SrcOtherStateData%TData
+  i1 = SIZE(SrcOtherStateData%DELTA,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%DELTA)) ALLOCATE(DstOtherStateData%DELTA(i1))
+  DstOtherStateData%DELTA = SrcOtherStateData%DELTA
+  i1 = SIZE(SrcOtherStateData%V,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%V)) ALLOCATE(DstOtherStateData%V(i1))
+  DstOtherStateData%V = SrcOtherStateData%V
+  i1 = SIZE(SrcOtherStateData%VZ,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%VZ)) ALLOCATE(DstOtherStateData%VZ(i1))
+  DstOtherStateData%VZ = SrcOtherStateData%VZ
+  i1 = SIZE(SrcOtherStateData%HSHR,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%HSHR)) ALLOCATE(DstOtherStateData%HSHR(i1))
+  DstOtherStateData%HSHR = SrcOtherStateData%HSHR
+  i1 = SIZE(SrcOtherStateData%VSHR,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%VSHR)) ALLOCATE(DstOtherStateData%VSHR(i1))
+  DstOtherStateData%VSHR = SrcOtherStateData%VSHR
+  i1 = SIZE(SrcOtherStateData%VLINSHR,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%VLINSHR)) ALLOCATE(DstOtherStateData%VLINSHR(i1))
+  DstOtherStateData%VLINSHR = SrcOtherStateData%VLINSHR
+  i1 = SIZE(SrcOtherStateData%VGUST,1)
+  IF (.NOT.ALLOCATED(DstOtherStateData%VGUST)) ALLOCATE(DstOtherStateData%VGUST(i1))
+  DstOtherStateData%VGUST = SrcOtherStateData%VGUST
+  DstOtherStateData%LinearizeDels = SrcOtherStateData%LinearizeDels
+  DstOtherStateData%RefHt = SrcOtherStateData%RefHt
+  DstOtherStateData%RefWid = SrcOtherStateData%RefWid
+  DstOtherStateData%NumDataLines = SrcOtherStateData%NumDataLines
  END SUBROUTINE IfW_HHWind_CopyOtherState
 
  SUBROUTINE IfW_HHWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -498,6 +541,14 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+  IF ( ALLOCATED(OtherStateData%TData) ) DEALLOCATE(OtherStateData%TData)
+  IF ( ALLOCATED(OtherStateData%DELTA) ) DEALLOCATE(OtherStateData%DELTA)
+  IF ( ALLOCATED(OtherStateData%V) ) DEALLOCATE(OtherStateData%V)
+  IF ( ALLOCATED(OtherStateData%VZ) ) DEALLOCATE(OtherStateData%VZ)
+  IF ( ALLOCATED(OtherStateData%HSHR) ) DEALLOCATE(OtherStateData%HSHR)
+  IF ( ALLOCATED(OtherStateData%VSHR) ) DEALLOCATE(OtherStateData%VSHR)
+  IF ( ALLOCATED(OtherStateData%VLINSHR) ) DEALLOCATE(OtherStateData%VLINSHR)
+  IF ( ALLOCATED(OtherStateData%VGUST) ) DEALLOCATE(OtherStateData%VGUST)
  END SUBROUTINE IfW_HHWind_DestroyOtherState
 
  SUBROUTINE IfW_HHWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -534,11 +585,63 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Int_BufSz  = Int_BufSz  + 1  ! DummyOtherState
+  Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
+  Re_BufSz    = Re_BufSz    + SIZE( InData%TData )  ! TData 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%DELTA )  ! DELTA 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%V )  ! V 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%VZ )  ! VZ 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%HSHR )  ! HSHR 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%VSHR )  ! VSHR 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%VLINSHR )  ! VLINSHR 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%VGUST )  ! VGUST 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%LinearizeDels )  ! LinearizeDels 
+  Re_BufSz   = Re_BufSz   + 1  ! RefHt
+  Re_BufSz   = Re_BufSz   + 1  ! RefWid
+  Int_BufSz  = Int_BufSz  + 1  ! NumDataLines
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%DummyOtherState )
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%TimeIndex )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(InData%TData) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TData))-1 ) =  PACK(InData%TData ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%TData)
+  ENDIF
+  IF ( ALLOCATED(InData%DELTA) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DELTA))-1 ) =  PACK(InData%DELTA ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%DELTA)
+  ENDIF
+  IF ( ALLOCATED(InData%V) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%V))-1 ) =  PACK(InData%V ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%V)
+  ENDIF
+  IF ( ALLOCATED(InData%VZ) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VZ))-1 ) =  PACK(InData%VZ ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%VZ)
+  ENDIF
+  IF ( ALLOCATED(InData%HSHR) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%HSHR))-1 ) =  PACK(InData%HSHR ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%HSHR)
+  ENDIF
+  IF ( ALLOCATED(InData%VSHR) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VSHR))-1 ) =  PACK(InData%VSHR ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%VSHR)
+  ENDIF
+  IF ( ALLOCATED(InData%VLINSHR) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VLINSHR))-1 ) =  PACK(InData%VLINSHR ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%VLINSHR)
+  ENDIF
+  IF ( ALLOCATED(InData%VGUST) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VGUST))-1 ) =  PACK(InData%VGUST ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%VGUST)
+  ENDIF
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%LinearizeDels))-1 ) =  PACK(InData%LinearizeDels ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%LinearizeDels)
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefWid )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumDataLines )
   Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_HHWind_PackOtherState
 
@@ -575,7 +678,65 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  OutData%DummyOtherState = IntKiBuf ( Int_Xferred )
+  OutData%TimeIndex = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(OutData%TData) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%TData,1))); mask1 = .TRUE.
+    OutData%TData = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TData))-1 ),mask1,OutData%TData)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%TData)
+  ENDIF
+  IF ( ALLOCATED(OutData%DELTA) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%DELTA,1))); mask1 = .TRUE.
+    OutData%DELTA = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DELTA))-1 ),mask1,OutData%DELTA)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%DELTA)
+  ENDIF
+  IF ( ALLOCATED(OutData%V) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%V,1))); mask1 = .TRUE.
+    OutData%V = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%V))-1 ),mask1,OutData%V)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%V)
+  ENDIF
+  IF ( ALLOCATED(OutData%VZ) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%VZ,1))); mask1 = .TRUE.
+    OutData%VZ = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%VZ))-1 ),mask1,OutData%VZ)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%VZ)
+  ENDIF
+  IF ( ALLOCATED(OutData%HSHR) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%HSHR,1))); mask1 = .TRUE.
+    OutData%HSHR = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%HSHR))-1 ),mask1,OutData%HSHR)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%HSHR)
+  ENDIF
+  IF ( ALLOCATED(OutData%VSHR) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%VSHR,1))); mask1 = .TRUE.
+    OutData%VSHR = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%VSHR))-1 ),mask1,OutData%VSHR)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%VSHR)
+  ENDIF
+  IF ( ALLOCATED(OutData%VLINSHR) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%VLINSHR,1))); mask1 = .TRUE.
+    OutData%VLINSHR = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%VLINSHR))-1 ),mask1,OutData%VLINSHR)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%VLINSHR)
+  ENDIF
+  IF ( ALLOCATED(OutData%VGUST) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%VGUST,1))); mask1 = .TRUE.
+    OutData%VGUST = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%VGUST))-1 ),mask1,OutData%VGUST)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%VGUST)
+  ENDIF
+  ALLOCATE(mask1(SIZE(OutData%LinearizeDels,1))); mask1 = .TRUE.
+  OutData%LinearizeDels = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%LinearizeDels))-1 ),mask1,OutData%LinearizeDels)
+  DEALLOCATE(mask1)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%LinearizeDels)
+  OutData%RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%RefWid = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%NumDataLines = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
@@ -594,6 +755,9 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   DstParamData%DT = SrcParamData%DT
+  DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
+  DstParamData%Width = SrcParamData%Width
+  DstParamData%Linearize = SrcParamData%Linearize
  END SUBROUTINE IfW_HHWind_CopyParam
 
  SUBROUTINE IfW_HHWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -641,11 +805,17 @@ CONTAINS
   Db_BufSz  = 0
   Int_BufSz  = 0
   Db_BufSz   = Db_BufSz   + 1  ! DT
+  Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
+  Re_BufSz   = Re_BufSz   + 1  ! Width
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
   Db_Xferred   = Db_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
+  Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HHWind_PackParam
 
  SUBROUTINE IfW_HHWind_UnpackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -683,6 +853,10 @@ CONTAINS
   Int_BufSz  = 0
   OutData%DT = DbKiBuf ( Db_Xferred )
   Db_Xferred   = Db_Xferred   + 1
+  OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%Width = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
