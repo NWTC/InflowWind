@@ -31,27 +31,23 @@ MODULE IfW_HHWind
 
    PUBLIC                       :: IfW_HHWind_Init
    PUBLIC                       :: IfW_HHWind_End
-PUBLIC                       :: IfW_HHWind_GetWindSpeed        !FIXME: this is temporary
-! !   PUBLIC                       :: IfW_HHWind_SetLinearizeDels       !FIXME: make this private??? or remove it??? or does the outer part go into this module???
+   PUBLIC                       :: IfW_HHWind_CalcOutput
 
+! !   PUBLIC                       :: IfW_HHWind_SetLinearizeDels       !FIXME: make this private??? or remove it??? or does the outer part go into this module???
 ! !   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
 
 CONTAINS
+
 !====================================================================================================
-SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFile from here.
-                           InitData,   InputGuess, ParamData, &
-                           ContStates, DiscStates, ConstrState,      OtherStates, &
+
+SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
+                           ContStates, DiscStates, ConstrStates,     OtherStates,   &
                            OutData,    Interval,   ErrStat, ErrMsg)
 ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
 ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
 ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
 ! information is necessary because of the way the shears are defined.
 !----------------------------------------------------------------------------------------------------
-
-      ! Passed Variables: FIXME: remove these
-
-   INTEGER,       INTENT(IN)        :: UnWind                        ! unit number for reading wind files
-   CHARACTER(*),  INTENT(IN)        :: WindFile                      ! Name of the text HH wind file
 
 
       ! Passed Variables
@@ -60,7 +56,7 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
    TYPE(IfW_HHWind_ParameterType),        INTENT(  OUT)  :: ParamData         ! Parameters
    TYPE(IfW_HHWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates        ! Continuous States  (unused)
    TYPE(IfW_HHWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates        ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrState       ! Constraint States  (unused)
+   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates      ! Constraint States  (unused)
    TYPE(IfW_HHWind_OtherStateType),       INTENT(  OUT)  :: OtherStates       ! Other State data   (storage for the main data)
    TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData           ! Initial output
 
@@ -69,40 +65,55 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
 
 
       ! Error handling
-   INTEGER,                               INTENT(  OUT)  :: ErrStat           ! determines if an error has been encountered
+   INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat           ! determines if an error has been encountered
    CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg            ! A message about the error
 
       ! local variables
 
-   INTEGER,                   PARAMETER                  :: NumCols = 8       ! Number of columns in the HH file
+   INTEGER(IntKi),            PARAMETER                  :: NumCols = 8       ! Number of columns in the HH file
    REAL(ReKi)                                            :: TmpData(NumCols)  ! Temp variable for reading all columns from a line
    REAL(ReKi)                                            :: DelDiff           ! Temp variable for storing the direction difference
 
-   INTEGER                                               :: I
-   INTEGER                                               :: NumComments
-   INTEGER                                               :: ILine             ! Counts the line number in the file
-   INTEGER,                   PARAMETER                  :: MaxTries = 100
+   INTEGER(IntKi)                                        :: I
+   INTEGER(IntKi)                                        :: NumComments
+   INTEGER(IntKi)                                        :: ILine             ! Counts the line number in the file
+   INTEGER(IntKi),            PARAMETER                  :: MaxTries = 100
    CHARACTER(1024)                                       :: Line              ! Temp variable for reading whole line from file
 
       ! Temporary variables for error handling
-   INTEGER                                               :: TmpErrStat        ! Temp variable for the error status
+   INTEGER(IntKi)                                        :: TmpErrStat        ! Temp variable for the error status
    CHARACTER(1024)                                       :: TmpErrMsg         ! Temp variable for the error message
+
+
+   !-------------------------------------------------------------------------------------------------
+   ! Set a few temporary variables
+   !-------------------------------------------------------------------------------------------------
+   TmpErrStat  = ErrID_None
+   TmpErrMsg   = ""
 
 
    !-------------------------------------------------------------------------------------------------
    ! Check that it's not already initialized
    !-------------------------------------------------------------------------------------------------
-
    IF ( OtherStates%TimeIndex /= 0 ) THEN
-      CALL WrScr( ' HHWind has already been initialized.' )
-      ErrStat = ErrId_Warn
+      ErrMsg   = ' HHWind has already been initialized.'
+      ErrStat  = ErrId_Warn
       RETURN
    ELSE
       ErrStat = ErrId_None
 
-      OtherStates%LinearizeDels(:)   = 0.0
+      OtherStates%LinearizeDels(:)  = 0.0
       ParamData%Linearize           = .FALSE.
    END IF
+
+
+      ! Get a unit number to use
+   CALL GetNewUnit(OtherStates%UnitWind, TmpErrStat, TmpErrMsg)
+   IF ( TmpErrStat /= 0 ) THEN
+      ErrStat  = ErrID_Fatal
+      ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind: Could not assign a unitnumber for opening the Wind file."
+      RETURN
+   ENDIF
 
 
    !-------------------------------------------------------------------------------------------------
@@ -111,14 +122,19 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
 
    ParamData%ReferenceHeight  =  InitData%ReferenceHeight
    ParamData%Width            =  InitData%Width
-!FIXME: add in any others that we need to keep around.
+   ParamData%WindFile         =  InitData%WindFile
+
 
    !-------------------------------------------------------------------------------------------------
    ! Open the file for reading
    !-------------------------------------------------------------------------------------------------
-   CALL OpenFInpFile (UnWind, TRIM(WindFile), ErrStat, ErrMsg)
+   CALL OpenFInpFile (OtherStates%UnitWind, TRIM(InitData%WindFile), TmpErrStat, TmpErrMsg)
+   IF ( TmpErrStat >= ErrID_Severe ) THEN
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      RETURN
+   ENDIF
 
-   IF ( ErrStat /= 0 ) RETURN
 
    !-------------------------------------------------------------------------------------------------
    ! Find the number of comment lines
@@ -129,36 +145,40 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
    DO WHILE (INDEX( LINE, '!' ) > 0 ) ! Lines containing "!" are treated as comment lines
       NumComments = NumComments + 1
 
-      READ(UnWind,'( A )',IOSTAT=ErrStat) LINE
+      READ(OtherStates%UnitWind,'( A )',IOSTAT=TmpErrStat) LINE
 
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr ( ' Error reading from HH wind file on line '//TRIM(Num2LStr(NumComments))//'.' )
+      IF ( TmpErrStat /=0 ) THEN
+         ErrMsg   = TRIM(ErrMsg)//NewLine//' Error reading from HH wind file on line '//TRIM(Num2LStr(NumComments))//'.'
+         ErrStat  = ErrID_Fatal
          RETURN
       END IF
 
    END DO !WHILE
+
 
    !-------------------------------------------------------------------------------------------------
    ! Find the number of data lines
    !-------------------------------------------------------------------------------------------------
    OtherStates%NumDataLines = 0
 
-   READ(LINE,*,IOSTAT=ErrStat) ( TmpData(I), I=1,NumCols )
+   READ(LINE,*,IOSTAT=TmpErrStat) ( TmpData(I), I=1,NumCols )
 
-   DO WHILE (ErrStat == 0)  ! read the rest of the file (until an error occurs)
+   DO WHILE (TmpErrStat == ErrID_None)  ! read the rest of the file (until an error occurs)
       OtherStates%NumDataLines = OtherStates%NumDataLines + 1
 
-      READ(UnWind,*,IOSTAT=ErrStat) ( TmpData(I), I=1,NumCols )
+      READ(OtherStates%UnitWind,*,IOSTAT=TmpErrStat) ( TmpData(I), I=1,NumCols )
 
    END DO !WHILE
 
 
    IF (OtherStates%NumDataLines < 1) THEN
-      CALL WrScr ( ' Error reading data from HH wind file on line '//TRIM(Num2LStr(OtherStates%NumDataLines+NumComments))//'.' )
+      ErrMsg   = TRIM(ErrMsg)//NewLine//' Error reading data from HH wind file on line '// &
+                  TRIM(Num2LStr(OtherStates%NumDataLines+NumComments))//'.'
+      ErrStat  = ErrID_Fatal
       RETURN
    ELSE
-      CALL WrScr ( ' Reading '//TRIM(Num2LStr(OtherStates%NumDataLines))//' lines of data from the HH wind file "'// &
-                     TRIM(WindFile)//'"' )
+      ErrMsg   =  TRIM(ErrMsg)//NewLine//' Reading '//TRIM(Num2LStr(OtherStates%NumDataLines))// &
+                     ' lines of data from the HH wind file "'//TRIM(InitData%WindFile)//'"'
    END IF
 
 
@@ -170,78 +190,72 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
    !-------------------------------------------------------------------------------------------------
 
    IF (.NOT. ALLOCATED(OtherStates%Tdata) ) THEN
-      ALLOCATE ( OtherStates%Tdata(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH time array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%Tdata, OtherStates%NumDataLines, 'HH time', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%V) ) THEN
-      ALLOCATE ( OtherStates%V(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH horizontal wind speed array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%V, OtherStates%NumDataLines, 'HH horizontal wind speed', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%Delta) ) THEN
-      ALLOCATE ( OtherStates%Delta(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH wind direction array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%Delta, OtherStates%NumDataLines, 'HH wind direction', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VZ) ) THEN
-      ALLOCATE ( OtherStates%VZ(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH vertical wind speed array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%VZ, OtherStates%NumDataLines, 'HH vertical wind speed', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%HShr) ) THEN
-      ALLOCATE ( OtherStates%HShr(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH horizontal linear shear array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%HShr, OtherStates%NumDataLines, 'HH horizontal linear shear', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VShr) ) THEN
-      ALLOCATE ( OtherStates%VShr(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH vertical power-law shear exponent array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%VShr, OtherStates%NumDataLines, 'HH vertical power-law shear exponent', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VLinShr) ) THEN
-      ALLOCATE ( OtherStates%VLinShr(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH vertical linear shear array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%VLinShr, OtherStates%NumDataLines, 'HH vertical linear shear', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VGust) ) THEN
-      ALLOCATE ( OtherStates%VGust(OtherStates%NumDataLines) , STAT=ErrStat )
-      IF ( ErrStat /=0 ) THEN
-         CALL WrScr( 'Error allocating memory for the HH gust velocity array.' )
-         RETURN
-      END IF
+      CALL AllocAry( OtherStates%VGust, OtherStates%NumDataLines, 'HH gust velocity', TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END IF
 
 
    !-------------------------------------------------------------------------------------------------
    ! Rewind the file (to the beginning) and skip the comment lines
    !-------------------------------------------------------------------------------------------------
-   REWIND( UnWind )
+   REWIND( OtherStates%UnitWind )
 
    DO I=1,NumComments
-      CALL ReadCom( UnWind, TRIM(WindFile), 'Header line #'//TRIM(Num2LStr(I)), ErrStat )
-      IF ( ErrStat /= 0 ) RETURN
+      CALL ReadCom( OtherStates%UnitWind, TRIM(InitData%WindFile), 'Header line #'//TRIM(Num2LStr(I)), TmpErrStat, TmpErrMsg )
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= ErrID_Severe ) RETURN
    END DO !I
 
 
@@ -251,9 +265,12 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
 
    DO I=1,OtherStates%NumDataLines
 
-      CALL ReadAry( UnWind, TRIM(WindFile), TmpData(1:NumCols), NumCols, 'TmpData', &
-                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), ErrStat )
-      IF (ErrStat /= 0) RETURN
+      CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFile), TmpData(1:NumCols), NumCols, 'TmpData', &
+                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat ) !, TmpErrMsg)  FIXME: add error handling when available
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine// &  !FIXME: TRIM(TmpErrMsg)
+         'Error retrieving data from the HH line'//TRIM(Num2LStr(NumComments+I))
+      IF ( ErrStat >= ErrID_Severe ) RETURN
 
       OtherStates%Tdata(  I) = TmpData(1)
       OtherStates%V(      I) = TmpData(2)
@@ -289,10 +306,10 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
       END DO
 
       IF ( ILine >= MaxTries ) THEN
-         CALL WrScr( ' Error calculating wind direction from HH file. OtherStates%Delta(' &
+         ErrMsg   = TRIM(ErrMsg)//NewLine//' Error calculating wind direction from HH file. OtherStates%Delta(' &
                // TRIM(Num2LStr(I  )) // ') = ' // TRIM(Num2LStr(OtherStates%Delta(I))) // '; OtherStates%Delta(' &
-               // TRIM(Num2LStr(I+1)) // ') = ' // TRIM(Num2LStr(OtherStates%Delta(I+1))) )
-         ErrStat = 1
+               // TRIM(Num2LStr(I+1)) // ') = ' // TRIM(Num2LStr(OtherStates%Delta(I+1)))
+         ErrStat  = ErrID_Fatal
       END IF
 
 
@@ -303,7 +320,7 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
    ! Close the file
    !-------------------------------------------------------------------------------------------------
 
-   CLOSE( UnWind )
+   CLOSE( OtherStates%UnitWind )
 
 
    !-------------------------------------------------------------------------------------------------
@@ -313,13 +330,15 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
 
 
    IF ( OtherStates%Tdata(1) > 0.0 ) THEN
-      CALL ProgWarn( 'The hub-height wind file : "'//TRIM(ADJUSTL(WindFile))//'" starts at a time '// &
-                     'greater than zero. Interpolation errors may result.')
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'The hub-height wind file : "'//TRIM(ADJUSTL(InitData%WindFile))//'" starts at a time '// &
+                     'greater than zero. Interpolation errors may result.'
+      ErrStat  = MAX(ErrStat, ErrID_Warn)
    ENDIF
 
    IF ( OtherStates%NumDataLines == 1 ) THEN
-      CALL WrScr( ' Only 1 line in HH wind file. Steady, hub-height horizontal wind speed = '// &
-                  TRIM(Num2LStr(OtherStates%V(1)))//' m/s.' )
+      ErrMsg   = TRIM(ErrMsg)//NewLine//' Only 1 line in HH wind file. Steady, hub-height horizontal wind speed = '// &
+                  TRIM(Num2LStr(OtherStates%V(1)))//' m/s.'
+      ErrStat  = MAX(ErrStat, ErrID_Info)
    END IF
 
 
@@ -336,212 +355,313 @@ SUBROUTINE IfW_HHWind_Init(UnWind, WindFile, &  !FIXME: remove UnWind and WindFi
    RETURN
 
 END SUBROUTINE IfW_HHWind_Init
+
 !====================================================================================================
-FUNCTION IfW_HHWind_GetWindSpeed(Time, InputPosition,                            &
-                           InData,     ParamData,                                &
-                           ContStates, DiscStates, ConstrState,   OtherStates,   &
-                           OutData,    ErrStat,    ErrMsg)
-! This subroutine linearly interpolates the columns in the HH input file to get the values for
-! the requested time, then uses the interpolated values to calclate the wind speed at a point
-! in space represented by InputPosition.
-!----------------------------------------------------------------------------------------------------
+
+SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
+                           ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
+                           OutData,       ErrStat,       ErrMsg)
 
       ! Passed Variables
-   TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: InData         ! Initialized input data variable
+   REAL(DbKi),                            INTENT(IN   )  :: Time           ! time from the start of the simulation
+   TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
    TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
-   TYPE(IfW_HHWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrState    ! Constraint States  (unused)
+   TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
    TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
    TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
 
+      ! Error handling
+   INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat        ! error status
+   CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg         ! The error message
 
-   REAL(DbKi),          INTENT(IN)  :: Time                 ! time from the start of the simulation
-   REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z
-   INTEGER,             INTENT(OUT) :: ErrStat              ! error status
-   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
-!FIXME: make this go away when convert to subroutine
-   REAL(ReKi)                       :: IfW_HHwind_GetWindSpeed(3)   ! return velocities (U,V,W)
 
-   REAL(ReKi)                       :: CosDelta             ! cosine of Delta_tmp
-   REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
-   REAL(ReKi)                       :: HShr_tmp             ! interpolated HShr    at input TIME
-   REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
-   REAL(ReKi)                       :: SinDelta             ! sine of Delta_tmp
-   REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
-   REAL(ReKi)                       :: VGust_tmp            ! interpolated VGust   at input TIME
-   REAL(ReKi)                       :: VLinShr_tmp          ! interpolated VLinShr at input TIME
-   REAL(ReKi)                       :: VShr_tmp             ! interpolated VShr    at input TIME
-   REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
-   REAL(ReKi)                       :: V1                   ! temporary storage for horizontal velocity
+      ! local variables
+   INTEGER(IntKi)                                        :: NumPoints      ! Number of points specified by the InData%Position array
+
+      ! local counters
+   INTEGER(IntKi)                                        :: PointNum       ! a loop counter for the current point
+
+      ! temporary variables
+   INTEGER(IntKi)                                        :: TmpErrStat     ! temporary error status
+   CHARACTER(1024)                                       :: TmpErrMsg      ! temporary error message
 
 
 
    !-------------------------------------------------------------------------------------------------
-   ! verify the module was initialized first
+   ! Initialize some things
    !-------------------------------------------------------------------------------------------------
 
-   IF ( OtherStates%TimeIndex == 0 ) THEN
-      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
-      ErrStat  = ErrID_Fatal         ! Fatal since no data returned
+   TmpErrStat  = ErrID_None
+   TmpErrMsg   = ""
+   NumPoints   =  SIZE(InData%Position,1)
+
+
+      ! Allocate Velocity output array
+   CALL AllocAry( OutData%Velocity, NumPoints, 3,  "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
+   IF ( TmpErrStat >= ErrID_Severe ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Could not allocate the output velocity array."
       RETURN
-   ELSE
-      ErrStat = 0
-   END IF
-
-   !-------------------------------------------------------------------------------------------------
-   ! Linearly interpolate in time (or used nearest-neighbor to extrapolate)
-   ! (compare with NWTC_Num.f90\InterpStpReal)
-   !-------------------------------------------------------------------------------------------------
-
-    IF ( ParamData%Linearize ) THEN  !get the perturbed wind speed
-
-      OtherStates%TimeIndex      = 1
-      V_tmp         = OtherStates%V      (1) + OtherStates%LinearizeDels(1)
-      Delta_tmp     = OtherStates%Delta  (1) + OtherStates%LinearizeDels(2)
-      VZ_tmp        = OtherStates%VZ     (1) + OtherStates%LinearizeDels(3)
-      HShr_tmp      = OtherStates%HShr   (1) + OtherStates%LinearizeDels(4)
-      VShr_tmp      = OtherStates%VShr   (1) + OtherStates%LinearizeDels(5)
-      VLinShr_tmp   = OtherStates%VLinShr(1) + OtherStates%LinearizeDels(6)
-      VGust_tmp     = OtherStates%VGust  (1) + OtherStates%LinearizeDels(7)
-
-      ! Let's check the limits.
-   ELSE IF ( Time <= OtherStates%Tdata(1) .OR. OtherStates%NumDataLines == 1 )  THEN
-
-      OtherStates%TimeIndex      = 1
-      V_tmp         = OtherStates%V      (1)
-      Delta_tmp     = OtherStates%Delta  (1)
-      VZ_tmp        = OtherStates%VZ     (1)
-      HShr_tmp      = OtherStates%HShr   (1)
-      VShr_tmp      = OtherStates%VShr   (1)
-      VLinShr_tmp   = OtherStates%VLinShr(1)
-      VGust_tmp     = OtherStates%VGust  (1)
-
-   ELSE IF ( Time >= OtherStates%Tdata(OtherStates%NumDataLines) )  THEN
-
-      OtherStates%TimeIndex      = OtherStates%NumDataLines - 1
-      V_tmp         = OtherStates%V      (OtherStates%NumDataLines)
-      Delta_tmp     = OtherStates%Delta  (OtherStates%NumDataLines)
-      VZ_tmp        = OtherStates%VZ     (OtherStates%NumDataLines)
-      HShr_tmp      = OtherStates%HShr   (OtherStates%NumDataLines)
-      VShr_tmp      = OtherStates%VShr   (OtherStates%NumDataLines)
-      VLinShr_tmp   = OtherStates%VLinShr(OtherStates%NumDataLines)
-      VGust_tmp     = OtherStates%VGust  (OtherStates%NumDataLines)
-
-   ELSE
-
-         ! Let's interpolate!
-
-      OtherStates%TimeIndex = MAX( MIN( OtherStates%TimeIndex, OtherStates%NumDataLines-1 ), 1 )
-
-      DO
-
-         IF ( Time < OtherStates%Tdata(OtherStates%TimeIndex) )  THEN
-
-            OtherStates%TimeIndex = OtherStates%TimeIndex - 1
-
-         ELSE IF ( Time >= OtherStates%Tdata(OtherStates%TimeIndex+1) )  THEN
-
-            OtherStates%TimeIndex = OtherStates%TimeIndex + 1
-
-         ELSE
-            P           = ( Time - OtherStates%Tdata(OtherStates%TimeIndex) )/( OtherStates%Tdata(OtherStates%TimeIndex+1) &
-                           - OtherStates%Tdata(OtherStates%TimeIndex) )
-            V_tmp       = ( OtherStates%V(      OtherStates%TimeIndex+1) - OtherStates%V(      OtherStates%TimeIndex) )*P  &
-                           + OtherStates%V(      OtherStates%TimeIndex)
-            Delta_tmp   = ( OtherStates%Delta(  OtherStates%TimeIndex+1) - OtherStates%Delta(  OtherStates%TimeIndex) )*P  &
-                           + OtherStates%Delta(  OtherStates%TimeIndex)
-            VZ_tmp      = ( OtherStates%VZ(     OtherStates%TimeIndex+1) - OtherStates%VZ(     OtherStates%TimeIndex) )*P  &
-                           + OtherStates%VZ(     OtherStates%TimeIndex)
-            HShr_tmp    = ( OtherStates%HShr(   OtherStates%TimeIndex+1) - OtherStates%HShr(   OtherStates%TimeIndex) )*P  &
-                           + OtherStates%HShr(   OtherStates%TimeIndex)
-            VShr_tmp    = ( OtherStates%VShr(   OtherStates%TimeIndex+1) - OtherStates%VShr(   OtherStates%TimeIndex) )*P  &
-                           + OtherStates%VShr(   OtherStates%TimeIndex)
-            VLinShr_tmp = ( OtherStates%VLinShr(OtherStates%TimeIndex+1) - OtherStates%VLinShr(OtherStates%TimeIndex) )*P  &
-                           + OtherStates%VLinShr(OtherStates%TimeIndex)
-            VGust_tmp   = ( OtherStates%VGust(  OtherStates%TimeIndex+1) - OtherStates%VGust(  OtherStates%TimeIndex) )*P  &
-                           + OtherStates%VGust(  OtherStates%TimeIndex)
-            EXIT
-
-         END IF
-
-      END DO
-
-   END IF
+   ENDIF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! calculate the wind speed at this time
-   !-------------------------------------------------------------------------------------------------
+      ! Step through all the positions and get the velocities
+   DO PointNum = 1, NumPoints
 
-   CosDelta = COS( Delta_tmp )
-   SinDelta = SIN( Delta_tmp )
-   V1 = V_tmp * ( ( InputPosition(3)/OtherStates%RefHt ) ** VShr_tmp &                                  ! power-law wind shear
-        + ( HShr_tmp   * ( InputPosition(2) * CosDelta + InputPosition(1) * SinDelta ) &    ! horizontal linear shear
-        +  VLinShr_tmp * ( InputPosition(3)-OtherStates%RefHt ) )/OtherStates%RefWid  ) &                           ! vertical linear shear
-        + VGust_tmp                                                                         ! gust speed
-   IfW_HHWind_GetWindSpeed(1) =  V1 * CosDelta
-   IfW_HHWind_GetWindSpeed(2) = -V1 * SinDelta
-   IfW_HHWind_GetWindSpeed(3) =  VZ_tmp
+         ! Calculate the velocity for the position
+      OutData%Velocity(PointNum,:) = GetWindSpeed(Time, InData%Position(PointNum,:), ParamData, OtherStates, TmpErrStat, TmpErrMsg)
+
+         ! Error handling
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)    ! This might be redundant given the next line (depends on what GetWindSpeed returns for TmpErrMsg).
+      IF (ErrStat >= ErrID_Severe) THEN
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Error calculating the wind speed at position ("//   &
+                     TRIM(Num2LStr(InData%Position(PointNum,1)))//", "// &
+                     TRIM(Num2LStr(InData%Position(PointNum,2)))//", "// &
+                     TRIM(Num2LStr(InData%Position(PointNum,3)))//")"
+         RETURN
+      ENDIF
+
+   ENDDO
 
 
    RETURN
 
-END FUNCTION IfW_HHWind_GetWindSpeed
+CONTAINS
+   !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+   FUNCTION GetWindSpeed(Time,   InputPosition,   ParamData,     OtherStates,   ErrStat, ErrMsg)
+   ! This subroutine linearly interpolates the columns in the HH input file to get the values for
+   ! the requested time, then uses the interpolated values to calclate the wind speed at a point
+   ! in space represented by InputPosition.
+   !----------------------------------------------------------------------------------------------------
+
+         ! Passed Variables
+      REAL(DbKi),                            INTENT(IN   )  :: Time              ! time from the start of the simulation
+      REAL(ReKi),                            INTENT(IN   )  :: InputPosition(3)  ! input information: positions X,Y,Z
+      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: ParamData         ! Parameters
+      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates       ! Other State data   (storage for the main data)
+
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat           ! error status
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg            ! The error message
+
+         ! Returned variables
+      REAL(ReKi)                                            :: GetWindSpeed(3)   ! return velocities (U,V,W)
+
+
+         ! Local Variables
+      REAL(ReKi)                       :: CosDelta             ! cosine of Delta_tmp
+      REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
+      REAL(ReKi)                       :: HShr_tmp             ! interpolated HShr    at input TIME
+      REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
+      REAL(ReKi)                       :: SinDelta             ! sine of Delta_tmp
+      REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
+      REAL(ReKi)                       :: VGust_tmp            ! interpolated VGust   at input TIME
+      REAL(ReKi)                       :: VLinShr_tmp          ! interpolated VLinShr at input TIME
+      REAL(ReKi)                       :: VShr_tmp             ! interpolated VShr    at input TIME
+      REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
+      REAL(ReKi)                       :: V1                   ! temporary storage for horizontal velocity
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! verify the module was initialized first
+      !-------------------------------------------------------------------------------------------------
+
+      IF ( OtherStates%TimeIndex == 0 ) THEN
+         ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+         ErrStat  = ErrID_Fatal         ! Fatal since no data returned
+         RETURN
+      ELSE
+         ErrStat = ErrID_None
+      END IF
+
+      !-------------------------------------------------------------------------------------------------
+      ! Linearly interpolate in time (or used nearest-neighbor to extrapolate)
+      ! (compare with NWTC_Num.f90\InterpStpReal)
+      !-------------------------------------------------------------------------------------------------
+
+       IF ( ParamData%Linearize ) THEN  !get the perturbed wind speed
+
+         OtherStates%TimeIndex      = 1
+         V_tmp         = OtherStates%V      (1) + OtherStates%LinearizeDels(1)
+         Delta_tmp     = OtherStates%Delta  (1) + OtherStates%LinearizeDels(2)
+         VZ_tmp        = OtherStates%VZ     (1) + OtherStates%LinearizeDels(3)
+         HShr_tmp      = OtherStates%HShr   (1) + OtherStates%LinearizeDels(4)
+         VShr_tmp      = OtherStates%VShr   (1) + OtherStates%LinearizeDels(5)
+         VLinShr_tmp   = OtherStates%VLinShr(1) + OtherStates%LinearizeDels(6)
+         VGust_tmp     = OtherStates%VGust  (1) + OtherStates%LinearizeDels(7)
+
+         ! Let's check the limits.
+      ELSE IF ( Time <= OtherStates%Tdata(1) .OR. OtherStates%NumDataLines == 1 )  THEN
+
+         OtherStates%TimeIndex      = 1
+         V_tmp         = OtherStates%V      (1)
+         Delta_tmp     = OtherStates%Delta  (1)
+         VZ_tmp        = OtherStates%VZ     (1)
+         HShr_tmp      = OtherStates%HShr   (1)
+         VShr_tmp      = OtherStates%VShr   (1)
+         VLinShr_tmp   = OtherStates%VLinShr(1)
+         VGust_tmp     = OtherStates%VGust  (1)
+
+      ELSE IF ( Time >= OtherStates%Tdata(OtherStates%NumDataLines) )  THEN
+
+         OtherStates%TimeIndex      = OtherStates%NumDataLines - 1
+         V_tmp         = OtherStates%V      (OtherStates%NumDataLines)
+         Delta_tmp     = OtherStates%Delta  (OtherStates%NumDataLines)
+         VZ_tmp        = OtherStates%VZ     (OtherStates%NumDataLines)
+         HShr_tmp      = OtherStates%HShr   (OtherStates%NumDataLines)
+         VShr_tmp      = OtherStates%VShr   (OtherStates%NumDataLines)
+         VLinShr_tmp   = OtherStates%VLinShr(OtherStates%NumDataLines)
+         VGust_tmp     = OtherStates%VGust  (OtherStates%NumDataLines)
+
+      ELSE
+
+            ! Let's interpolate!
+
+         OtherStates%TimeIndex = MAX( MIN( OtherStates%TimeIndex, OtherStates%NumDataLines-1 ), 1 )
+
+         DO
+
+            IF ( Time < OtherStates%Tdata(OtherStates%TimeIndex) )  THEN
+
+               OtherStates%TimeIndex = OtherStates%TimeIndex - 1
+
+            ELSE IF ( Time >= OtherStates%Tdata(OtherStates%TimeIndex+1) )  THEN
+
+               OtherStates%TimeIndex = OtherStates%TimeIndex + 1
+
+            ELSE
+               P           = ( Time - OtherStates%Tdata(OtherStates%TimeIndex) )/( OtherStates%Tdata(OtherStates%TimeIndex+1) &
+                              - OtherStates%Tdata(OtherStates%TimeIndex) )
+               V_tmp       = ( OtherStates%V(      OtherStates%TimeIndex+1) - OtherStates%V(      OtherStates%TimeIndex) )*P  &
+                              + OtherStates%V(      OtherStates%TimeIndex)
+               Delta_tmp   = ( OtherStates%Delta(  OtherStates%TimeIndex+1) - OtherStates%Delta(  OtherStates%TimeIndex) )*P  &
+                              + OtherStates%Delta(  OtherStates%TimeIndex)
+               VZ_tmp      = ( OtherStates%VZ(     OtherStates%TimeIndex+1) - OtherStates%VZ(     OtherStates%TimeIndex) )*P  &
+                              + OtherStates%VZ(     OtherStates%TimeIndex)
+               HShr_tmp    = ( OtherStates%HShr(   OtherStates%TimeIndex+1) - OtherStates%HShr(   OtherStates%TimeIndex) )*P  &
+                              + OtherStates%HShr(   OtherStates%TimeIndex)
+               VShr_tmp    = ( OtherStates%VShr(   OtherStates%TimeIndex+1) - OtherStates%VShr(   OtherStates%TimeIndex) )*P  &
+                              + OtherStates%VShr(   OtherStates%TimeIndex)
+               VLinShr_tmp = ( OtherStates%VLinShr(OtherStates%TimeIndex+1) - OtherStates%VLinShr(OtherStates%TimeIndex) )*P  &
+                              + OtherStates%VLinShr(OtherStates%TimeIndex)
+               VGust_tmp   = ( OtherStates%VGust(  OtherStates%TimeIndex+1) - OtherStates%VGust(  OtherStates%TimeIndex) )*P  &
+                              + OtherStates%VGust(  OtherStates%TimeIndex)
+               EXIT
+
+            END IF
+
+         END DO
+
+      END IF
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! calculate the wind speed at this time
+      !-------------------------------------------------------------------------------------------------
+
+      CosDelta = COS( Delta_tmp )
+      SinDelta = SIN( Delta_tmp )
+      V1 = V_tmp * ( ( InputPosition(3)/OtherStates%RefHt ) ** VShr_tmp &                                  ! power-law wind shear
+           + ( HShr_tmp   * ( InputPosition(2) * CosDelta + InputPosition(1) * SinDelta ) &    ! horizontal linear shear
+           +  VLinShr_tmp * ( InputPosition(3)-OtherStates%RefHt ) )/OtherStates%RefWid  ) &                           ! vertical linear shear
+           + VGust_tmp                                                                         ! gust speed
+      GetWindSpeed(1) =  V1 * CosDelta
+      GetWindSpeed(2) = -V1 * SinDelta
+      GetWindSpeed(3) =  VZ_tmp
+
+      RETURN
+
+   END FUNCTION GetWindSpeed
+
+END SUBROUTINE IfW_HHWind_CalcOutput
+
 !====================================================================================================
+
 SUBROUTINE IfW_HHWind_End( InData,     ParamData,                                &
-                           ContStates, DiscStates, ConstrState,   OtherStates,   &
+                           ContStates, DiscStates, ConstrStates,  OtherStates,   &
                            OutData,                                              &
                            ErrStat,    ErrMsg)
+
 
       ! Passed Variables
    TYPE(IfW_HHWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
    TYPE(IfW_HHWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
    TYPE(IfW_HHWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
    TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrState    ! Constraint States  (unused)
+   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
    TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
    TYPE(IfW_HHWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
 
 
       ! Error Handling
-   INTEGER,                               INTENT(OUT)    :: ErrStat        ! determines if an error has been encountered
+   INTEGER(IntKi),                        INTENT(OUT)    :: ErrStat        ! determines if an error has been encountered
    CHARACTER(1024),                       INTENT(OUT)    :: ErrMsg         ! Message about errors
 
 
       ! Local Variables
-   INTEGER                          :: SumErrs  !FIXME: this is depricated!!!!
+   INTEGER(IntKi)                                        :: TmpErrStat     ! temporary error status
+   CHARACTER(1024)                                       :: TmpErrMsg      ! temporary error message
 
 
       !-=- Initialize the routine -=-
 
-   SumErrs = 0
+   ErrMsg   = ''
+   ErrStat  = ErrID_None
 
-   IF ( ALLOCATED(OtherStates%Tdata  ) ) DEALLOCATE( OtherStates%Tdata,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
 
-   IF ( ALLOCATED(OtherStates%Delta  ) ) DEALLOCATE( OtherStates%Delta,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+      ! Deallocate all arrays
 
-   IF ( ALLOCATED(OtherStates%V      ) ) DEALLOCATE( OtherStates%V,       STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%Tdata  ) ) DEALLOCATE( OtherStates%Tdata,   STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate Tdata array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   IF ( ALLOCATED(OtherStates%VZ     ) ) DEALLOCATE( OtherStates%VZ,      STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%Delta  ) ) DEALLOCATE( OtherStates%Delta,   STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate Delta array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   IF ( ALLOCATED(OtherStates%HShr   ) ) DEALLOCATE( OtherStates%HShr,    STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%V      ) ) DEALLOCATE( OtherStates%V,       STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate V array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   IF ( ALLOCATED(OtherStates%VShr   ) ) DEALLOCATE( OtherStates%VShr,    STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%VZ     ) ) DEALLOCATE( OtherStates%VZ,      STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VZ array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   IF ( ALLOCATED(OtherStates%VLinShr) ) DEALLOCATE( OtherStates%VLinShr, STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%HShr   ) ) DEALLOCATE( OtherStates%HShr,    STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate HShr array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   IF ( ALLOCATED(OtherStates%VGust  ) ) DEALLOCATE( OtherStates%VGust,   STAT=ErrStat )
-   SumErrs = SumErrs + ABS(ErrStat)
+   IF ( ALLOCATED(OtherStates%VShr   ) ) DEALLOCATE( OtherStates%VShr,    STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VShr array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
 
-   ErrStat  = SumErrs
+   IF ( ALLOCATED(OtherStates%VLinShr) ) DEALLOCATE( OtherStates%VLinShr, STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VLinShr array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
+
+   IF ( ALLOCATED(OtherStates%VGust  ) ) DEALLOCATE( OtherStates%VGust,   STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VGust array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
+
+
+      ! reset time index so we know the module is no longer initialized
    OtherStates%TimeIndex = 0
 
 END SUBROUTINE IfW_HHWind_End
@@ -560,7 +680,7 @@ END SUBROUTINE IfW_HHWind_End
 !
 !   REAL(ReKi),          INTENT(IN)  :: Time                 ! time from the start of the simulation
 !   REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z   -   NOT USED HERE!!!
-!   INTEGER,             INTENT(OUT) :: ErrStat              ! error status
+!   INTEGER(IntKi),      INTENT(OUT) :: ErrStat              ! error status
 !   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
 !   REAL(ReKi)                       :: HH_Get_ADHack_WindSpeed(3)      ! return velocities (U,V,W)
 !
@@ -652,33 +772,33 @@ END SUBROUTINE IfW_HHWind_End
 !====================================================================================================
 !====================================================================================================
 !====================================================================================================
-! !!MOVED FROM ABOVE:
-! !!----------------------------------------------------------------------------------------------------
-! !!FIXME: might need to move this into states???
-! !SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
-! !! This subroutine sets the perturbation values for the linearization scheme.
-! !
-! !   REAL(ReKi),          INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
-! !   INTEGER,             INTENT(OUT) :: ErrStat              ! time from the start of the simulation
-! !   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! Error Message
-! !
-! !   !-------------------------------------------------------------------------------------------------
-! !   ! verify the module was initialized first
-! !   !-------------------------------------------------------------------------------------------------
-! !
-! !   IF ( TimeIndex == 0 ) THEN
-! !      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
-! !      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
-! !      RETURN
-! !   ELSE
-! !      ErrStat = 0
-! !   END IF
-! !
-! !   ParamData%Linearize = .TRUE.
-! !   OtherStates%LinearizeDels(:) = Perturbations(:)
-! !
-! !   RETURN
-! !
-! !END SUBROUTINE IfW_HHWind_SetLinearizeDels
-! !!====================================================================================================
+!!MOVED FROM ABOVE:
+!!----------------------------------------------------------------------------------------------------
+!!FIXME: might need to move this into states???
+!SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
+!! This subroutine sets the perturbation values for the linearization scheme.
+!
+!   REAL(ReKi),          INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
+!   INTEGER(IntKi),      INTENT(OUT) :: ErrStat              ! time from the start of the simulation
+!   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! Error Message
+!
+!   !-------------------------------------------------------------------------------------------------
+!   ! verify the module was initialized first
+!   !-------------------------------------------------------------------------------------------------
+!
+!   IF ( TimeIndex == 0 ) THEN
+!      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+!      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
+!      RETURN
+!   ELSE
+!      ErrStat = 0
+!   END IF
+!
+!   ParamData%Linearize = .TRUE.
+!   OtherStates%LinearizeDels(:) = Perturbations(:)
+!
+!   RETURN
+!
+!END SUBROUTINE IfW_HHWind_SetLinearizeDels
+!!====================================================================================================
 END MODULE IfW_HHWind

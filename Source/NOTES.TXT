@@ -8,10 +8,31 @@ After talking with Bonnie, we will not do reallocation of arrays within the IfW_
 
 
 
-2013.02.05t
 New plan:
-  -- convert HHWind to framework
-  -- HHWind test routine (get TurbSim sorted out so I can generate files)
-  -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
-  -- Make the Driver work with paraprint
-  -- Setup regression test with HHWind
+   +  convert HHWind to framework -- some bits remaining in the first three routines.
+   +  HHWind test routine (get TurbSim sorted out so I can generate files)
+   -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
+   -- Make the Driver work with paraprint
+   -- Setup regression test with HHWind
+   -- do the other modules
+   -- merge all the wind file types together (if possible)
+   -- write documentation on use
+
+
+Things to remember to change:
+   -- UnWind -> UnitWind --> get this during init (stored in OtherStates)
+
+
+TODO:
+   -  Add information in the Parameters about how many time steps there are, bounds on time
+   -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
+
+COMPLETED:
+IfW_HHWind.f90
+   +  properly allocate array for the output
+   +  step through all points
+   +  Err handling in CalcOutput
+   +  Err handling in the GetWindSpeed function (upgrade to use ErrID levels etc)
+   +  Err handling in Init
+   +  Err handling in End
+

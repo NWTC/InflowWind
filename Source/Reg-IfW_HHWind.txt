@@ -15,10 +15,10 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-typedef  IfW_HHWind/IfW_HHWind   InitInputType CHARACTER(1024)    InputFile         -     -     -     "Name of the input file; remove if there is no file"           -
+typedef  IfW_HHWind/IfW_HHWind   InitInputType  CHARACTER(1024)   InputFile         -     -     -     "Name of the input file; remove if there is no file"           -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
-
+typedef  ^                       ^              CHARACTER(1024)   WindFile          -     -     -     "Name of the wind file to use"                                 -
 
 typedef  ^                       ContinuousStateType     ReKi     DummyContState1   -     -     -     "Remove this variable if you have continuous states"           -
 
@@ -34,18 +34,19 @@ typedef  ^                       ConstraintStateType     ReKi     DummyConstrSta
 #   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
 #   at a given time, etc.)
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
-typedef  ^                       ^                       ReKi     TData             {:}   -     -     "Time array from the HH file"                                  seconds
-typedef  ^                       ^                       ReKi     DELTA             {:}   -     -     "HH Wind direction (angle)"                                    degrees
-typedef  ^                       ^                       ReKi     V                 {:}   -     -     "HH horizontal wind speed"                                     meters/sec
-typedef  ^                       ^                       ReKi     VZ                {:}   -     -     "wind, including tower shadow, along the Z axis"               meters/sec
-typedef  ^                       ^                       ReKi     HSHR              {:}   -     -     "HH Horizontal linear shear"                                   -
-typedef  ^                       ^                       ReKi     VSHR              {:}   -     -     "HH vertical shear exponent"                                   -
-typedef  ^                       ^                       ReKi     VLINSHR           {:}   -     -     "HH vertical linear shear"                                     -
-typedef  ^                       ^                       ReKi     VGUST             {:}   -     -     "HH wind gust"                                                 -
+typedef  ^                       ^                       ReKi     TData             :     -     -     "Time array from the HH file"                                  seconds
+typedef  ^                       ^                       ReKi     DELTA             :     -     -     "HH Wind direction (angle)"                                    degrees
+typedef  ^                       ^                       ReKi     V                 :     -     -     "HH horizontal wind speed"                                     meters/sec
+typedef  ^                       ^                       ReKi     VZ                :     -     -     "wind, including tower shadow, along the Z axis"               meters/sec
+typedef  ^                       ^                       ReKi     HSHR              :     -     -     "HH Horizontal linear shear"                                   -
+typedef  ^                       ^                       ReKi     VSHR              :     -     -     "HH vertical shear exponent"                                   -
+typedef  ^                       ^                       ReKi     VLINSHR           :     -     -     "HH vertical linear shear"                                     -
+typedef  ^                       ^                       ReKi     VGUST             :     -     -     "HH wind gust"                                                 -
 typedef  ^                       ^                       ReKi     LinearizeDels     7     -     -     "The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar"  -
 typedef  ^                       ^                       ReKi     RefHt             -     -     -     "reference height; was HH (hub height); used to center the wind"  -
 typedef  ^                       ^                       ReKi     RefWid            -     -     -     "reference width; was 2*R (=rotor diameter); used to scale the linear shear"  -
 typedef  ^                       ^                       IntKi    NumDataLines      -     -     -     ""                                                             -
+typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
 
 
 # ..... Parameters ................................................................................................................
@@ -55,21 +56,24 @@ typedef  ^                       ParameterType           DbKi     DT            
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Height of the hub"                                            meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field"                                      meters
 typedef  ^                       ^                       Logical  Linearize         -  .FALSE.  -     "If this is true, we are linearizing"                          -
+typedef  ^                       ^              CHARACTER(1024)   WindFile          -     -     -     "Name of the wind file to use"                                 -
+typedef  ^                       ^                       Logical  Initialized       -  .FALSE.  -     "Flag to indicate if the module was initialized"               -
 
 
 
 # ..... Inputs ....................................................................................................................
 # Define inputs that are contained on the mesh here:
-typedef  ^                    InputType           MeshType MeshedInput - - -     "Meshed data" -
+typedef  ^                    InputType                  MeshType MeshedInput       -     -     -     "Meshed data"                                                  -
 
 # Define inputs that are not on this mesh here:
-typedef  ^                    InputType           ReKi     DummyInput  - - -     "Remove this variable if you have input data" -
+typedef  ^                    InputType                  ReKi     Position         ::     -     -     "Array holding the input positions at a given timestep"        meters
 
 
 # ..... Outputs ...................................................................................................................
 # Define outputs that are contained on the mesh here:
-#typedef IfW_HHWind ModName_OutputType          MeshType MeshedOutput - - -    "Meshed data" -
+#typedef IfW_HHWind           OutputType                 MeshType MeshedOutput      -     -     -     "Meshed data"                                                  -
 # Define outputs that are not on this mesh here:
-typedef  ^                    OutputType          ReKi     DummyOutput  -  - -   "Remove this variable if you have output data" -
-typedef  ^                    OutputType          ReKi     WriteOutput {2} - -   "Example of data to be written to an output file" "s, -"
+typedef  ^                    OutputType                 ReKi     DummyOutput       -     -     -     "Remove this variable if you have output data"                 -
+typedef  ^                    OutputType                 ReKi     Velocity          ::    -     -     "Array holding the U,V,W velocity for a given timestep"        meters/sec
+#typedef  ^                    OutputType                 ReKi     WriteOutput      2     -     -     "Example of data to be written to an output file"              "s, -"
 

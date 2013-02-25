@@ -45,10 +45,9 @@ PROGRAM HHWind_Test
 
       ! Local variables
    CHARACTER(1024)                                    :: WindFileName
-   INTEGER(IntKi)                                     :: UnWind         !FIXME: this should be removed when fully converted to the modular framework
    REAL(DbKi)                                         :: Time
-   REAL(ReKi)                                         :: WindPosition(3)
-   REAL(ReKi)                                         :: WindVelocity(3)
+   REAL(ReKi)                                         :: WindPosition(2,3)
+   REAL(ReKi)                                         :: WindVelocity(2,3)
 
 
 
@@ -63,25 +62,23 @@ PROGRAM HHWind_Test
    HH_Interval = 0.01
 
       ! setup the file info
-   WindFileName      = "../../Samples/Steady.wnd"           ! HHWind file
-!   WindFileName      = "../../Samples/SampleCase/Sample1.hh"
+   HH_InitData%WindFile       = "../../Samples/Steady.wnd"           ! HHWind file
+   HH_InitData%WindFile       = "../../Samples/SampleCase/Sample1.hh"
    HH_InitData%ReferenceHeight = 80.                        ! meters
    HH_InitData%Width           = 100.                       ! meters
 
-   WindPosition(1)   = 0.0                                  ! longitudinal front/back of tower
-   WindPosition(2)   = 0.0                                  ! lateral position left/right of tower
-   WindPosition(3)   = HH_InitData%ReferenceHeight          ! Height above ground
+   WindPosition(1,1) = 0.0                                  ! longitudinal front/back of tower
+   WindPosition(1,2) = 0.0                                  ! lateral position left/right of tower
+   WindPosition(1,3) = HH_InitData%ReferenceHeight          ! Height above ground
 
-      ! find a unit number to use, then check the errors
-   CALL GetNewUnit(UnWind,ErrStat,ErrMsg)
+   WindPosition(2,1) = 10.0
+   WindPosition(2,2) = 10.0
+   WindPosition(2,3) = HH_InitData%ReferenceHeight
 
-   IF ( ErrStat >= ErrID_Severe ) THEN
-      CALL ProgAbort(ErrMsg)
-   ELSEIF ( ErrStat /= ErrID_None ) THEN
-      CALL ProgWarn(ErrMsg)
-   ENDIF
    ErrMsg   = ""
    ErrStat  = ErrID_None
+
+
 
 
 
@@ -89,8 +86,7 @@ PROGRAM HHWind_Test
 
    CALL WrScr(NewLine//" Initializing HHWind"//NewLine)
 
-   CALL IfW_HHWind_Init( UnWind, WindFileName,                                            &
-                        HH_InitData,   HH_InData,     HH_ParamData,                       &
+   CALL IfW_HHWind_Init(HH_InitData,   HH_InData,     HH_ParamData,                       &
                         HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
                         HH_OutData,    HH_Interval,                                       &
                         ErrStat, ErrMsg )
@@ -99,18 +95,31 @@ PROGRAM HHWind_Test
    ELSEIF ( ErrStat /= ErrID_None ) THEN
       CALL ProgWarn(ErrMsg)
    ENDIF
-   ErrMsg   = ""
    ErrStat  = ErrID_None
+   ErrMsg   = ""
 
+   CALL AllocAry( HH_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
+   IF ( ErrStat >= ErrID_Severe ) THEN
+      CALL ProgAbort(ErrMsg)
+   ELSEIF ( ErrStat /= ErrID_None ) THEN
+      CALL ProgWarn(ErrMsg)
+   ENDIF
+   ErrStat  = ErrID_None
+   ErrMsg   = ""
+
+      ! Copy the WindPosition over to the InData%Position array
+   HH_InData%Position   = WindPosition
 
    !-=- Simple call to get windspeed at just the hub -=-=-=-=-=-=-=-
 
    CALL WrScr(" Calculating wind velocity:")
 
-   WindVelocity = IfW_HHWind_GetWindSpeed( Time, WindPosition, HH_InData,     HH_ParamData, &
-                        HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
-                        HH_OutData,                                                       &
-                        ErrStat,       ErrMsg )
+   CALL  IfW_HHWind_CalcOutput(  Time,    HH_InData,     HH_ParamData,                          &
+                           HH_ContStates, HH_DiscStates, HH_ConstrStates,     HH_OtherStates,   &
+                           HH_OutData,    ErrStat,       ErrMsg)
+
+      ! copy the Velocity data over for this timestep
+   WindVelocity=HH_OutData%Velocity
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
@@ -126,10 +135,15 @@ PROGRAM HHWind_Test
    CALL WrScr("   Time: "//TRIM(Num2LStr(Time)))
    CALL WrScr("          (x, y, z)          (U, V, W)")
 
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1)))//", "//TRIM(Num2LStr(WindPosition(2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1)))//", "//TRIM(Num2LStr(WindVelocity(2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(3)))//")")
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(1,2)))//", " &
+                           //TRIM(Num2LStr(WindPosition(1,3)))//")        (" &
+                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(1,2)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(1,3)))//")")
+
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(2,1)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
+                           //TRIM(Num2LStr(WindPosition(2,3)))//")        (" &
+                           //TRIM(Num2LStr(WindVelocity(2,1)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(2,3)))//")")
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

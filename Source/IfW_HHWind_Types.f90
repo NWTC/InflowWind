@@ -34,6 +34,7 @@ IMPLICIT NONE
     CHARACTER(1024)  :: InputFile 
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
+    CHARACTER(1024)  :: WindFile 
   END TYPE IfW_HHWind_InitInputType
   TYPE, PUBLIC :: IfW_HHWind_ContinuousStateType
     REAL(ReKi)  :: DummyContState1 
@@ -58,20 +59,23 @@ IMPLICIT NONE
     REAL(ReKi)  :: RefHt 
     REAL(ReKi)  :: RefWid 
     INTEGER(IntKi)  :: NumDataLines 
+    INTEGER(IntKi)  :: UnitWind 
   END TYPE IfW_HHWind_OtherStateType
   TYPE, PUBLIC :: IfW_HHWind_ParameterType
     REAL(DbKi)  :: DT 
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
     LOGICAL  :: Linearize = .FALSE. 
+    CHARACTER(1024)  :: WindFile 
+    LOGICAL  :: Initialized = .FALSE. 
   END TYPE IfW_HHWind_ParameterType
   TYPE, PUBLIC :: IfW_HHWind_InputType
     TYPE(MeshType)  :: MeshedInput 
-    REAL(ReKi)  :: DummyInput 
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position 
   END TYPE IfW_HHWind_InputType
   TYPE, PUBLIC :: IfW_HHWind_OutputType
     REAL(ReKi)  :: DummyOutput 
-    REAL(ReKi) , DIMENSION(1:2)  :: WriteOutput 
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity 
   END TYPE IfW_HHWind_OutputType
 CONTAINS
  SUBROUTINE IfW_HHWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
@@ -88,6 +92,7 @@ CONTAINS
   DstInitInputData%InputFile = SrcInitInputData%InputFile
   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
   DstInitInputData%Width = SrcInitInputData%Width
+  DstInitInputData%WindFile = SrcInitInputData%WindFile
  END SUBROUTINE IfW_HHWind_CopyInitInput
 
  SUBROUTINE IfW_HHWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -545,6 +550,7 @@ CONTAINS
   DstOtherStateData%RefHt = SrcOtherStateData%RefHt
   DstOtherStateData%RefWid = SrcOtherStateData%RefWid
   DstOtherStateData%NumDataLines = SrcOtherStateData%NumDataLines
+  DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_HHWind_CopyOtherState
 
  SUBROUTINE IfW_HHWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -612,6 +618,7 @@ CONTAINS
   Re_BufSz   = Re_BufSz   + 1  ! RefHt
   Re_BufSz   = Re_BufSz   + 1  ! RefWid
   Int_BufSz  = Int_BufSz  + 1  ! NumDataLines
+  Int_BufSz  = Int_BufSz  + 1  ! UnitWind
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -656,6 +663,8 @@ CONTAINS
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefWid )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumDataLines )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%UnitWind )
   Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_HHWind_PackOtherState
 
@@ -752,6 +761,8 @@ CONTAINS
   Re_Xferred   = Re_Xferred   + 1
   OutData%NumDataLines = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
+  OutData%UnitWind = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -772,6 +783,8 @@ CONTAINS
   DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
   DstParamData%Width = SrcParamData%Width
   DstParamData%Linearize = SrcParamData%Linearize
+  DstParamData%WindFile = SrcParamData%WindFile
+  DstParamData%Initialized = SrcParamData%Initialized
  END SUBROUTINE IfW_HHWind_CopyParam
 
  SUBROUTINE IfW_HHWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -888,7 +901,10 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   CALL MeshCopy( SrcInputData%MeshedInput, DstInputData%MeshedInput, CtrlCode, ErrStat, ErrMsg )
-  DstInputData%DummyInput = SrcInputData%DummyInput
+  i1 = SIZE(SrcInputData%Position,1)
+  i2 = SIZE(SrcInputData%Position,2)
+  IF (.NOT.ALLOCATED(DstInputData%Position)) ALLOCATE(DstInputData%Position(i1,i2))
+  DstInputData%Position = SrcInputData%Position
  END SUBROUTINE IfW_HHWind_CopyInput
 
  SUBROUTINE IfW_HHWind_DestroyInput( InputData, ErrStat, ErrMsg )
@@ -900,6 +916,7 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   CALL MeshDestroy( InputData%MeshedInput, ErrStat, ErrMsg )
+  IF ( ALLOCATED(InputData%Position) ) DEALLOCATE(InputData%Position)
  END SUBROUTINE IfW_HHWind_DestroyInput
 
  SUBROUTINE IfW_HHWind_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -947,7 +964,7 @@ CONTAINS
   IF(ALLOCATED(Re_MeshedInput_Buf))  DEALLOCATE(Re_MeshedInput_Buf)
   IF(ALLOCATED(Db_MeshedInput_Buf))  DEALLOCATE(Db_MeshedInput_Buf)
   IF(ALLOCATED(Int_MeshedInput_Buf)) DEALLOCATE(Int_MeshedInput_Buf)
-  Re_BufSz   = Re_BufSz   + 1  ! DummyInput
+  Re_BufSz    = Re_BufSz    + SIZE( InData%Position )  ! Position 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -967,8 +984,10 @@ CONTAINS
   IF( ALLOCATED(Re_MeshedInput_Buf) )  DEALLOCATE(Re_MeshedInput_Buf)
   IF( ALLOCATED(Db_MeshedInput_Buf) )  DEALLOCATE(Db_MeshedInput_Buf)
   IF( ALLOCATED(Int_MeshedInput_Buf) ) DEALLOCATE(Int_MeshedInput_Buf)
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyInput )
-  Re_Xferred   = Re_Xferred   + 1
+  IF ( ALLOCATED(InData%Position) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Position))-1 ) =  PACK(InData%Position ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%Position)
+  ENDIF
  END SUBROUTINE IfW_HHWind_PackInput
 
  SUBROUTINE IfW_HHWind_UnpackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1025,8 +1044,12 @@ CONTAINS
   IF( ALLOCATED(Re_MeshedInput_Buf) )  DEALLOCATE(Re_MeshedInput_Buf)
   IF( ALLOCATED(Db_MeshedInput_Buf) )  DEALLOCATE(Db_MeshedInput_Buf)
   IF( ALLOCATED(Int_MeshedInput_Buf) ) DEALLOCATE(Int_MeshedInput_Buf)
-  OutData%DummyInput = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
+  IF ( ALLOCATED(OutData%Position) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%Position,1),SIZE(OutData%Position,2))); mask2 = .TRUE.
+    OutData%Position = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Position))-1 ),mask2,OutData%Position)
+  DEALLOCATE(mask2)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%Position)
+  ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1044,7 +1067,10 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   DstOutputData%DummyOutput = SrcOutputData%DummyOutput
-  DstOutputData%WriteOutput = SrcOutputData%WriteOutput
+  i1 = SIZE(SrcOutputData%Velocity,1)
+  i2 = SIZE(SrcOutputData%Velocity,2)
+  IF (.NOT.ALLOCATED(DstOutputData%Velocity)) ALLOCATE(DstOutputData%Velocity(i1,i2))
+  DstOutputData%Velocity = SrcOutputData%Velocity
  END SUBROUTINE IfW_HHWind_CopyOutput
 
  SUBROUTINE IfW_HHWind_DestroyOutput( OutputData, ErrStat, ErrMsg )
@@ -1055,6 +1081,7 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+  IF ( ALLOCATED(OutputData%Velocity) ) DEALLOCATE(OutputData%Velocity)
  END SUBROUTINE IfW_HHWind_DestroyOutput
 
  SUBROUTINE IfW_HHWind_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1092,14 +1119,16 @@ CONTAINS
   Db_BufSz  = 0
   Int_BufSz  = 0
   Re_BufSz   = Re_BufSz   + 1  ! DummyOutput
-  Re_BufSz    = Re_BufSz    + SIZE( InData%WriteOutput )  ! WriteOutput 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%Velocity )  ! Velocity 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyOutput )
   Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WriteOutput))-1 ) =  PACK(InData%WriteOutput ,.TRUE.)
-  Re_Xferred   = Re_Xferred   + SIZE(InData%WriteOutput)
+  IF ( ALLOCATED(InData%Velocity) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) =  PACK(InData%Velocity ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
+  ENDIF
  END SUBROUTINE IfW_HHWind_PackOutput
 
  SUBROUTINE IfW_HHWind_UnpackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1137,10 +1166,12 @@ CONTAINS
   Int_BufSz  = 0
   OutData%DummyOutput = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
-  ALLOCATE(mask1(SIZE(OutData%WriteOutput,1))); mask1 = .TRUE.
-  OutData%WriteOutput = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WriteOutput))-1 ),mask1,OutData%WriteOutput)
-  DEALLOCATE(mask1)
-  Re_Xferred   = Re_Xferred   + SIZE(OutData%WriteOutput)
+  IF ( ALLOCATED(OutData%Velocity) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%Velocity,1),SIZE(OutData%Velocity,2))); mask2 = .TRUE.
+    OutData%Velocity = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Velocity))-1 ),mask2,OutData%Velocity)
+  DEALLOCATE(mask2)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%Velocity)
+  ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
