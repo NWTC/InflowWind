@@ -129,7 +129,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    ! Open the file for reading
    !-------------------------------------------------------------------------------------------------
    CALL OpenFInpFile (OtherStates%UnitWind, TRIM(InitData%WindFile), TmpErrStat, TmpErrMsg)
-   IF ( TmpErrStat >= ErrID_Severe ) THEN
+   IF ( TmpErrStat >= AbortErrLev ) THEN
       ErrStat  = MAX(TmpErrStat, ErrStat)
       ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
       RETURN
@@ -193,56 +193,56 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       CALL AllocAry( OtherStates%Tdata, OtherStates%NumDataLines, 'HH time', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%V) ) THEN
       CALL AllocAry( OtherStates%V, OtherStates%NumDataLines, 'HH horizontal wind speed', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%Delta) ) THEN
       CALL AllocAry( OtherStates%Delta, OtherStates%NumDataLines, 'HH wind direction', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VZ) ) THEN
       CALL AllocAry( OtherStates%VZ, OtherStates%NumDataLines, 'HH vertical wind speed', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%HShr) ) THEN
       CALL AllocAry( OtherStates%HShr, OtherStates%NumDataLines, 'HH horizontal linear shear', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VShr) ) THEN
       CALL AllocAry( OtherStates%VShr, OtherStates%NumDataLines, 'HH vertical power-law shear exponent', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VLinShr) ) THEN
       CALL AllocAry( OtherStates%VLinShr, OtherStates%NumDataLines, 'HH vertical linear shear', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VGust) ) THEN
       CALL AllocAry( OtherStates%VGust, OtherStates%NumDataLines, 'HH gust velocity', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
 
@@ -255,7 +255,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       CALL ReadCom( OtherStates%UnitWind, TRIM(InitData%WindFile), 'Header line #'//TRIM(Num2LStr(I)), TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
    END DO !I
 
 
@@ -270,7 +270,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine// &  !FIXME: TRIM(TmpErrMsg)
          'Error retrieving data from the HH line'//TRIM(Num2LStr(NumComments+I))
-      IF ( ErrStat >= ErrID_Severe ) RETURN
+      IF ( ErrStat >= AbortErrLev ) RETURN
 
       OtherStates%Tdata(  I) = TmpData(1)
       OtherStates%V(      I) = TmpData(2)
@@ -400,7 +400,7 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
 
       ! Allocate Velocity output array
    CALL AllocAry( OutData%Velocity, NumPoints, 3,  "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
-   IF ( TmpErrStat >= ErrID_Severe ) THEN
+   IF ( TmpErrStat >= AbortErrLev ) THEN
       ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Could not allocate the output velocity array."
       RETURN
    ENDIF
@@ -415,7 +415,7 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
          ! Error handling
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)    ! This might be redundant given the next line (depends on what GetWindSpeed returns for TmpErrMsg).
-      IF (ErrStat >= ErrID_Severe) THEN
+      IF (ErrStat >= AbortErrLev) THEN
          ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Error calculating the wind speed at position ("//   &
                      TRIM(Num2LStr(InData%Position(PointNum,1)))//", "// &
                      TRIM(Num2LStr(InData%Position(PointNum,2)))//", "// &

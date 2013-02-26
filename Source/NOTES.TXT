@@ -10,7 +10,7 @@ After talking with Bonnie, we will not do reallocation of arrays within the IfW_
 
 New plan:
    +  convert HHWind to framework -- some bits remaining in the first three routines.
-   +  HHWind test routine (get TurbSim sorted out so I can generate files)
+   +  HHWind test routine
    -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
    -- Make the Driver work with paraprint
    -- Setup regression test with HHWind
@@ -26,6 +26,7 @@ Things to remember to change:
 TODO:
    -  Add information in the Parameters about how many time steps there are, bounds on time
    -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
+   -  Add the other modular framework required routines into the file.
 
 COMPLETED:
 IfW_HHWind.f90
