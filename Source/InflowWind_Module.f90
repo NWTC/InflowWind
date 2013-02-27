@@ -13,7 +13,7 @@
 ! 14 Nov 2011    v1.00.01b-bjj                                 B. Jonkman
 !  1 Aug 2012    v1.01.00a-bjj                                 B. Jonkman
 ! 10 Aug 2012    v1.01.00b-bjj                                 B. Jonkman
-!    Dec 2012    v2.00.00a-adp   conversion to Framework       A. Platt
+!    Feb 2013    v2.00.00a-adp   conversion to Framework       A. Platt
 !
 !..................................................................................................................................
 ! Files with this module:
@@ -72,7 +72,6 @@ MODULE InflowWind_Module
 !FIXME: tie this to InitOut as well.
    TYPE(ProgDesc), PARAMETER            :: IfW_ProgDesc = ProgDesc( 'InflowWind', 'v1.00.00', '27-Dec-2012' )
 
-!   CHARACTER(99),PARAMETER        :: InflowWindVer = 'InflowWind (v1.01.00b-bjj, 10-Aug-2012)'
 
 
       ! ..... Public Subroutines ...................................................................................................

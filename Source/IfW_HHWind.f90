@@ -21,20 +21,51 @@ MODULE IfW_HHWind
 !      + V * VLinShr/RefWid * ( Z-RefHt )                               ! vertical linear shear
 !      + VGust                                                          ! gust speed
 !----------------------------------------------------------------------------------------------------
+!  Feb 2013    v2.00.00          A. Platt    -- updated to the new framework
+!                    - Note:  Jacobians are not included in this version.
+!
+!----------------------------------------------------------------------------------------------------
+! LICENSING
+! Copyright (C) 2012  National Renewable Energy Laboratory
+!
+!    This file is part of InflowWind.
+!
+!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as
+!    published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+!
+!    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+!    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+!
+!    You should have received a copy of the GNU General Public License along with InflowWind.
+!    If not, see <http://www.gnu.org/licenses/>.
+!
+!----------------------------------------------------------------------------------------------------
 
-   USE                           NWTC_Library
-   USE                           SharedInflowDefs
-   USE                           IfW_HHWind_Types
+   USE                                       NWTC_Library
+   USE                                       SharedInflowDefs
+   USE                                       IfW_HHWind_Types
 
-   IMPLICIT                      NONE
+   IMPLICIT                                  NONE
    PRIVATE
 
-   PUBLIC                       :: IfW_HHWind_Init
-   PUBLIC                       :: IfW_HHWind_End
-   PUBLIC                       :: IfW_HHWind_CalcOutput
+   INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_HHWind_Pack)
+   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v1.00.00', '25-Feb-2013' )
 
-! !   PUBLIC                       :: IfW_HHWind_SetLinearizeDels       !FIXME: make this private??? or remove it??? or does the outer part go into this module???
-! !   PUBLIC                       :: HH_Get_ADhack_WindSpeed                  ! REMOVE THIS!!!!
+   PUBLIC                                    :: IfW_HHWind_Init
+   PUBLIC                                    :: IfW_HHWind_End
+   PUBLIC                                    :: IfW_HHWind_CalcOutput
+
+
+      ! The following do not contain anything since there are no states.
+   PUBLIC                                    :: IfW_HHWind_UpdateStates
+   PUBLIC                                    :: IfW_HHWind_CalcContStateDeriv
+   PUBLIC                                    :: IfW_HHWind_UpdateDiscState
+   PUBLIC                                    :: IfW_HHWind_CalcConstrStateResidual
+
+
+      !The following were removed during conversion to the framework:
+   !PUBLIC                                   :: IfW_HHWind_SetLinearizeDels                ! If necessary, move this into the UpdateStates routine.
+   !PUBLIC                                   :: HH_Get_ADhack_WindSpeed                    ! This is depricated and removed.
 
 CONTAINS
 
@@ -42,7 +73,7 @@ CONTAINS
 
 SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
-                           OutData,    Interval,   ErrStat, ErrMsg)
+                           OutData,    Interval,   ErrStat,          ErrMsg)
 ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
 ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
 ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
@@ -266,9 +297,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    DO I=1,OtherStates%NumDataLines
 
       CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFile), TmpData(1:NumCols), NumCols, 'TmpData', &
-                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat ) !, TmpErrMsg)  FIXME: add error handling when available
+                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat ) !, TmpErrMsg)  FIXME: add error handling when available in the library
       ErrStat  = MAX(TmpErrStat, ErrStat)
-      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine// &  !FIXME: TRIM(TmpErrMsg)
+!      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine// &           ! FIXME: replace this and the next line with the above line
          'Error retrieving data from the HH line'//TRIM(Num2LStr(NumComments+I))
       IF ( ErrStat >= AbortErrLev ) RETURN
 
@@ -668,6 +700,204 @@ END SUBROUTINE IfW_HHWind_End
 !====================================================================================================
 
 
+
+
+
+!====================================================================================================
+! The following are generic routines required by the framework.
+!====================================================================================================
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
+! Constraint states are solved for input Time; Continuous and discrete states are updated for Time + Interval
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
+                                                                           ! Output: Continuous states at Time + Interval
+      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+                                                                           ! Output: Discrete states at Time  + Interval
+      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
+                                                                           ! Output: Constraint states at Time
+      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+         ! Local variables
+
+      TYPE(IfW_HHWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_HHWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
+
+      INTEGER(IntKi)                                        :: ErrStat2    ! Error status of the operation (occurs after initial error)
+      CHARACTER(LEN(ErrMsg))                                :: ErrMsg2     ! Error message if ErrStat2 /= ErrID_None
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+
+         ! Solve for the constraint states (z) here:
+
+         ! Check if the z guess is correct and update z with a new guess.
+         ! Iterate until the value is within a given tolerance.
+
+      CALL IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+      ! DO WHILE ( z_Residual% > tolerance )
+      !
+      !  z =
+      !
+      !  CALL IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      !  IF ( ErrStat >= AbortErrLev ) THEN
+      !     CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+      !     ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+      !     RETURN
+      !  END IF
+      !
+      ! END DO
+
+
+         ! Destroy z_Residual because it is not necessary for the rest of the subroutine:
+
+      CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
+
+
+
+         ! Get first time derivatives of continuous states (dxdt):
+
+      CALL IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_HHWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+
+         ! Update discrete states:
+         !   Note that xd [discrete state] is changed in IfW_HHWind_UpdateDiscState(), so IfW_HHWind_CalcOutput(),
+         !   IfW_HHWind_CalcContStateDeriv(), and IfW_HHWind_CalcConstrStates() must be called first (see above).
+
+      CALL IfW_HHWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_HHWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+
+         ! Integrate (update) continuous states (x) here:
+
+      !x = function of dxdt and x
+
+
+         ! Destroy dxdt because it is not necessary for the rest of the subroutine
+
+      CALL IfW_HHWind_DestroyContState( dxdt, ErrStat, ErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
+
+
+
+END SUBROUTINE IfW_HHWind_UpdateStates
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+! Tight coupling routine for computing derivatives of continuous states
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Compute the first time derivatives of the continuous states here:
+
+      dxdt%DummyContState = 0
+
+
+END SUBROUTINE IfW_HHWind_CalcContStateDeriv
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+! Tight coupling routine for updating discrete states
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+                                                                           !   Output: Discrete states at Time + Interval
+      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Update discrete states here:
+
+      ! StateData%DiscState =
+
+END SUBROUTINE IfW_HHWind_UpdateDiscState
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
+! Tight coupling routine for solving for the residual of the constraint state equations
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
+      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
+                                                                           ! the input values described above
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Solve for the constraint states here:
+
+      z_residual%DummyConstrState = 0
+
+END SUBROUTINE IfW_HHWind_CalcConstrStateResidual
+!----------------------------------------------------------------------------------------------------------------------------------
+END MODULE IfW_HHWind
+
+
 !====================================================================================================
 !====================================================================================================
 !REMOVED:
@@ -678,16 +908,16 @@ END SUBROUTINE IfW_HHWind_End
 !! in space represented by InputPosition. THIS FUNCTION SHOULD BE REMOVED!!!!! (used for DISK VEL ONLY)
 !!----------------------------------------------------------------------------------------------------
 !
-!   REAL(ReKi),          INTENT(IN)  :: Time                 ! time from the start of the simulation
-!   REAL(ReKi),          INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z   -   NOT USED HERE!!!
-!   INTEGER(IntKi),      INTENT(OUT) :: ErrStat              ! error status
-!   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! The error message
-!   REAL(ReKi)                       :: HH_Get_ADHack_WindSpeed(3)      ! return velocities (U,V,W)
+!   REAL(ReKi),                        INTENT(IN)  :: Time                 ! time from the start of the simulation
+!   REAL(ReKi),                        INTENT(IN)  :: InputPosition(3)     ! input information: positions X,Y,Z   -   NOT USED HERE!!!
+!   INTEGER(IntKi),                    INTENT(OUT) :: ErrStat              ! error status
+!   CHARACTER(*),                      INTENT(OUT) :: ErrMsg               ! The error message
+!   REAL(ReKi)                                     :: HH_Get_ADHack_WindSpeed(3)      ! return velocities (U,V,W)
 !
-!   REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
-!   REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
-!   REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
-!   REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
+!   REAL(ReKi)                                     :: Delta_tmp            ! interpolated Delta   at input TIME
+!   REAL(ReKi)                                     :: P                    ! temporary storage for slope (in time) used in linear interpolation
+!   REAL(ReKi)                                     :: V_tmp                ! interpolated V       at input TIME
+!   REAL(ReKi)                                     :: VZ_tmp               ! interpolated VZ      at input TIME
 !
 !
 !   !-------------------------------------------------------------------------------------------------
@@ -778,9 +1008,9 @@ END SUBROUTINE IfW_HHWind_End
 !SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 !! This subroutine sets the perturbation values for the linearization scheme.
 !
-!   REAL(ReKi),          INTENT(IN)  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
-!   INTEGER(IntKi),      INTENT(OUT) :: ErrStat              ! time from the start of the simulation
-!   CHARACTER(*),        INTENT(OUT) :: ErrMsg               ! Error Message
+!   REAL(ReKi),                        INTENT(IN   )  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
+!   INTEGER(IntKi),                    INTENT(  OUT)  :: ErrStat              ! time from the start of the simulation
+!   CHARACTER(*),                      INTENT(  OUT)  :: ErrMsg               ! Error Message
 !
 !   !-------------------------------------------------------------------------------------------------
 !   ! verify the module was initialized first
@@ -801,4 +1031,3 @@ END SUBROUTINE IfW_HHWind_End
 !
 !END SUBROUTINE IfW_HHWind_SetLinearizeDels
 !!====================================================================================================
-END MODULE IfW_HHWind

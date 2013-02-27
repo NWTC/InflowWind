@@ -6,7 +6,8 @@ PROGRAM HHWind_Test
 !  v1.00.00a-adp  -- HHWind tested
 !
 !
-!
+!  The purpose of this code is simply to test the IfW_HHWind module. It does not do much useful beyond initialize the module,
+!  calculate some values, and end the module.
 !
 !
 !
@@ -46,8 +47,8 @@ PROGRAM HHWind_Test
       ! Local variables
    CHARACTER(1024)                                    :: WindFileName
    REAL(DbKi)                                         :: Time
-   REAL(ReKi)                                         :: WindPosition(2,3)
-   REAL(ReKi)                                         :: WindVelocity(2,3)
+   REAL(ReKi)                                         :: WindPosition(3,3)
+   REAL(ReKi)                                         :: WindVelocity(3,3)
 
 
 
@@ -71,9 +72,13 @@ PROGRAM HHWind_Test
    WindPosition(1,2) = 0.0                                  ! lateral position left/right of tower
    WindPosition(1,3) = HH_InitData%ReferenceHeight          ! Height above ground
 
-   WindPosition(2,1) = 10.0
-   WindPosition(2,2) = 10.0
+   WindPosition(2,1) = 30.0
+   WindPosition(2,2) = 30.0
    WindPosition(2,3) = HH_InitData%ReferenceHeight
+
+   WindPosition(3,1) = 0.0
+   WindPosition(3,2) = 0.0
+   WindPosition(3,3) = HH_InitData%ReferenceHeight+30
 
    ErrMsg   = ""
    ErrStat  = ErrID_None
@@ -145,6 +150,11 @@ PROGRAM HHWind_Test
                            //TRIM(Num2LStr(WindVelocity(2,1)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
                            //TRIM(Num2LStr(WindVelocity(2,3)))//")")
 
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(3,1)))//", "//TRIM(Num2LStr(WindPosition(3,2)))//", " &
+                           //TRIM(Num2LStr(WindPosition(3,3)))//")        (" &
+                           //TRIM(Num2LStr(WindVelocity(3,1)))//", "//TRIM(Num2LStr(WindVelocity(3,2)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(3,3)))//")")
+
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
    CALL IfW_HHWind_End( HH_InData,     HH_ParamData,                                      &
@@ -161,13 +171,5 @@ PROGRAM HHWind_Test
    ErrStat  = ErrID_None
 
 
+
 END PROGRAM
-
-
-! TODO:
-!  -- Fix the error handling so it is correct
-!  -- Rename routines to match framework
-!  -- Convert the Init routine to the framework
-!  -- Convert the Calc routine to the framework -- unfunction it
-!  -- Convert the End  routine to the framework
-!  -- Figure out how to store the info we need (types)

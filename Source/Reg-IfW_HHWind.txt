@@ -20,15 +20,7 @@ typedef  ^                       ^                       ReKi     ReferenceHeigh
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 typedef  ^                       ^              CHARACTER(1024)   WindFile          -     -     -     "Name of the wind file to use"                                 -
 
-typedef  ^                       ContinuousStateType     ReKi     DummyContState1   -     -     -     "Remove this variable if you have continuous states"           -
 
-
-
-# Define discrete (nondifferentiable) states here:
-typedef  ^                       DiscreteStateType       ReKi     DummyDiscState    -     -     -     "Remove this variable if you have discrete states"             -
-
-# Define constraint states here:
-typedef  ^                       ConstraintStateType     ReKi     DummyConstrState  -     -     -     "Remove this variable if you have constraint states"           -
 
 # Define any data that are not considered actual states here:
 #   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
@@ -62,18 +54,18 @@ typedef  ^                       ^                       Logical  Initialized   
 
 
 # ..... Inputs ....................................................................................................................
-# Define inputs that are contained on the mesh here:
-typedef  ^                    InputType                  MeshType MeshedInput       -     -     -     "Meshed data"                                                  -
-
 # Define inputs that are not on this mesh here:
 typedef  ^                    InputType                  ReKi     Position         ::     -     -     "Array holding the input positions at a given timestep"        meters
 
 
 # ..... Outputs ...................................................................................................................
 # Define outputs that are contained on the mesh here:
-#typedef IfW_HHWind           OutputType                 MeshType MeshedOutput      -     -     -     "Meshed data"                                                  -
-# Define outputs that are not on this mesh here:
 typedef  ^                    OutputType                 ReKi     DummyOutput       -     -     -     "Remove this variable if you have output data"                 -
 typedef  ^                    OutputType                 ReKi     Velocity          ::    -     -     "Array holding the U,V,W velocity for a given timestep"        meters/sec
-#typedef  ^                    OutputType                 ReKi     WriteOutput      2     -     -     "Example of data to be written to an output file"              "s, -"
 
+
+
+# ..... States not used by this module ...................................................................................................................
+typedef  ^                       ContinuousStateType     ReKi     DummyContState    -     -     -     "Remove this variable if you have continuous states"           -
+typedef  ^                       DiscreteStateType       ReKi     DummyDiscState    -     -     -     "Remove this variable if you have discrete states"             -
+typedef  ^                       ConstraintStateType     ReKi     DummyConstrState  -     -     -     "Remove this variable if you have constraint states"           -

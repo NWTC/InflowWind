@@ -26,7 +26,7 @@ Things to remember to change:
 TODO:
    -  Add information in the Parameters about how many time steps there are, bounds on time
    -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
-   -  Add the other modular framework required routines into the file.
+   -  Add in tests of the empty state routines
 
 COMPLETED:
 IfW_HHWind.f90
@@ -36,4 +36,5 @@ IfW_HHWind.f90
    +  Err handling in the GetWindSpeed function (upgrade to use ErrID levels etc)
    +  Err handling in Init
    +  Err handling in End
+   +  Add the other modular framework required routines into the file.
 

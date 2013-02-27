@@ -36,15 +36,6 @@ IMPLICIT NONE
     REAL(ReKi)  :: Width 
     CHARACTER(1024)  :: WindFile 
   END TYPE IfW_HHWind_InitInputType
-  TYPE, PUBLIC :: IfW_HHWind_ContinuousStateType
-    REAL(ReKi)  :: DummyContState1 
-  END TYPE IfW_HHWind_ContinuousStateType
-  TYPE, PUBLIC :: IfW_HHWind_DiscreteStateType
-    REAL(ReKi)  :: DummyDiscState 
-  END TYPE IfW_HHWind_DiscreteStateType
-  TYPE, PUBLIC :: IfW_HHWind_ConstraintStateType
-    REAL(ReKi)  :: DummyConstrState 
-  END TYPE IfW_HHWind_ConstraintStateType
   TYPE, PUBLIC :: IfW_HHWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0 
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: TData 
@@ -70,13 +61,21 @@ IMPLICIT NONE
     LOGICAL  :: Initialized = .FALSE. 
   END TYPE IfW_HHWind_ParameterType
   TYPE, PUBLIC :: IfW_HHWind_InputType
-    TYPE(MeshType)  :: MeshedInput 
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position 
   END TYPE IfW_HHWind_InputType
   TYPE, PUBLIC :: IfW_HHWind_OutputType
     REAL(ReKi)  :: DummyOutput 
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity 
   END TYPE IfW_HHWind_OutputType
+  TYPE, PUBLIC :: IfW_HHWind_ContinuousStateType
+    REAL(ReKi)  :: DummyContState 
+  END TYPE IfW_HHWind_ContinuousStateType
+  TYPE, PUBLIC :: IfW_HHWind_DiscreteStateType
+    REAL(ReKi)  :: DummyDiscState 
+  END TYPE IfW_HHWind_DiscreteStateType
+  TYPE, PUBLIC :: IfW_HHWind_ConstraintStateType
+    REAL(ReKi)  :: DummyConstrState 
+  END TYPE IfW_HHWind_ConstraintStateType
 CONTAINS
  SUBROUTINE IfW_HHWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_HHWind_initinputtype), INTENT(IN   ) :: SrcInitInputData
@@ -191,324 +190,6 @@ CONTAINS
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
  END SUBROUTINE IfW_HHWind_UnpackInitInput
-
- SUBROUTINE IfW_HHWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(IN   ) :: SrcContStateData
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(  OUT) :: DstContStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstContStateData%DummyContState1 = SrcContStateData%DummyContState1
- END SUBROUTINE IfW_HHWind_CopyContState
-
- SUBROUTINE IfW_HHWind_DestroyContState( ContStateData, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: ContStateData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
- END SUBROUTINE IfW_HHWind_DestroyContState
-
- SUBROUTINE IfW_HHWind_PackContState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
-  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
-  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
-  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_continuousstatetype),  INTENT(INOUT) :: InData
-  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
-  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
-  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
-  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
- ! buffers to store meshes, if any
-  OnlySize = .FALSE.
-  IF ( PRESENT(SizeOnly) ) THEN
-    OnlySize = SizeOnly
-  ENDIF
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  Re_BufSz   = Re_BufSz   + 1  ! DummyContState1
-  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
-  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
-  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyContState1 )
-  Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_HHWind_PackContState
-
- SUBROUTINE IfW_HHWind_UnpackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
-  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
-  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
-  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: OutData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
-  LOGICAL, ALLOCATABLE           :: mask1(:)
-  LOGICAL, ALLOCATABLE           :: mask2(:,:)
-  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
- ! buffers to store meshes, if any
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  OutData%DummyContState1 = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
-  Re_Xferred   = Re_Xferred-1
-  Db_Xferred   = Db_Xferred-1
-  Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_HHWind_UnpackContState
-
- SUBROUTINE IfW_HHWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_discretestatetype), INTENT(IN   ) :: SrcDiscStateData
-  TYPE(IfW_HHWind_discretestatetype), INTENT(  OUT) :: DstDiscStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstDiscStateData%DummyDiscState = SrcDiscStateData%DummyDiscState
- END SUBROUTINE IfW_HHWind_CopyDiscState
-
- SUBROUTINE IfW_HHWind_DestroyDiscState( DiscStateData, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: DiscStateData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
- END SUBROUTINE IfW_HHWind_DestroyDiscState
-
- SUBROUTINE IfW_HHWind_PackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
-  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
-  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
-  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_discretestatetype),  INTENT(INOUT) :: InData
-  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
-  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
-  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
-  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
- ! buffers to store meshes, if any
-  OnlySize = .FALSE.
-  IF ( PRESENT(SizeOnly) ) THEN
-    OnlySize = SizeOnly
-  ENDIF
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  Re_BufSz   = Re_BufSz   + 1  ! DummyDiscState
-  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
-  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
-  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyDiscState )
-  Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_HHWind_PackDiscState
-
- SUBROUTINE IfW_HHWind_UnpackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
-  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
-  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
-  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: OutData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
-  LOGICAL, ALLOCATABLE           :: mask1(:)
-  LOGICAL, ALLOCATABLE           :: mask2(:,:)
-  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
- ! buffers to store meshes, if any
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  OutData%DummyDiscState = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
-  Re_Xferred   = Re_Xferred-1
-  Db_Xferred   = Db_Xferred-1
-  Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_HHWind_UnpackDiscState
-
- SUBROUTINE IfW_HHWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(IN   ) :: SrcConstrStateData
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(  OUT) :: DstConstrStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstConstrStateData%DummyConstrState = SrcConstrStateData%DummyConstrState
- END SUBROUTINE IfW_HHWind_CopyConstrState
-
- SUBROUTINE IfW_HHWind_DestroyConstrState( ConstrStateData, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: ConstrStateData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
-! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
- END SUBROUTINE IfW_HHWind_DestroyConstrState
-
- SUBROUTINE IfW_HHWind_PackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
-  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
-  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
-  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_constraintstatetype),  INTENT(INOUT) :: InData
-  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
-  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
-  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
-  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
- ! buffers to store meshes, if any
-  OnlySize = .FALSE.
-  IF ( PRESENT(SizeOnly) ) THEN
-    OnlySize = SizeOnly
-  ENDIF
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  Re_BufSz   = Re_BufSz   + 1  ! DummyConstrState
-  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
-  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
-  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyConstrState )
-  Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_HHWind_PackConstrState
-
- SUBROUTINE IfW_HHWind_UnpackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
-  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
-  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
-  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: OutData
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-    ! Local variables
-  INTEGER(IntKi)                 :: Re_BufSz
-  INTEGER(IntKi)                 :: Re_Xferred
-  INTEGER(IntKi)                 :: Re_CurrSz
-  INTEGER(IntKi)                 :: Db_BufSz
-  INTEGER(IntKi)                 :: Db_Xferred
-  INTEGER(IntKi)                 :: Db_CurrSz
-  INTEGER(IntKi)                 :: Int_BufSz
-  INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: Int_CurrSz
-  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
-  LOGICAL, ALLOCATABLE           :: mask1(:)
-  LOGICAL, ALLOCATABLE           :: mask2(:,:)
-  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
-  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
- ! buffers to store meshes, if any
-    !
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  Re_Xferred  = 1
-  Db_Xferred  = 1
-  Int_Xferred  = 1
-  Re_BufSz  = 0
-  Db_BufSz  = 0
-  Int_BufSz  = 0
-  OutData%DummyConstrState = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
-  Re_Xferred   = Re_Xferred-1
-  Db_Xferred   = Db_Xferred-1
-  Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_HHWind_UnpackConstrState
 
  SUBROUTINE IfW_HHWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_HHWind_otherstatetype), INTENT(IN   ) :: SrcOtherStateData
@@ -900,7 +581,6 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  CALL MeshCopy( SrcInputData%MeshedInput, DstInputData%MeshedInput, CtrlCode, ErrStat, ErrMsg )
   i1 = SIZE(SrcInputData%Position,1)
   i2 = SIZE(SrcInputData%Position,2)
   IF (.NOT.ALLOCATED(DstInputData%Position)) ALLOCATE(DstInputData%Position(i1,i2))
@@ -915,7 +595,6 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  CALL MeshDestroy( InputData%MeshedInput, ErrStat, ErrMsg )
   IF ( ALLOCATED(InputData%Position) ) DEALLOCATE(InputData%Position)
  END SUBROUTINE IfW_HHWind_DestroyInput
 
@@ -940,9 +619,6 @@ CONTAINS
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
  ! buffers to store meshes, if any
-  REAL(ReKi),     ALLOCATABLE :: Re_MeshedInput_Buf(:)
-  REAL(DbKi),     ALLOCATABLE :: Db_MeshedInput_Buf(:)
-  INTEGER(IntKi), ALLOCATABLE :: Int_MeshedInput_Buf(:)
   OnlySize = .FALSE.
   IF ( PRESENT(SizeOnly) ) THEN
     OnlySize = SizeOnly
@@ -956,34 +632,10 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
- ! Allocate mesh buffers, if any (we'll also get sizes from these) 
-  CALL MeshPack( InData%MeshedInput, Re_MeshedInput_Buf, Db_MeshedInput_Buf, Int_MeshedInput_Buf, ErrStat, ErrMsg, .TRUE. ) ! MeshedInput 
-  IF(ALLOCATED(Re_MeshedInput_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_MeshedInput_Buf  ) ! MeshedInput
-  IF(ALLOCATED(Db_MeshedInput_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_MeshedInput_Buf  ) ! MeshedInput
-  IF(ALLOCATED(Int_MeshedInput_Buf))Int_BufSz = Int_BufSz + SIZE( Int_MeshedInput_Buf ) ! MeshedInput
-  IF(ALLOCATED(Re_MeshedInput_Buf))  DEALLOCATE(Re_MeshedInput_Buf)
-  IF(ALLOCATED(Db_MeshedInput_Buf))  DEALLOCATE(Db_MeshedInput_Buf)
-  IF(ALLOCATED(Int_MeshedInput_Buf)) DEALLOCATE(Int_MeshedInput_Buf)
   Re_BufSz    = Re_BufSz    + SIZE( InData%Position )  ! Position 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  CALL MeshPack( InData%MeshedInput, Re_MeshedInput_Buf, Db_MeshedInput_Buf, Int_MeshedInput_Buf, ErrStat, ErrMsg, OnlySize ) ! MeshedInput 
-  IF(ALLOCATED(Re_MeshedInput_Buf)) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_MeshedInput_Buf)-1 ) = Re_MeshedInput_Buf
-    Re_Xferred = Re_Xferred + SIZE(Re_MeshedInput_Buf)
-  ENDIF
-  IF(ALLOCATED(Db_MeshedInput_Buf)) THEN
-    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_MeshedInput_Buf)-1 ) = Db_MeshedInput_Buf
-    Db_Xferred = Db_Xferred + SIZE(Db_MeshedInput_Buf)
-  ENDIF
-  IF(ALLOCATED(Int_MeshedInput_Buf)) THEN
-    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_MeshedInput_Buf)-1 ) = Int_MeshedInput_Buf
-    Int_Xferred = Int_Xferred + SIZE(Int_MeshedInput_Buf)
-  ENDIF
-  IF( ALLOCATED(Re_MeshedInput_Buf) )  DEALLOCATE(Re_MeshedInput_Buf)
-  IF( ALLOCATED(Db_MeshedInput_Buf) )  DEALLOCATE(Db_MeshedInput_Buf)
-  IF( ALLOCATED(Int_MeshedInput_Buf) ) DEALLOCATE(Int_MeshedInput_Buf)
   IF ( ALLOCATED(InData%Position) ) THEN
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Position))-1 ) =  PACK(InData%Position ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%Position)
@@ -1014,9 +666,6 @@ CONTAINS
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
  ! buffers to store meshes, if any
-  REAL(ReKi),    ALLOCATABLE :: Re_MeshedInput_Buf(:)
-  REAL(DbKi),    ALLOCATABLE :: Db_MeshedInput_Buf(:)
-  INTEGER(IntKi),    ALLOCATABLE :: Int_MeshedInput_Buf(:)
     !
   ErrStat = ErrID_None
   ErrMsg  = ""
@@ -1026,24 +675,6 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
- ! first call MeshPack to get correctly sized buffers for unpacking
-  CALL MeshPack( OutData%MeshedInput, Re_MeshedInput_Buf, Db_MeshedInput_Buf, Int_MeshedInput_Buf, ErrStat, ErrMsg , .TRUE. ) ! MeshedInput 
-  IF(ALLOCATED(Re_MeshedInput_Buf)) THEN
-    Re_MeshedInput_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_MeshedInput_Buf)-1 )
-    Re_Xferred = Re_Xferred + SIZE(Re_MeshedInput_Buf)
-  ENDIF
-  IF(ALLOCATED(Db_MeshedInput_Buf)) THEN
-    Db_MeshedInput_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_MeshedInput_Buf)-1 )
-    Db_Xferred = Db_Xferred + SIZE(Db_MeshedInput_Buf)
-  ENDIF
-  IF(ALLOCATED(Int_MeshedInput_Buf)) THEN
-    Int_MeshedInput_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_MeshedInput_Buf)-1 )
-    Int_Xferred = Int_Xferred + SIZE(Int_MeshedInput_Buf)
-  ENDIF
-  CALL MeshUnPack( OutData%MeshedInput, Re_MeshedInput_Buf, Db_MeshedInput_Buf, Int_MeshedInput_Buf, ErrStat, ErrMsg ) ! MeshedInput 
-  IF( ALLOCATED(Re_MeshedInput_Buf) )  DEALLOCATE(Re_MeshedInput_Buf)
-  IF( ALLOCATED(Db_MeshedInput_Buf) )  DEALLOCATE(Db_MeshedInput_Buf)
-  IF( ALLOCATED(Int_MeshedInput_Buf) ) DEALLOCATE(Int_MeshedInput_Buf)
   IF ( ALLOCATED(OutData%Position) ) THEN
   ALLOCATE(mask2(SIZE(OutData%Position,1),SIZE(OutData%Position,2))); mask2 = .TRUE.
     OutData%Position = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Position))-1 ),mask2,OutData%Position)
@@ -1176,6 +807,324 @@ CONTAINS
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
  END SUBROUTINE IfW_HHWind_UnpackOutput
+
+ SUBROUTINE IfW_HHWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_continuousstatetype), INTENT(IN   ) :: SrcContStateData
+  TYPE(IfW_HHWind_continuousstatetype), INTENT(  OUT) :: DstContStateData
+  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  DstContStateData%DummyContState = SrcContStateData%DummyContState
+ END SUBROUTINE IfW_HHWind_CopyContState
+
+ SUBROUTINE IfW_HHWind_DestroyContState( ContStateData, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: ContStateData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+ END SUBROUTINE IfW_HHWind_DestroyContState
+
+ SUBROUTINE IfW_HHWind_PackContState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_continuousstatetype),  INTENT(INOUT) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+ ! buffers to store meshes, if any
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  Re_BufSz   = Re_BufSz   + 1  ! DummyContState
+  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
+  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
+  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyContState )
+  Re_Xferred   = Re_Xferred   + 1
+ END SUBROUTINE IfW_HHWind_PackContState
+
+ SUBROUTINE IfW_HHWind_UnpackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+ ! buffers to store meshes, if any
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  OutData%DummyContState = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  Re_Xferred   = Re_Xferred-1
+  Db_Xferred   = Db_Xferred-1
+  Int_Xferred  = Int_Xferred-1
+ END SUBROUTINE IfW_HHWind_UnpackContState
+
+ SUBROUTINE IfW_HHWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_discretestatetype), INTENT(IN   ) :: SrcDiscStateData
+  TYPE(IfW_HHWind_discretestatetype), INTENT(  OUT) :: DstDiscStateData
+  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  DstDiscStateData%DummyDiscState = SrcDiscStateData%DummyDiscState
+ END SUBROUTINE IfW_HHWind_CopyDiscState
+
+ SUBROUTINE IfW_HHWind_DestroyDiscState( DiscStateData, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: DiscStateData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+ END SUBROUTINE IfW_HHWind_DestroyDiscState
+
+ SUBROUTINE IfW_HHWind_PackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_discretestatetype),  INTENT(INOUT) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+ ! buffers to store meshes, if any
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  Re_BufSz   = Re_BufSz   + 1  ! DummyDiscState
+  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
+  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
+  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyDiscState )
+  Re_Xferred   = Re_Xferred   + 1
+ END SUBROUTINE IfW_HHWind_PackDiscState
+
+ SUBROUTINE IfW_HHWind_UnpackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+ ! buffers to store meshes, if any
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  OutData%DummyDiscState = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  Re_Xferred   = Re_Xferred-1
+  Db_Xferred   = Db_Xferred-1
+  Int_Xferred  = Int_Xferred-1
+ END SUBROUTINE IfW_HHWind_UnpackDiscState
+
+ SUBROUTINE IfW_HHWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_constraintstatetype), INTENT(IN   ) :: SrcConstrStateData
+  TYPE(IfW_HHWind_constraintstatetype), INTENT(  OUT) :: DstConstrStateData
+  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  DstConstrStateData%DummyConstrState = SrcConstrStateData%DummyConstrState
+ END SUBROUTINE IfW_HHWind_CopyConstrState
+
+ SUBROUTINE IfW_HHWind_DestroyConstrState( ConstrStateData, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: ConstrStateData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+ END SUBROUTINE IfW_HHWind_DestroyConstrState
+
+ SUBROUTINE IfW_HHWind_PackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_constraintstatetype),  INTENT(INOUT) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+ ! buffers to store meshes, if any
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  Re_BufSz   = Re_BufSz   + 1  ! DummyConstrState
+  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
+  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
+  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyConstrState )
+  Re_Xferred   = Re_Xferred   + 1
+ END SUBROUTINE IfW_HHWind_PackConstrState
+
+ SUBROUTINE IfW_HHWind_UnpackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+ ! buffers to store meshes, if any
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  OutData%DummyConstrState = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  Re_Xferred   = Re_Xferred-1
+  Db_Xferred   = Db_Xferred-1
+  Int_Xferred  = Int_Xferred-1
+ END SUBROUTINE IfW_HHWind_UnpackConstrState
 
  SUBROUTINE IfW_HHWind_Pack( Re_RetAry, Db_RetAry, Int_RetAry, &
                      InData, ParamData, ContStateData, DiscStateData, &
