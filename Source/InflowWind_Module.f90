@@ -599,5 +599,17 @@ END SUBROUTINE IfW_End
 !====================================================================================================
 END MODULE InflowWind_Module
 
-
-
+!SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
+!                           ContStates, DiscStates, ConstrStates,     OtherStates,   &
+!                           OutData,    Interval,   ErrStat,          ErrMsg)
+!SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
+!                           ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
+!                           OutData,       ErrStat,       ErrMsg)
+!SUBROUTINE IfW_HHWind_End( InData,     ParamData,                                &
+!                           ContStates, DiscStates, ConstrStates,  OtherStates,   &
+!                           OutData,                                              &
+!                           ErrStat,    ErrMsg)
+!SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+!SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+!SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+!SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
