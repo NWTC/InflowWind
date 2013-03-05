@@ -19,22 +19,53 @@ New plan:
    -- write documentation on use
 
 
+
 Things to remember to change:
    -- UnWind -> UnitWind --> get this during init (stored in OtherStates)
 
 
-TODO:
-   -  Add information in the Parameters about how many time steps there are, bounds on time
-   -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
-   -  Add in tests of the empty state routines
 
-COMPLETED:
+Module:
+   TODO:
+      -  figure out what types should be common to all the module pieces.
+         -  Copy over what is needed from the HHWind one.
+         -  Make the HHWind use the global types rather than its own.
+         -  figure out how to make that work with userwind.
+      -  Figure out a good way to copy things from one type to another
+      -  Get CALL HHWind_Init working correctly (passing stuff out)
+      -  Get CALL HHWind_End working correctly
+      -  Get CALL HHWind_CalcOutput working correctly
+
+
+Driver:
+   TODO:
+      -  Make sure that HHWind works correctly
+
+
+Documentation:
+   TODO:
+      -  explain input
+      -  explain outputs
+      -  explain structure of the code
+      -  Explain what has been hacked out (linearize, hacks, etc)
+      -  Explain how to use UserWnd
+      -  Explain name changes???
+      -  planned features
+         -  storing info about the "grid size/stepsize/time length" of the file read in
+
+
 IfW_HHWind.f90
-   +  properly allocate array for the output
-   +  step through all points
-   +  Err handling in CalcOutput
-   +  Err handling in the GetWindSpeed function (upgrade to use ErrID levels etc)
-   +  Err handling in Init
-   +  Err handling in End
-   +  Add the other modular framework required routines into the file.
+   TODO:
+      -  Add information in the Parameters about how many time steps there are, bounds on time
+      -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
+      -  Add in tests of the empty state routines
 
+   COMPLETED:
+      +  properly allocate array for the output
+      +  step through all points
+      +  Err handling in CalcOutput
+      +  Err handling in the GetWindSpeed function (upgrade to use ErrID levels etc)
+      +  Err handling in Init
+      +  Err handling in End
+      +  Add the other modular framework required routines into the file.
+   

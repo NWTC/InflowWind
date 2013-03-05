@@ -48,12 +48,13 @@ MODULE InflowWind_Module
       ! The included wind modules
       !-------------------------------------------------------------------------------------------------
 
-   USE                              FFWind               ! full-field binary wind files
-   USE                              HHWind               ! hub-height text wind files
-   USE                              FDWind               ! 4-D binary wind files
-   USE                              CTWind               ! coherent turbulence from KH billow - binary file superimposed on another wind type
-   USE                              UserWind             ! user-defined wind module
-   USE                              HAWCWind             ! full-field binary wind files in HAWC format
+   USE                              IfW_HHWind_Types           ! Types for IfW_HHWind
+   USE                              IfW_HHWind                 ! hub-height text wind files
+!   USE                              FFWind               ! full-field binary wind files
+!   USE                              HAWCWind             ! full-field binary wind files in HAWC format
+!   USE                              FDWind               ! 4-D binary wind files
+!   USE                              CTWind               ! coherent turbulence from KH billow - binary file superimposed on another wind type
+!   USE                              UserWind             ! user-defined wind module
 
 
       !-------------------------------------------------------------------------------------------------
@@ -137,7 +138,7 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 !----------------------------------------------------------------------------------------------------
 !  Open and read the wind files, allocating space for necessary variables
 
-      USE CTWind
+!      USE CTWind
 
          ! Initialization data and guesses
 
@@ -160,13 +161,23 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
          ! Local variables
 
-      TYPE(HH_Info)                                      :: HHInitInfo
-      TYPE(CT_Backgr)                                    :: BackGrndValues
+      TYPE(IfW_HHWind_InitInputType)                     :: HH_InitData       ! initialization info FIXME:merge
+      TYPE(IfW_HHWind_InputType)                         :: HH_InitGuess      ! input positions. FIXME:merge
+      TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData      ! parameters FIXME:merge
+      TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates     ! Unused FIXME:merge
+      TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates     ! Unused FIXME:merge
+      TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates   ! Unused FIXME:merge
+      TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates    ! Data is stored here FIXME:merge
+      TYPE(IfW_HHWind_OutputType)                        :: HH_OutData        ! output velocities FIXME:merge
+
+
+!     TYPE(CT_Backgr)                                    :: BackGrndValues
 
 
 !NOTE: It isn't entirely clear what the purpose of Height is. Does it sometimes occur that Height  /= ParamData%ReferenceHeight???
       REAL(ReKi)                                         :: Height      ! Retrieved from FF
       REAL(ReKi)                                         :: HalfWidth   ! Retrieved from FF
+!FIXME: remove the following. Should be passed to the modules through their types.
       CHARACTER(1024)                                    :: FileName
 
 !NOTE: I may need to revamp how data is passed to the lower modules. Might need to do that before going any further.
@@ -214,9 +225,9 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
          ErrStat = 1
          RETURN
       ELSE
-            ! Copy things into the ParamaterType -- InitData may not exist later and isn't accessable in some routines.
-         ParamData%WindFileType = InitData%WindFileType
-         ParamData%WindFileName = InitData%WindFileName
+            ! Copy things into the ParameterType
+         ParamData%WindFileType = InitData%WindFileType  !FIXME:merge
+         ParamData%WindFileName = InitData%WindFileName  !FIXME:merge
    !FIXME: this is temporary and should be removed once the Wind modules are done.
          FileName = InitData%WindFileName
          CALL NWTC_Init()
@@ -240,24 +251,24 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
       !-------------------------------------------------------------------------------------------------
 
       IF ( ParamData%WindFileType == CTP_Wind ) THEN
-
-         CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat, ErrMsg)
-         IF (ErrStat /= 0) THEN
-   !         CALL IfW_End( ParamData, ErrStat )
-   !FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
-   !         CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-   !                       OutData, ErrStat, ErrMsg )
-            ParamData%WindFileType = Undef_Wind
-            ErrStat  = 1
-            RETURN
-         END IF
-
-   !FIXME: check this
-         ParamData%WindFileName = BackGrndValues%WindFile
-         ParamData%WindFileType = BackGrndValues%WindFileType
-   !      CT_Flag  = BackGrndValues%CoherentStr
-         ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
-
+!
+!         CALL CT_Init(UnWind, ParamData%WindFileName, BackGrndValues, ErrStat, ErrMsg)
+!         IF (ErrStat /= 0) THEN
+!   !         CALL IfW_End( ParamData, ErrStat )
+!   !FIXME: cannot call IfW_End here -- requires InitData to be INOUT. Not allowed by framework.
+!   !         CALL IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
+!   !                       OutData, ErrStat, ErrMsg )
+!            ParamData%WindFileType = Undef_Wind
+!            ErrStat  = 1
+!            RETURN
+!         END IF
+!
+!   !FIXME: check this
+!         ParamData%WindFileName = BackGrndValues%WindFile
+!         ParamData%WindFileType = BackGrndValues%WindFileType
+!   !      CT_Flag  = BackGrndValues%CoherentStr
+!         ParamData%CT_Flag  = BackGrndValues%CoherentStr    ! This might be wrong
+!
       ELSE
 
    !      CT_Flag  = .FALSE.
@@ -273,46 +284,50 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
          CASE (HH_Wind)
 
-            HHInitInfo%ReferenceHeight = InitData%ReferenceHeight
-            HHInitInfo%Width           = InitData%Width
+            HH_InitData%ReferenceHeight = InitData%ReferenceHeight
+            HH_InitData%Width           = InitData%Width
+            HH_InitData%WindFileName    = InitData%WindFileName
 
-            CALL HH_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
+!            CALL IfW_HHWind_Init( UnWind, ParamData%WindFileName, HHInitInfo, ErrStat )
+            CALL IfW_HHWind_Init(HH_InitData,   HH_InitGuess,  HH_ParamData,                       &
+                                 HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
+                                 HH_OutData,    Interval,      ErrStat,          ErrMsg)
 
-   !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)
-            IF (ErrStat == ErrID_None .AND. ParamData%CT_Flag) &
-               CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat, ErrMsg)
-
-
-         CASE (FF_Wind)
-
-            CALL FF_Init( UnWind, ParamData%WindFileName, ErrStat, ErrMsg )
-
-
-               ! Set CT parameters
-            IF ( ErrStat == ErrID_None .AND. ParamData%CT_Flag ) THEN
-               Height     = FF_GetValue('HubHeight', ErrStat, ErrMsg)
-               IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
-
-               HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat, ErrMsg)
-               IF ( ErrStat /= 0 ) HalfWidth = 0
-
-               CALL CT_SetRefVal(Height, HalfWidth, ErrStat, ErrMsg)
-            END IF
+   !        IF (CT_Flag) CALL CT_SetRefVal(FileInfo%ReferenceHeight, 0.5*FileInfo%Width, ErrStat)  !FIXME: check if this was originally used
+!            IF (ErrStat == ErrID_None .AND. ParamData%CT_Flag) &
+!               CALL CT_SetRefVal(InitData%ReferenceHeight, REAL(0.0, ReKi), ErrStat, ErrMsg)
 
 
-         CASE (UD_Wind)
-
-            CALL UsrWnd_Init(ErrStat)
-
-
-         CASE (FD_Wind)
-
-            CALL FD_Init(UnWind, ParamData%WindFileName, InitData%ReferenceHeight, ErrStat)
-
-         CASE (HAWC_Wind)
-
-            CALL HW_Init( UnWind, ParamData%WindFileName, ErrStat )
-
+!         CASE (FF_Wind)
+!
+!            CALL IfW_FFWind_Init( UnWind, ParamData%WindFileName, ErrStat, ErrMsg )
+!
+!
+!               ! Set CT parameters
+!            IF ( ErrStat == ErrID_None .AND. ParamData%CT_Flag ) THEN
+!               Height     = FF_GetValue('HubHeight', ErrStat, ErrMsg)
+!               IF ( ErrStat /= 0 ) Height = InitData%ReferenceHeight
+!
+!               HalfWidth  = 0.5*FF_GetValue('GridWidth', ErrStat, ErrMsg)
+!               IF ( ErrStat /= 0 ) HalfWidth = 0
+!
+!               CALL CT_SetRefVal(Height, HalfWidth, ErrStat, ErrMsg)
+!            END IF
+!
+!
+!         CASE (UD_Wind)
+!
+!            CALL UsrWnd_Init(ErrStat)
+!
+!
+!         CASE (FD_Wind)
+!
+!            CALL IfW_FDWind_Init(UnWind, ParamData%WindFileName, InitData%ReferenceHeight, ErrStat)
+!
+!         CASE (HAWC_Wind)
+!
+!            CALL HW_Init( UnWind, ParamData%WindFileName, ErrStat )
+!
          CASE DEFAULT
 
             CALL WrScr(' Error: Undefined wind type in WindInflow_Init()' )
@@ -406,9 +421,11 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
       SELECT CASE ( ParamData%WindFileType )
          CASE (HH_Wind)
 
+!FIXME: remove this loop structure. this was moved into the IfW_HHWind module
             DO PointCounter = 1, SIZE(InputData%Position, 2)
 
-               OutputData%Velocity(:,PointCounter) = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
+!FIXME: now subroutine. Pass in the correct types for all points you want, not just this one point.
+!               OutputData%Velocity(:,PointCounter) = HH_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
 
                   ! Error Handling -- move ErrMsg inside HH_GetWindSPeed and simplify
                IF (ErrStat >= ErrID_Severe) THEN
@@ -418,62 +435,62 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
             ENDDO
 
 
-         CASE (FF_Wind)
-
-            DO PointCounter = 1, SIZE(InputData%Position, 2)
-
-               OutputData%Velocity(:,PointCounter) = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
-
-                  ! Error Handling -- move ErrMsg inside FF_GetWindSPeed and simplify
-               IF (ErrStat >= ErrID_Severe) THEN
-                  ErrMsg   = 'IfW_CalcOutput: Error in FF_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
-                  EXIT        ! Exit the loop
-               ENDIF
-            ENDDO
-
-
-         CASE (UD_Wind)
-
-            DO PointCounter = 1, SIZE(InputData%Position, 2)
-
-               OutputData%Velocity(:,PointCounter) = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )!, ErrMsg)
-
-                  ! Error Handling -- move ErrMsg inside UsrWind_GetWindSPeed and simplify
-               IF (ErrStat >= ErrID_Severe) THEN
-                  ErrMsg   = 'IfW_CalcOutput: Error in UsrWnd_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
-                  EXIT        ! Exit the loop
-               ENDIF
-            ENDDO
-
-
-         CASE (FD_Wind)
-
-            DO PointCounter = 1, SIZE(InputData%Position, 2)
-
-               OutputData%Velocity(:,PointCounter) = FD_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
-
-                  ! Error Handling -- move ErrMsg inside FD_GetWindSPeed and simplify
-               IF (ErrStat >= ErrID_Severe) THEN
-                  ErrMsg   = 'IfW_CalcOutput: Error in FD_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
-                  EXIT        ! Exit the loop
-               ENDIF
-            ENDDO
-
-
-         CASE (HAWC_Wind)
-
-            DO PointCounter = 1, SIZE(InputData%Position, 2)
-
-               OutputData%Velocity(:,PointCounter) = HW_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
-
-                  ! Error Handling -- move ErrMsg inside HW_GetWindSPeed and simplify
-               IF (ErrStat >= ErrID_Severe) THEN
-                  ErrMsg   = 'IfW_CalcOutput: Error in HW_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
-                  EXIT        ! Exit the loop
-               ENDIF
-            ENDDO
-
-
+!         CASE (FF_Wind)
+!
+!            DO PointCounter = 1, SIZE(InputData%Position, 2)
+!
+!               OutputData%Velocity(:,PointCounter) = FF_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg)
+!
+!                  ! Error Handling -- move ErrMsg inside FF_GetWindSPeed and simplify
+!               IF (ErrStat >= ErrID_Severe) THEN
+!                  ErrMsg   = 'IfW_CalcOutput: Error in FF_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+!                  EXIT        ! Exit the loop
+!               ENDIF
+!            ENDDO
+!
+!
+!         CASE (UD_Wind)
+!
+!            DO PointCounter = 1, SIZE(InputData%Position, 2)
+!
+!               OutputData%Velocity(:,PointCounter) = UsrWnd_GetWindSpeed( Time, InputData%Position(:,PointCounter), ErrStat )!, ErrMsg)
+!
+!                  ! Error Handling -- move ErrMsg inside UsrWind_GetWindSPeed and simplify
+!               IF (ErrStat >= ErrID_Severe) THEN
+!                  ErrMsg   = 'IfW_CalcOutput: Error in UsrWnd_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+!                  EXIT        ! Exit the loop
+!               ENDIF
+!            ENDDO
+!
+!
+!         CASE (FD_Wind)
+!
+!            DO PointCounter = 1, SIZE(InputData%Position, 2)
+!
+!               OutputData%Velocity(:,PointCounter) = FD_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+!
+!                  ! Error Handling -- move ErrMsg inside FD_GetWindSPeed and simplify
+!               IF (ErrStat >= ErrID_Severe) THEN
+!                  ErrMsg   = 'IfW_CalcOutput: Error in FD_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+!                  EXIT        ! Exit the loop
+!               ENDIF
+!            ENDDO
+!
+!
+!         CASE (HAWC_Wind)
+!
+!            DO PointCounter = 1, SIZE(InputData%Position, 2)
+!
+!               OutputData%Velocity(:,PointCounter) = HW_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat )
+!
+!                  ! Error Handling -- move ErrMsg inside HW_GetWindSPeed and simplify
+!               IF (ErrStat >= ErrID_Severe) THEN
+!                  ErrMsg   = 'IfW_CalcOutput: Error in HW_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+!                  EXIT        ! Exit the loop
+!               ENDIF
+!            ENDDO
+!
+!
 
             ! If it isn't one of the above cases, we have a problem and won't be able to continue
 
@@ -499,27 +516,27 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
             ! Add coherent turbulence to background wind
 
-         IF (ParamData%CT_Flag) THEN
-
-            DO PointCounter = 1, SIZE(InputData%Position, 2)
-
-               TempWindSpeed = CT_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg )
-
-                  ! Error Handling -- move ErrMsg inside CT_GetWindSPeed and simplify
-               IF (ErrStat >= ErrID_Severe) THEN
-                  ErrMsg   = 'IfW_CalcOutput: Error in CT_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
-                  EXIT        ! Exit the loop
-               ENDIF
-
-               OutputData%Velocity(:,PointCounter) = OutputData%Velocity(:,PointCounter) + TempWindSpeed
-
-            ENDDO
-
-               ! If something went badly wrong, Return
-            IF (ErrStat >= ErrID_Severe ) RETURN
-
-         ENDIF
-
+!         IF (ParamData%CT_Flag) THEN
+!
+!            DO PointCounter = 1, SIZE(InputData%Position, 2)
+!
+!               TempWindSpeed = CT_GetWindSpeed(     Time, InputData%Position(:,PointCounter), ErrStat, ErrMsg )
+!
+!                  ! Error Handling -- move ErrMsg inside CT_GetWindSPeed and simplify
+!               IF (ErrStat >= ErrID_Severe) THEN
+!                  ErrMsg   = 'IfW_CalcOutput: Error in CT_GetWindSpeed for point number '//TRIM(Num2LStr(PointCounter))
+!                  EXIT        ! Exit the loop
+!               ENDIF
+!
+!               OutputData%Velocity(:,PointCounter) = OutputData%Velocity(:,PointCounter) + TempWindSpeed
+!
+!            ENDDO
+!
+!               ! If something went badly wrong, Return
+!            IF (ErrStat >= ErrID_Severe ) RETURN
+!
+!         ENDIF
+!
       ENDIF
 
 
@@ -551,9 +568,10 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
       CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
 
 
-         ! Close the wind file, if it happens to be open
-
-      CLOSE( UnWind )
+!FIXME: UnWind is not stored here anymore
+!         ! Close the wind file, if it happens to be open
+!
+!      CLOSE( UnWind )
 
 
          ! End the sub-modules (deallocates their arrays and closes their files):
@@ -561,19 +579,26 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
       SELECT CASE ( ParamData%WindFileType )
 
          CASE (HH_Wind)
-            CALL HH_Terminate(     ErrStat )
+!FIXME:NEXT how do I want to deal with the types? put all into a single one? or what? Do I add a translation layer for everything? Would that even work?
+!SUBROUTINE IfW_HHWind_End( InData,     ParamData,                                &
+!                           ContStates, DiscStates, ConstrStates,  OtherStates,   &
+!                           OutData,                                              &
+!FIXME:NEXT add the types as needed.
+!            CALL IfW_HHWind_End( HH_InitData,   HH_ParamData,  &
+!                                 HH_ContStates, HH_DiscStates, HH_ConstrStateGuess, HH_OtherStates, &
+!                                 HH_OutData,    ErrStat,       ErrMsg )
 
-         CASE (FF_Wind)
-            CALL FF_Terminate(     ErrStat, ErrMsg )
-
-         CASE (UD_Wind)
-            CALL UsrWnd_Terminate( ErrStat )
-
-         CASE (FD_Wind)
-            CALL FD_Terminate(     ErrStat )
-
-         CASE (HAWC_Wind)
-            CALL HW_Terminate(     ErrStat )
+!         CASE (FF_Wind)
+!            CALL FF_Terminate(     ErrStat, ErrMsg )
+!
+!         CASE (UD_Wind)
+!            CALL UsrWnd_Terminate( ErrStat )
+!
+!         CASE (FD_Wind)
+!            CALL FD_Terminate(     ErrStat )
+!
+!         CASE (HAWC_Wind)
+!            CALL HW_Terminate(     ErrStat )
 
          CASE ( Undef_Wind )
             ! Do nothing
@@ -584,8 +609,8 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
 
       END SELECT
 
-  !   IF (CT_Flag) CALL CT_Terminate( ErrStat ) !FIXME: should it be this line or the next?
-         CALL CT_Terminate( ErrStat, ErrMsg )
+!  !   IF (CT_Flag) CALL CT_Terminate( ErrStat ) !FIXME: should it be this line or the next?
+!         CALL CT_Terminate( ErrStat, ErrMsg )
 
 
          ! Reset the wind type so that the initialization routine must be called
@@ -599,9 +624,6 @@ END SUBROUTINE IfW_End
 !====================================================================================================
 END MODULE InflowWind_Module
 
-!SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
-!                           ContStates, DiscStates, ConstrStates,     OtherStates,   &
-!                           OutData,    Interval,   ErrStat,          ErrMsg)
 !SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
 !                           ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
 !                           OutData,       ErrStat,       ErrMsg)

@@ -15,10 +15,9 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-typedef  IfW_HHWind/IfW_HHWind   InitInputType  CHARACTER(1024)   InputFile         -     -     -     "Name of the input file; remove if there is no file"           -
+typedef  IfW_HHWind/IfW_HHWind   InitInputType  CHARACTER(1024)   WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
-typedef  ^                       ^              CHARACTER(1024)   WindFile          -     -     -     "Name of the wind file to use"                                 -
 
 
 
@@ -48,7 +47,7 @@ typedef  ^                       ParameterType           DbKi     DT            
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Height of the hub"                                            meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field"                                      meters
 typedef  ^                       ^                       Logical  Linearize         -  .FALSE.  -     "If this is true, we are linearizing"                          -
-typedef  ^                       ^              CHARACTER(1024)   WindFile          -     -     -     "Name of the wind file to use"                                 -
+typedef  ^                       ^              CHARACTER(1024)   WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       Logical  Initialized       -  .FALSE.  -     "Flag to indicate if the module was initialized"               -
 
 

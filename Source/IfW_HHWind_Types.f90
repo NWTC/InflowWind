@@ -31,10 +31,9 @@ MODULE IfW_HHWind_Types
 USE NWTC_Library
 IMPLICIT NONE
   TYPE, PUBLIC :: IfW_HHWind_InitInputType
-    CHARACTER(1024)  :: InputFile 
+    CHARACTER(1024)  :: WindFileName 
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
-    CHARACTER(1024)  :: WindFile 
   END TYPE IfW_HHWind_InitInputType
   TYPE, PUBLIC :: IfW_HHWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0 
@@ -57,7 +56,7 @@ IMPLICIT NONE
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
     LOGICAL  :: Linearize = .FALSE. 
-    CHARACTER(1024)  :: WindFile 
+    CHARACTER(1024)  :: WindFileName 
     LOGICAL  :: Initialized = .FALSE. 
   END TYPE IfW_HHWind_ParameterType
   TYPE, PUBLIC :: IfW_HHWind_InputType
@@ -88,10 +87,9 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  DstInitInputData%InputFile = SrcInitInputData%InputFile
+  DstInitInputData%WindFileName = SrcInitInputData%WindFileName
   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
   DstInitInputData%Width = SrcInitInputData%Width
-  DstInitInputData%WindFile = SrcInitInputData%WindFile
  END SUBROUTINE IfW_HHWind_CopyInitInput
 
  SUBROUTINE IfW_HHWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -464,7 +462,7 @@ CONTAINS
   DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
   DstParamData%Width = SrcParamData%Width
   DstParamData%Linearize = SrcParamData%Linearize
-  DstParamData%WindFile = SrcParamData%WindFile
+  DstParamData%WindFileName = SrcParamData%WindFileName
   DstParamData%Initialized = SrcParamData%Initialized
  END SUBROUTINE IfW_HHWind_CopyParam
 

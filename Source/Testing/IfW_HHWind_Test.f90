@@ -45,7 +45,6 @@ PROGRAM HHWind_Test
 
 
       ! Local variables
-   CHARACTER(1024)                                    :: WindFileName
    REAL(DbKi)                                         :: Time
    REAL(ReKi)                                         :: WindPosition(3,3)
    REAL(ReKi)                                         :: WindVelocity(3,3)
@@ -63,8 +62,8 @@ PROGRAM HHWind_Test
    HH_Interval = 0.01
 
       ! setup the file info
-   HH_InitData%WindFile       = "../../Samples/Steady.wnd"           ! HHWind file
-   HH_InitData%WindFile       = "../../Samples/SampleCase/Sample1.hh"
+   HH_InitData%WindFileName   = "../../Samples/Steady.wnd"           ! HHWind file
+   HH_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.hh"
    HH_InitData%ReferenceHeight = 80.                        ! meters
    HH_InitData%Width           = 100.                       ! meters
 

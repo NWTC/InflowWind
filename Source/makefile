@@ -60,20 +60,22 @@ Other_DIR	:= \
 	../TestRoutines/Fortran/
 
 #The source files for InflowWind
-InflowWind_SOURCES  := \
-	SharedInflowDefs.f90 \
-   InflowWind_Module_Types.f90 \
-	CTWind.f90 \
-	FDWind.f90 \
-	FFWind.f90 \
-	HAWCWind.f90 \
-	IfW_HHWind.f90 \
-	UserWind.f90 \
-   InflowWind_Subs.f90 \
-	InflowWind_Module.f90 \
-   InflowWind_Driver_Types.f90 \
-   InflowWind_Driver_Subs.f90 \
+InflowWind_SOURCES  :=           \
+	SharedInflowDefs.f90          \
+   InflowWind_Module_Types.f90   \
+	IfW_HHWind.f90                \
+   IfW_HHWind_Types.f90          \
+   InflowWind_Subs.f90           \
+	InflowWind_Module.f90         \
+   InflowWind_Driver_Types.f90   \
+   InflowWind_Driver_Subs.f90    \
    InflowWind_Driver.f90
+
+#	CTWind.f90                    \
+	FDWind.f90                    \
+	FFWind.f90                    \
+	HAWCWind.f90                  \
+	UserWind.f90                  \
 
 
 
@@ -102,7 +104,9 @@ NWTC_Num.o:             NWTC_IO.o
 NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
 ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
 NWTC_Library.o:         NWTC_Aero.o ModMesh.o
-InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o
+
+IfW_HHWind.o:           IfW_HHWind_Types.o
+InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o IfW_HHWind.o
 InflowWind_Subs.o:      SharedInflowDefs.o NWTC_Library.o
 InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 
@@ -125,7 +129,7 @@ $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driv
 
 #cleanup afterwards
 clean:
-	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod;
+	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_NAME);
 	rmdir $(DEST_DIR)
 
 #doxygen bits

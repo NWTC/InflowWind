@@ -153,13 +153,13 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
    ParamData%ReferenceHeight  =  InitData%ReferenceHeight
    ParamData%Width            =  InitData%Width
-   ParamData%WindFile         =  InitData%WindFile
+   ParamData%WindFileName         =  InitData%WindFileName
 
 
    !-------------------------------------------------------------------------------------------------
    ! Open the file for reading
    !-------------------------------------------------------------------------------------------------
-   CALL OpenFInpFile (OtherStates%UnitWind, TRIM(InitData%WindFile), TmpErrStat, TmpErrMsg)
+   CALL OpenFInpFile (OtherStates%UnitWind, TRIM(InitData%WindFileName), TmpErrStat, TmpErrMsg)
    IF ( TmpErrStat >= AbortErrLev ) THEN
       ErrStat  = MAX(TmpErrStat, ErrStat)
       ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
@@ -209,7 +209,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       RETURN
    ELSE
       ErrMsg   =  TRIM(ErrMsg)//NewLine//' Reading '//TRIM(Num2LStr(OtherStates%NumDataLines))// &
-                     ' lines of data from the HH wind file "'//TRIM(InitData%WindFile)//'"'
+                     ' lines of data from the HH wind file "'//TRIM(InitData%WindFileName)//'"'
    END IF
 
 
@@ -283,7 +283,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    REWIND( OtherStates%UnitWind )
 
    DO I=1,NumComments
-      CALL ReadCom( OtherStates%UnitWind, TRIM(InitData%WindFile), 'Header line #'//TRIM(Num2LStr(I)), TmpErrStat, TmpErrMsg )
+      CALL ReadCom( OtherStates%UnitWind, TRIM(InitData%WindFileName), 'Header line #'//TRIM(Num2LStr(I)), TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
@@ -296,7 +296,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
    DO I=1,OtherStates%NumDataLines
 
-      CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFile), TmpData(1:NumCols), NumCols, 'TmpData', &
+      CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFileName), TmpData(1:NumCols), NumCols, 'TmpData', &
                 'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat ) !, TmpErrMsg)  FIXME: add error handling when available in the library
       ErrStat  = MAX(TmpErrStat, ErrStat)
 !      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
@@ -362,8 +362,8 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
 
    IF ( OtherStates%Tdata(1) > 0.0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'The hub-height wind file : "'//TRIM(ADJUSTL(InitData%WindFile))//'" starts at a time '// &
-                     'greater than zero. Interpolation errors may result.'
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'The hub-height wind file : "'//TRIM(ADJUSTL(InitData%WindFileName))// &
+                     '" starts at a time '//'greater than zero. Interpolation errors may result.'
       ErrStat  = MAX(ErrStat, ErrID_Warn)
    ENDIF
 
