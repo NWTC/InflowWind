@@ -7,10 +7,16 @@ REVISION:
 After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code.
 
 
+TODO Now:
+   anything left in HHWind?
+   Convert FFWind
+
 
 New plan:
-   +  convert HHWind to framework -- some bits remaining in the first three routines.
+   +  convert HHWind to framework -- some bits remaining in the first three routines.???
    +  HHWind test routine
+   -- convert FFWind to framework just like HHWind.
+   -- FFWind test routine (make new)?
    -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
    -- Make the Driver work with paraprint
    -- Setup regression test with HHWind

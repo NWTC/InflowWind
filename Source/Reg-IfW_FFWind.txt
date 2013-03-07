@@ -1,10 +1,10 @@
 ###################################################################################################################################
-# Registry for IfW_HHWind, creates MODULE IfW_HHWind_Types
-# Module IfW_HHWind_Types contains all of the user-defined types needed in IfW_HHWind. It also contains copy, destroy, pack, and
+# Registry for IfW_FFWind, creates MODULE IfW_FFWind_Types
+# Module IfW_FFWind_Types contains all of the user-defined types needed in IfW_FFWind. It also contains copy, destroy, pack, and
 # unpack routines associated with each defined data types.
 ###################################################################################################################################
 # Entries are of the form
-# keyword <IfW_HHWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
+# keyword <IfW_FFWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
 include Registry_NWTC_Library.txt
@@ -15,7 +15,7 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-typedef  IfW_HHWind/IfW_HHWind   InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
+typedef  IfW_FFWind/IfW_FFWind   InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 
@@ -25,19 +25,19 @@ typedef  ^                       ^                       ReKi     Width         
 #   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
 #   at a given time, etc.)
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
-typedef  ^                       ^                       ReKi     TData             :     -     -     "Time array from the HH file"                                  seconds
-typedef  ^                       ^                       ReKi     DELTA             :     -     -     "HH Wind direction (angle)"                                    degrees
-typedef  ^                       ^                       ReKi     V                 :     -     -     "HH horizontal wind speed"                                     meters/sec
-typedef  ^                       ^                       ReKi     VZ                :     -     -     "wind, including tower shadow, along the Z axis"               meters/sec
-typedef  ^                       ^                       ReKi     HSHR              :     -     -     "HH Horizontal linear shear"                                   -
-typedef  ^                       ^                       ReKi     VSHR              :     -     -     "HH vertical shear exponent"                                   -
-typedef  ^                       ^                       ReKi     VLINSHR           :     -     -     "HH vertical linear shear"                                     -
-typedef  ^                       ^                       ReKi     VGUST             :     -     -     "HH wind gust"                                                 -
-typedef  ^                       ^                       ReKi     LinearizeDels     7     -     -     "The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar"  -
-typedef  ^                       ^                       ReKi     RefHt             -     -     -     "reference height; was HH (hub height); used to center the wind"  -
-typedef  ^                       ^                       ReKi     RefWid            -     -     -     "reference width; was 2*R (=rotor diameter); used to scale the linear shear"  -
-typedef  ^                       ^                       IntKi    NumDataLines      -     -     -     ""                                                             -
-typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
+#typedef  ^                       ^                       ReKi     TData             :     -     -     "Time array from the FF file"                                  seconds
+#typedef  ^                       ^                       ReKi     DELTA             :     -     -     "FF Wind direction (angle)"                                    degrees
+#typedef  ^                       ^                       ReKi     V                 :     -     -     "FF horizontal wind speed"                                     meters/sec
+#typedef  ^                       ^                       ReKi     VZ                :     -     -     "wind, including tower shadow, along the Z axis"               meters/sec
+#typedef  ^                       ^                       ReKi     HSHR              :     -     -     "FF Horizontal linear shear"                                   -
+#typedef  ^                       ^                       ReKi     VSHR              :     -     -     "FF vertical shear exponent"                                   -
+#typedef  ^                       ^                       ReKi     VLINSHR           :     -     -     "FF vertical linear shear"                                     -
+#typedef  ^                       ^                       ReKi     VGUST             :     -     -     "FF wind gust"                                                 -
+#typedef  ^                       ^                       ReKi     LinearizeDels     7     -     -     "The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar"  -
+#typedef  ^                       ^                       ReKi     RefHt             -     -     -     "reference height; was FF (hub height); used to center the wind"  -
+#typedef  ^                       ^                       ReKi     RefWid            -     -     -     "reference width; was 2*R (=rotor diameter); used to scale the linear shear"  -
+#typedef  ^                       ^                       IntKi    NumDataLines      -     -     -     ""                                                             -
+#typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
 
 
 # ..... Parameters ................................................................................................................

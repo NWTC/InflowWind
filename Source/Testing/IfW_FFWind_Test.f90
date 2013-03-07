@@ -1,12 +1,12 @@
-PROGRAM HHWind_Test
+PROGRAM FFWind_Test
 !-----------------------------------------------------------------------------------------------------------------------------------
 !  This program is for testing the wind modules during development.
 !
 !
-!  v1.00.00a-adp  -- HHWind tested
+!  v1.00.00a-adp  -- FFWind tested
 !
 !
-!  The purpose of this code is simply to test the IfW_HHWind module. It does not do much useful beyond initialize the module,
+!  The purpose of this code is simply to test the IfW_FFWind module. It does not do much useful beyond initialize the module,
 !  calculate some values, and end the module.
 !
 !
@@ -16,13 +16,13 @@ PROGRAM HHWind_Test
 
 
    USE NWTC_Library
-   USE IfW_HHWind_Types
-   USE IfW_HHWind
+   USE IfW_FFWind_Types
+   USE IfW_FFWind
 
 
    IMPLICIT NONE
 
-   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("Wind_Test","v1.00.00a-adp","28-Feb-2013")
+   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("Wind_Test","v1.00.00a-adp","6-Feb-2013")
 
 
 
@@ -31,17 +31,17 @@ PROGRAM HHWind_Test
    INTEGER(IntKi)                                     :: ErrStat
 
 
-      ! The types used by HHWind
-   TYPE(IfW_HHWind_InitInputType)                     :: HH_InitData
-   TYPE(IfW_HHWind_InputType)                         :: HH_InData
-   TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData
-   TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates
-   TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates
-   TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates
-   TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates
-   TYPE(IfW_HHWind_OutputType)                        :: HH_OutData
+      ! The types used by FFWind
+   TYPE(IfW_FFWind_InitInputType)                     :: FF_InitData
+   TYPE(IfW_FFWind_InputType)                         :: FF_InData
+   TYPE(IfW_FFWind_ParameterType)                     :: FF_ParamData
+   TYPE(IfW_FFWind_ContinuousStateType)               :: FF_ContStates
+   TYPE(IfW_FFWind_DiscreteStateType)                 :: FF_DiscStates
+   TYPE(IfW_FFWind_ConstraintStateType)               :: FF_ConstrStates
+   TYPE(IfW_FFWind_OtherStateType)                    :: FF_OtherStates
+   TYPE(IfW_FFWind_OutputType)                        :: FF_OutData
 
-   REAL(DbKi)                                         :: HH_Interval
+   REAL(DbKi)                                         :: FF_Interval
 
 
       ! Local variables
@@ -59,25 +59,25 @@ PROGRAM HHWind_Test
    CALL DispNVD( ProgInfo )
 
    Time = 2.0
-   HH_Interval = 0.01
+   FF_Interval = 0.01
 
       ! setup the file info
-   HH_InitData%WindFileName   = "../../Samples/Steady.wnd"           ! HHWind file
-   HH_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.hh"
-   HH_InitData%ReferenceHeight = 80.                        ! meters
-   HH_InitData%Width           = 100.                       ! meters
+   FF_InitData%WindFileName   = "../../Samples/Steady.wnd"           ! FFWind file
+   FF_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.hh"
+   FF_InitData%ReferenceHeight = 80.                        ! meters
+   FF_InitData%Width           = 100.                       ! meters
 
    WindPosition(1,1) = 0.0                                  ! longitudinal front/back of tower
    WindPosition(1,2) = 0.0                                  ! lateral position left/right of tower
-   WindPosition(1,3) = HH_InitData%ReferenceHeight          ! Height above ground
+   WindPosition(1,3) = FF_InitData%ReferenceHeight          ! Height above ground
 
    WindPosition(2,1) = 30.0
    WindPosition(2,2) = 30.0
-   WindPosition(2,3) = HH_InitData%ReferenceHeight
+   WindPosition(2,3) = FF_InitData%ReferenceHeight
 
    WindPosition(3,1) = 0.0
    WindPosition(3,2) = 0.0
-   WindPosition(3,3) = HH_InitData%ReferenceHeight+30
+   WindPosition(3,3) = FF_InitData%ReferenceHeight+30
 
    ErrMsg   = ""
    ErrStat  = ErrID_None
@@ -88,11 +88,11 @@ PROGRAM HHWind_Test
 
    !-=- Initialize the module  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-   CALL WrScr(NewLine//" Initializing HHWind"//NewLine)
+   CALL WrScr(NewLine//" Initializing FFWind"//NewLine)
 
-   CALL IfW_HHWind_Init(HH_InitData,   HH_InData,     HH_ParamData,                       &
-                        HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
-                        HH_OutData,    HH_Interval,                                       &
+   CALL IfW_FFWind_Init(FF_InitData,   FF_InData,     FF_ParamData,                       &
+                        FF_ContStates, FF_DiscStates, FF_ConstrStates,  FF_OtherStates,   &
+                        FF_OutData,    FF_Interval,                                       &
                         ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
@@ -102,7 +102,7 @@ PROGRAM HHWind_Test
    ErrStat  = ErrID_None
    ErrMsg   = ""
 
-   CALL AllocAry( HH_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
+   CALL AllocAry( FF_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
    ELSEIF ( ErrStat /= ErrID_None ) THEN
@@ -112,18 +112,18 @@ PROGRAM HHWind_Test
    ErrMsg   = ""
 
       ! Copy the WindPosition over to the InData%Position array
-   HH_InData%Position   = WindPosition
+   FF_InData%Position   = WindPosition
 
    !-=- Simple call to get windspeed at just the hub -=-=-=-=-=-=-=-
 
    CALL WrScr(" Calculating wind velocity:")
 
-   CALL  IfW_HHWind_CalcOutput(  Time,    HH_InData,     HH_ParamData,                          &
-                           HH_ContStates, HH_DiscStates, HH_ConstrStates,     HH_OtherStates,   &
-                           HH_OutData,    ErrStat,       ErrMsg)
+   CALL  IfW_FFWind_CalcOutput(  Time,    FF_InData,     FF_ParamData,                          &
+                           FF_ContStates, FF_DiscStates, FF_ConstrStates,     FF_OtherStates,   &
+                           FF_OutData,    ErrStat,       ErrMsg)
 
       ! copy the Velocity data over for this timestep
-   WindVelocity=HH_OutData%Velocity
+   WindVelocity=FF_OutData%Velocity
 
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
@@ -156,9 +156,9 @@ PROGRAM HHWind_Test
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 
-   CALL IfW_HHWind_End( HH_InData,     HH_ParamData,                                      &
-                        HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
-                        HH_OutData,                                                       &
+   CALL IfW_FFWind_End( FF_InData,     FF_ParamData,                                      &
+                        FF_ContStates, FF_DiscStates, FF_ConstrStates,  FF_OtherStates,   &
+                        FF_OutData,                                                       &
                         ErrStat,       ErrMsg )
 
    IF ( ErrStat >= ErrID_Severe ) THEN

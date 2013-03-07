@@ -37,13 +37,18 @@ LIB_DIR := \
 #	../../../../../NWTC_Library/trunk/source
 
 #Name of the executable
-Executable_NAME := Wind_Test.lin32
+HHExecutable_NAME := HHWind_Test.lin32
+FFExecutable_NAME := FFWind_Test.lin32
 
 #Name of the registry file
-RegistryDIR := ..
-RegistryTXT := Reg-IfW_HHWind.txt
-RegistryF90	:= IfW_HHWind_Types.f90
-RegistryOBJ := $(RegistryF90:.f90=.o)
+RegistryDIR    := ..
+HHRegistryTXT  := Reg-IfW_HHWind.txt
+HHRegistryF90	:= IfW_HHWind_Types.f90
+HHRegistryOBJ  := $(RegistryF90:.f90=.o)
+
+FFRegistryTXT  := Reg-IfW_FFWind.txt
+FFRegistryF90	:= IfW_FFWind_Types.f90
+FFRegistryOBJ  := $(RegistryF90:.f90=.o)
 
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../../Doxygen--documentation
@@ -70,16 +75,23 @@ IfW_Test_DIR      := \
 IfW_Driver_DIR    := $(IfW_Test_DIR)
 
 #The source files for InflowWind
-InflowWind_SOURCES  :=           \
-	IfW_HHWind.f90                \
-   $(RegistryF90)                \
+InflowWind_SOURCES   :=          \
    SharedInflowDefs.f90          \
    InflowWind_Module_Types.f90
 
+HH_Sources           :=          \
+   $(InflowWind_SOURCES)         \
+	IfW_HHWind.f90                \
+   $(HHRegistryF90)
+
+FF_Sources           :=          \
+   $(InflowWind_SOURCES)         \
+	IfW_FFWind.f90                \
+   $(FFRegistryF90)
 
 #Testing sources
 IfW_Test_SOURCES  :=             \
-   IfW_HHWind_Test.f90
+   IfW_FFWind_Test.f90
 
 #Registry program
 RegistryProgram   := ../../../../../modularization_registry/registry.exe
@@ -88,11 +100,15 @@ RegistryNWTC      := ../../../../../modularization_registry/Registry_NWTC_Librar
 #### You should not need to change anything beyond this point
 #rule to do everything
 all:           default
-InflowWind:    clean default
-default:       $(RegistryF90) $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
+SETUP:         $(DEST_DIR) libcopy
+HH:            SETUP $(DEST_DIR)/$(HHExecutable_NAME)
+FF:            SETUP $(DEST_DIR)/$(FFExecutable_NAME)
+default:       HH FF
 
 LIB_OBJS          = $(LIB_SOURCES:.f90=.o)
 InflowWind_OBJS   = $(InflowWind_SOURCES:.f90=.o)
+HH_OBJS           = $(HH_SOURCES:.f90=.o)
+FF_OBJS           = $(FF_SOURCES:.f90=.o)
 IfW_Test_OBJS     = $(IfW_Test_SOURCES:.f90=.o)
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(IfW_Test_DIR)
@@ -102,8 +118,13 @@ vpath %.o $(DEST_DIR) $(LIB_DIR)
 %.o: %.f90
 	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR) -J $(DEST_DIR)
 
-#specific rule for the registry file
-$(RegistryF90):   $(RegistryDIR)/$(RegistryTXT)
+#specific rule for the HHWind registry file
+$(HHRegistryF90):   $(RegistryDIR)/$(HHRegistryTXT)
+	$(RegistryProgram) $<;
+	mv $@ $(RegistryDIR);
+
+#specific rule for the FFWind registry file
+$(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
 	$(RegistryProgram) $<;
 	mv $@ $(RegistryDIR);
 
@@ -115,9 +136,13 @@ NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
 ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
 NWTC_Library.o:         NWTC_Aero.o ModMesh.o
 
-IfW_HHWind_Types.o:     NWTC_Library.o $(RegistryF90)
+IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
 IfW_HHWind.o:           SharedInflowDefs.o InflowWind_Module_Types.o NWTC_Library.o IfW_HHWind_Types.o
 IfW_HHWind_Test.o:      IfW_HHWind.o SharedInflowDefs.o NWTC_Library.o IfW_HHWind_Types.o
+
+IfW_FFWind_Types.o:     NWTC_Library.o $(FFRegistryF90)
+IfW_FFWind.o:           SharedInflowDefs.o InflowWind_Module_Types.o NWTC_Library.o IfW_FFWind_Types.o
+IfW_FFWind_Test.o:      IfW_FFWind.o SharedInflowDefs.o NWTC_Library.o IfW_FFWind_Types.o
 
 #Make sure the destination directory exists
 $(DEST_DIR):
@@ -127,28 +152,26 @@ $(DEST_DIR):
 libcopy:
 	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
 
-#For compiling InflowWind
-$(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
-	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(Executable_NAME)           \
+#For compiling IfW_HHWind_Test
+$(DEST_DIR)/$(HHExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(HH_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
+	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(HHExecutable_NAME)         \
 		$(foreach src, $(LIB_OBJS),         $(addprefix $(DEST_DIR)/,$(src)))   \
 		$(foreach src, $(InflowWind_OBJS),  $(addprefix $(DEST_DIR)/,$(src)))   \
 		$(foreach src, $(IfW_Test_OBJS),    $(addprefix $(DEST_DIR)/,$(src)));
-		cp $(DEST_DIR)/$(Executable_NAME) .
+		cp $(DEST_DIR)/$(HHExecutable_NAME) .
+
+#For compiling IfW_FFWind_Test
+$(DEST_DIR)/$(FFExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(FF_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
+	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(FFExecutable_NAME)         \
+		$(foreach src, $(LIB_OBJS),         $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(InflowWind_OBJS),  $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(IfW_Test_OBJS),    $(addprefix $(DEST_DIR)/,$(src)));
+		cp $(DEST_DIR)/$(FFExecutable_NAME) .
 
 
 #cleanup afterwards
 clean:
-	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_NAME);
+	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(HHExecutable_NAME) $(DEST_DIR)/$(FFExecutable_NAME);
 	rmdir $(DEST_DIR);
-	rm -f $(RegistryDIR)/$(RegistryF90);
+	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90);
 
-#doxygen bits
-document: all
-	rm $(Doxy_DIR)/tempassembled.f90;
-	#cat $(foreach src, $(LIB_SOURCES),        $(addprefix $(LIB_DIR)/,$(src)))          >> $(Doxy_DIR)/tempassembled.f90;
-	cat $(foreach src, $(IfW_Test_SOURCES),   $(addprefix $(IfW_Test_DIR)/,$(src)))     >> $(Doxy_DIR)/tempassembled.f90;
-	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src)))   >> $(Doxy_DIR)/tempassembled.f90;
-	$(MAKE) -C $(Doxy_DIR);
-
-   #This line is for putting all the NWTC_Lib bits in the documentation;
-   #	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;

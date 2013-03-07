@@ -10,14 +10,52 @@ MODULE FFWind
 !     using subroutines and modules from AeroDyn v12.58
 !
 !----------------------------------------------------------------------------------------------------
+!  Feb 2013    v2.00.00          A. Platt    -- updated to the new framework
+!                    - Note:  Jacobians are not included in this version.
+!
+!----------------------------------------------------------------------------------------------------
+! LICENSING
+! Copyright (C) 2012  National Renewable Energy Laboratory
+!
+!    This file is part of InflowWind.
+!
+!    InflowWind is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as
+!    published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version.
+!
+!    This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
+!    of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
+!
+!    You should have received a copy of the GNU General Public License along with InflowWind.
+!    If not, see <http://www.gnu.org/licenses/>.
+!
+!----------------------------------------------------------------------------------------------------
 
-   USE      NWTC_Library
-   USE      SharedInflowDefs
-   USE                     InflowWind_Module_Types
+   USE                                       NWTC_Library
+   USE                                       SharedInflowDefs
+   USE                                       IfW_FFWind_Types
 
-   IMPLICIT NONE
+   IMPLICIT                                  NONE
+   PRIVATE
 
-   PRIVATE                                                        ! By default, everything in FFWind is private (methods, data, types, etc.)
+   INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_FFWind_Pack)
+   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v1.00.00', '25-Feb-2013' )
+
+   PUBLIC                                    :: IfW_FFWind_Init
+   PUBLIC                                    :: IfW_FFWind_End
+   PUBLIC                                    :: IfW_FFWind_CalcOutput
+
+
+      ! The following do not contain anything since there are no states.
+   PUBLIC                                    :: IfW_FFWind_UpdateStates
+   PUBLIC                                    :: IfW_FFWind_CalcContStateDeriv
+   PUBLIC                                    :: IfW_FFWind_UpdateDiscState
+   PUBLIC                                    :: IfW_FFWind_CalcConstrStateResidual
+
+
+      !The following were removed during conversion to the framework:
+
+!====================================================================================================
+
 
       ! former FF_Wind module
 
