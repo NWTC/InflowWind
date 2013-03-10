@@ -44,11 +44,11 @@ FFExecutable_NAME := FFWind_Test.lin32
 RegistryDIR    := ..
 HHRegistryTXT  := Reg-IfW_HHWind.txt
 HHRegistryF90	:= IfW_HHWind_Types.f90
-HHRegistryOBJ  := $(RegistryF90:.f90=.o)
+HHRegistryOBJ  := $(HHRegistryF90:.f90=.o)
 
 FFRegistryTXT  := Reg-IfW_FFWind.txt
 FFRegistryF90	:= IfW_FFWind_Types.f90
-FFRegistryOBJ  := $(RegistryF90:.f90=.o)
+FFRegistryOBJ  := $(FFRegistryF90:.f90=.o)
 
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../../Doxygen--documentation
@@ -79,18 +79,18 @@ InflowWind_SOURCES   :=          \
    SharedInflowDefs.f90          \
    InflowWind_Module_Types.f90
 
-HH_Sources           :=          \
-   $(InflowWind_SOURCES)         \
+HH_SOURCES           :=          \
 	IfW_HHWind.f90                \
    $(HHRegistryF90)
 
-FF_Sources           :=          \
-   $(InflowWind_SOURCES)         \
+FF_SOURCES           :=          \
 	IfW_FFWind.f90                \
    $(FFRegistryF90)
 
 #Testing sources
-IfW_Test_SOURCES  :=             \
+IfW_HH_Test_SOURCES  :=             \
+   IfW_HHWind_Test.f90
+IfW_FF_Test_SOURCES  :=             \
    IfW_FFWind_Test.f90
 
 #Registry program
@@ -109,7 +109,8 @@ LIB_OBJS          = $(LIB_SOURCES:.f90=.o)
 InflowWind_OBJS   = $(InflowWind_SOURCES:.f90=.o)
 HH_OBJS           = $(HH_SOURCES:.f90=.o)
 FF_OBJS           = $(FF_SOURCES:.f90=.o)
-IfW_Test_OBJS     = $(IfW_Test_SOURCES:.f90=.o)
+IfW_HH_Test_OBJS  = $(IfW_HH_Test_SOURCES:.f90=.o)
+IfW_FF_Test_OBJS  = $(IfW_FF_Test_SOURCES:.f90=.o)
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(IfW_Test_DIR)
 vpath %.o $(DEST_DIR) $(LIB_DIR)
@@ -153,19 +154,21 @@ libcopy:
 	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
 
 #For compiling IfW_HHWind_Test
-$(DEST_DIR)/$(HHExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(HH_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
+$(DEST_DIR)/$(HHExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(HH_OBJS) $(IfW_HH_Test_OBJS) | $(DEST_DIR)
 	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(HHExecutable_NAME)         \
 		$(foreach src, $(LIB_OBJS),         $(addprefix $(DEST_DIR)/,$(src)))   \
 		$(foreach src, $(InflowWind_OBJS),  $(addprefix $(DEST_DIR)/,$(src)))   \
-		$(foreach src, $(IfW_Test_OBJS),    $(addprefix $(DEST_DIR)/,$(src)));
+		$(foreach src, $(HH_OBJS),          $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(IfW_HH_Test_OBJS), $(addprefix $(DEST_DIR)/,$(src)));
 		cp $(DEST_DIR)/$(HHExecutable_NAME) .
 
 #For compiling IfW_FFWind_Test
-$(DEST_DIR)/$(FFExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(FF_OBJS) $(IfW_Test_OBJS) | $(DEST_DIR)
+$(DEST_DIR)/$(FFExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(FF_OBJS) $(IfW_FF_Test_OBJS) | $(DEST_DIR)
 	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(FFExecutable_NAME)         \
 		$(foreach src, $(LIB_OBJS),         $(addprefix $(DEST_DIR)/,$(src)))   \
 		$(foreach src, $(InflowWind_OBJS),  $(addprefix $(DEST_DIR)/,$(src)))   \
-		$(foreach src, $(IfW_Test_OBJS),    $(addprefix $(DEST_DIR)/,$(src)));
+		$(foreach src, $(FF_OBJS),          $(addprefix $(DEST_DIR)/,$(src)))   \
+		$(foreach src, $(IfW_FF_Test_OBJS), $(addprefix $(DEST_DIR)/,$(src)));
 		cp $(DEST_DIR)/$(FFExecutable_NAME) .
 
 

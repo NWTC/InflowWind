@@ -37,6 +37,8 @@ IMPLICIT NONE
   END TYPE IfW_FFWind_InitInputType
   TYPE, PUBLIC :: IfW_FFWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0 
+    REAL(ReKi) , DIMENSION(:,:,:,:), ALLOCATABLE  :: FFData 
+    REAL(ReKi) , DIMENSION(:,:,:), ALLOCATABLE  :: FFTower 
   END TYPE IfW_FFWind_OtherStateType
   TYPE, PUBLIC :: IfW_FFWind_ParameterType
     CHARACTER(1024)  :: WindFileName 
@@ -188,6 +190,17 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
+  i1 = SIZE(SrcOtherStateData%FFData,1)
+  i2 = SIZE(SrcOtherStateData%FFData,2)
+  i3 = SIZE(SrcOtherStateData%FFData,3)
+  i4 = SIZE(SrcOtherStateData%FFData,4)
+  IF (.NOT.ALLOCATED(DstOtherStateData%FFData)) ALLOCATE(DstOtherStateData%FFData(i1,i2,i3,i4))
+  DstOtherStateData%FFData = SrcOtherStateData%FFData
+  i1 = SIZE(SrcOtherStateData%FFTower,1)
+  i2 = SIZE(SrcOtherStateData%FFTower,2)
+  i3 = SIZE(SrcOtherStateData%FFTower,3)
+  IF (.NOT.ALLOCATED(DstOtherStateData%FFTower)) ALLOCATE(DstOtherStateData%FFTower(i1,i2,i3))
+  DstOtherStateData%FFTower = SrcOtherStateData%FFTower
  END SUBROUTINE IfW_FFWind_CopyOtherState
 
  SUBROUTINE IfW_FFWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -198,6 +211,8 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+  IF ( ALLOCATED(OtherStateData%FFData) ) DEALLOCATE(OtherStateData%FFData)
+  IF ( ALLOCATED(OtherStateData%FFTower) ) DEALLOCATE(OtherStateData%FFTower)
  END SUBROUTINE IfW_FFWind_DestroyOtherState
 
  SUBROUTINE IfW_FFWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -235,11 +250,21 @@ CONTAINS
   Db_BufSz  = 0
   Int_BufSz  = 0
   Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
+  Re_BufSz    = Re_BufSz    + SIZE( InData%FFData )  ! FFData 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%FFTower )  ! FFTower 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%TimeIndex )
   Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(InData%FFData) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%FFData))-1 ) =  PACK(InData%FFData ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%FFData)
+  ENDIF
+  IF ( ALLOCATED(InData%FFTower) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%FFTower))-1 ) =  PACK(InData%FFTower ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%FFTower)
+  ENDIF
  END SUBROUTINE IfW_FFWind_PackOtherState
 
  SUBROUTINE IfW_FFWind_UnpackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -277,6 +302,18 @@ CONTAINS
   Int_BufSz  = 0
   OutData%TimeIndex = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(OutData%FFData) ) THEN
+  ALLOCATE(mask4(SIZE(OutData%FFData,1),SIZE(OutData%FFData,2),SIZE(OutData%FFData,3),SIZE(OutData%FFData,4))); mask4 = .TRUE.
+    OutData%FFData = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%FFData))-1 ),mask4,OutData%FFData)
+  DEALLOCATE(mask4)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%FFData)
+  ENDIF
+  IF ( ALLOCATED(OutData%FFTower) ) THEN
+  ALLOCATE(mask3(SIZE(OutData%FFTower,1),SIZE(OutData%FFTower,2),SIZE(OutData%FFTower,3))); mask3 = .TRUE.
+    OutData%FFTower = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%FFTower))-1 ),mask3,OutData%FFTower)
+  DEALLOCATE(mask3)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%FFTower)
+  ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1

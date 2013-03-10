@@ -1,4 +1,4 @@
-MODULE FFWind
+MODULE IfW_FFWind
 !
 !  This module uses full-field binary wind files to determine the wind inflow.
 !  This module assumes that the origin, (0,0,0), is located at the tower centerline at ground level,
@@ -42,7 +42,7 @@ MODULE FFWind
 
    PUBLIC                                    :: IfW_FFWind_Init
    PUBLIC                                    :: IfW_FFWind_End
-   PUBLIC                                    :: IfW_FFWind_CalcOutput
+!   PUBLIC                                    :: IfW_FFWind_CalcOutput
 
 
       ! The following do not contain anything since there are no states.
@@ -92,14 +92,16 @@ MODULE FFWind
    END INTERFACE
 
 
-   PUBLIC                           :: FF_Init                    ! initialization subroutine to read the FF grids
-   PUBLIC                           :: FF_GetWindSpeed            ! interpolation function that returns velocities at specified time and space
-   PUBLIC                           :: FF_GetValue                ! interface to return requested values
-   PUBLIC                           :: FF_Terminate               ! subroutine that deallocates memory stored in the FFWind module
+!   PUBLIC                           :: FF_Init                    ! initialization subroutine to read the FF grids
+!   PUBLIC                           :: FF_GetWindSpeed            ! interpolation function that returns velocities at specified time and space
+!   PUBLIC                           :: FF_GetValue                ! interface to return requested values
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat, ErrMsg )
+!SUBROUTINE IfW_FFWind_Init ( UnWind, BinFile, ErrStat, ErrMsg )
+SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                       &
+                           ContStates, DiscStates, ConstrStates,     OtherStates,   &
+                           OutData,    Interval,   ErrStat,          ErrMsg)
 !  This routine is used read the full-field turbulence data.
 !  09/25/97 - Created by M. Buhl from GETFILES in ViewWind.
 !  09/23/09 - modified by B. Jonkman: this subroutine was split into several subroutines (was ReadFF)
@@ -108,187 +110,221 @@ SUBROUTINE FF_Init ( UnWind, BinFile, ErrStat, ErrMsg )
    IMPLICIT                       NONE
 
 
-      ! Passed Variables:
+      ! Passed Variables
+   TYPE(IfW_FFWind_InitInputType),        INTENT(IN   )  :: InitData       ! Initialization data passed to the module
+   TYPE(IfW_FFWind_InputType),            INTENT(  OUT)  :: InputGuess     ! Initialized input data variable
+   TYPE(IfW_FFWind_ParameterType),        INTENT(  OUT)  :: ParamData      ! Parameters
+   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_FFWind_OtherStateType),       INTENT(  OUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
 
-   INTEGER,       INTENT(IN)  :: UnWind                        ! unit number for reading wind files
-   INTEGER,       INTENT(OUT) :: ErrStat                       ! determines if an error has been encountered
-   CHARACTER(*),  INTENT(OUT) :: ErrMsg                        ! Error message about what caused the errstat
-
-   CHARACTER(*),  INTENT(IN)  :: BinFile                       ! Name of the binary FF wind file
-
-      ! Local Variables:
-
-   REAL(ReKi)                 :: TI      (3)                   ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
-   REAL(ReKi)                 :: BinTI   (3)                   ! turbulence intensities of the wind components as defined in the FF binary file, not necessarially the actual TI
-   REAL(ReKi)                 :: UBar
-   REAL(ReKi)                 :: ZCenter
-
-   INTEGER(B2Ki)              :: Dum_Int2
-   INTEGER                    :: DumInt
-   INTEGER                    :: I
-   LOGICAL                    :: CWise
-   LOGICAL                    :: Exists
-   CHARACTER( 1028 )          :: SumFile                       ! length is LEN(BinFile) + the 4-character extension.
-   CHARACTER( 1028 )          :: TwrFile                       ! length is LEN(BinFile) + the 4-character extension.
-
-   INTEGER( IntKi )           :: ReadStat                      ! for checking the status on the file reading
+   REAL(DbKi),                            INTENT(INOUT)  :: Interval       ! Time Interval to use (passed through here)
 
 
-      !----------------------------------------------------------------------------------------------
-      ! Check that the module hasn't already been initialized.
-      !----------------------------------------------------------------------------------------------
-
-   IF ( Initialized ) THEN
-      ErrMsg   = ' FFWind has already been initialized.'
-      ErrStat  = ErrID_Warn      ! no reason to stop the program over this.
-      RETURN
-   ELSE
-      ErrStat = ErrID_None
-   END IF
+      ! Error Handling
+   INTEGER(IntKi),                        INTENT(OUT)    :: ErrStat        ! determines if an error has been encountered
+   CHARACTER(1024),                       INTENT(OUT)    :: ErrMsg         ! Message about errors
 
 
-      !----------------------------------------------------------------------------------------------
-      ! Open the binary file, read its "header" (first 2-byte integer) to determine what format
-      ! binary file it is, and close it.
-      !----------------------------------------------------------------------------------------------
-
-   CALL OpenBInpFile (UnWind, TRIM(BinFile), ReadStat, ErrMsg)
-!FIXME: Add ErrMsg when it is available.
-   IF (ReadStat /= 0) THEN
-      ErrMsg   = 'Error opening file"'//TRIM(BinFile)//'."'
-      ErrSTat  = ErrID_Fatal
-      RETURN
-   ENDIF
-
-   READ ( UnWind, IOSTAT=ReadStat )  Dum_Int2
-   CLOSE( UnWind )
-
-   IF (ReadStat /= 0) THEN
-      ErrMsg   = ' Error reading first binary integer from file "'//TRIM(BinFile)//'."'
-      ErrStat  = ErrID_Fatal
-      RETURN
-   END IF
-
-      !----------------------------------------------------------------------------------------------
-      ! Read the files to get the required FF data.
-      !----------------------------------------------------------------------------------------------
-   DumInt = Dum_Int2  ! change to default INTEGER, instead of INT(2) to compare in SELECT below
-
-   SELECT CASE (DumInt)
-
-      CASE ( 7, 8 )                                                    ! TurbSim binary format
-
-         CALL Read_TurbSim_FF(UnWind, TRIM(BinFile), ErrStat, ErrMsg)
-
-         IF ( ErrStat >= ErrID_Fatal ) RETURN
-
-      CASE ( -1, -2, -3, -99 )                                         ! Bladed-style binary format
-
-         !...........................................................................................
-         ! Create full-field summary file name from binary file root name.  Also get tower file
-         ! name.
-         !...........................................................................................
-
-            CALL GetRoot(BinFile, SumFile)
-
-            TwrFile = TRIM(SumFile)//'.twr'
-            SumFile = TRIM(SumFile)//'.sum'
-
-         !...........................................................................................
-         ! Read the summary file to get necessary scaling information
-         !...........................................................................................
-
-            CALL Read_Summary_FF (UnWind, TRIM(SumFile), CWise, ZCenter, TI, ErrStat, ErrMsg )
-            IF (ErrStat >= ErrID_Fatal) RETURN
-
-            UBar = MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
-
-         !...........................................................................................
-         ! Open the binary file and read its header
-         !...........................................................................................
-
-            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat, ErrMsg )
-!FIXME: Add ErrMsg when it is available
-
-            IF (ErrStat >= ErrID_Fatal) RETURN
-
-            IF ( Dum_Int2 == -99 ) THEN                                       ! Newer-style BLADED format
-               CALL Read_Bladed_FF_Header1 (UnWind, BinTI, ErrStat, ErrMsg)
-
-                  ! If the TIs are also in the binary file (BinTI > 0),
-                  ! use those numbers instead of ones from the summary file
-
-               DO I =1,NFFComp
-                  IF ( BinTI(I) > 0 ) TI(I) = BinTI(I)
-               END DO
-
-            ELSE
-               CALL Read_Bladed_FF_Header0 (UnWind, ErrStat, ErrMsg)          ! Older-style BLADED format
-            END IF
-
-            IF (ErrStat >= ErrID_Fatal) RETURN
-
-         !...........................................................................................
-         ! Let's see if the summary and binary FF wind files go together before continuing.
-         !...........................................................................................
-
-            IF ( ABS( UBar - MeanFFWS ) > 0.1 )  THEN
-               ErrMsg   = ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
-                           '(Check that the .sum and .wnd files were generated together.)'
-               ErrStat  = ErrID_Fatal      ! was '= 1'
-               RETURN
-            ENDIF
-
-         !...........................................................................................
-         ! Calculate the height of the bottom of the grid
-         !...........................................................................................
-
-            GridBase = ZCenter - FFZHWid         ! the location, in meters, of the bottom of the grid
-
-         !...........................................................................................
-         ! Read the binary grids (converted to m/s) and close the file
-         !...........................................................................................
-
-            CALL Read_Bladed_Grids( UnWind, CWise, TI, ErrStat, ErrMsg)
-            CLOSE ( UnWind )
-
-            IF ( ErrStat /= 0 ) RETURN
-
-         !...........................................................................................
-         ! Read the tower points file
-         !...........................................................................................
-
-            INQUIRE ( FILE=TRIM(TwrFile) , EXIST=Exists )
-
-            IF (  Exists )  THEN
-               CALL Read_FF_Tower( UnWind, TRIM(TwrFile), ErrStat, ErrMsg )
-            ELSE
-               NTgrids = 0
-            END IF
+      ! Temporary variables for error handling
+   INTEGER(IntKi)                                        :: TmpErrStat     ! temporary error status
+   CHARACTER(1024)                                       :: TmpErrMsg      ! temporary error message
 
 
-      CASE DEFAULT
-
-         ErrMsg   = ' Error: Unrecognized binary wind file type.'
-         ErrStat  = ErrID_Fatal
-         RETURN
-
-   END SELECT
+      ! Local Variables
 
 
-   IF (Periodic) THEN
-      InitXPosition = 0                ! start at the hub
-      TotalTime     = NFFSteps*FFDTime
-   ELSE
-      InitXPosition = FFYHWid          ! start half the grid with ahead of the turbine
-      TotalTime     = (NFFSteps-1)*FFDTime
-   END IF
 
-   Initialized = .TRUE.
+
+      !-=- Initialize the routine -=-
+
+   ErrMsg   = ''
+   ErrStat  = ErrID_None
+
+!!!
+!!!      ! Passed Variables:
+!!!
+!!!   INTEGER,       INTENT(IN)  :: UnWind                        ! unit number for reading wind files
+!!!   INTEGER,       INTENT(OUT) :: ErrStat                       ! determines if an error has been encountered
+!!!   CHARACTER(*),  INTENT(OUT) :: ErrMsg                        ! Error message about what caused the errstat
+!!!
+!!!   CHARACTER(*),  INTENT(IN)  :: BinFile                       ! Name of the binary FF wind file
+!!!
+!!!      ! Local Variables:
+!!!
+!!!   REAL(ReKi)                 :: TI      (3)                   ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
+!!!   REAL(ReKi)                 :: BinTI   (3)                   ! turbulence intensities of the wind components as defined in the FF binary file, not necessarially the actual TI
+!!!   REAL(ReKi)                 :: UBar
+!!!   REAL(ReKi)                 :: ZCenter
+!!!
+!!!   INTEGER(B2Ki)              :: Dum_Int2
+!!!   INTEGER                    :: DumInt
+!!!   INTEGER                    :: I
+!!!   LOGICAL                    :: CWise
+!!!   LOGICAL                    :: Exists
+!!!   CHARACTER( 1028 )          :: SumFile                       ! length is LEN(BinFile) + the 4-character extension.
+!!!   CHARACTER( 1028 )          :: TwrFile                       ! length is LEN(BinFile) + the 4-character extension.
+!!!
+!!!   INTEGER( IntKi )           :: ReadStat                      ! for checking the status on the file reading
+!!!
+!!!
+!!!      !----------------------------------------------------------------------------------------------
+!!!      ! Check that the module hasn't already been initialized.
+!!!      !----------------------------------------------------------------------------------------------
+!!!
+!!!   IF ( Initialized ) THEN
+!!!      ErrMsg   = ' FFWind has already been initialized.'
+!!!      ErrStat  = ErrID_Warn      ! no reason to stop the program over this.
+!!!      RETURN
+!!!   ELSE
+!!!      ErrStat = ErrID_None
+!!!   END IF
+!!!
+!!!
+!!!      !----------------------------------------------------------------------------------------------
+!!!      ! Open the binary file, read its "header" (first 2-byte integer) to determine what format
+!!!      ! binary file it is, and close it.
+!!!      !----------------------------------------------------------------------------------------------
+!!!
+!!!   CALL OpenBInpFile (UnWind, TRIM(BinFile), ReadStat, ErrMsg)
+!!!!FIXME: Add ErrMsg when it is available.
+!!!   IF (ReadStat /= 0) THEN
+!!!      ErrMsg   = 'Error opening file"'//TRIM(BinFile)//'."'
+!!!      ErrSTat  = ErrID_Fatal
+!!!      RETURN
+!!!   ENDIF
+!!!
+!!!   READ ( UnWind, IOSTAT=ReadStat )  Dum_Int2
+!!!   CLOSE( UnWind )
+!!!
+!!!   IF (ReadStat /= 0) THEN
+!!!      ErrMsg   = ' Error reading first binary integer from file "'//TRIM(BinFile)//'."'
+!!!      ErrStat  = ErrID_Fatal
+!!!      RETURN
+!!!   END IF
+!!!
+!!!      !----------------------------------------------------------------------------------------------
+!!!      ! Read the files to get the required FF data.
+!!!      !----------------------------------------------------------------------------------------------
+!!!   DumInt = Dum_Int2  ! change to default INTEGER, instead of INT(2) to compare in SELECT below
+!!!
+!!!   SELECT CASE (DumInt)
+!!!
+!!!      CASE ( 7, 8 )                                                    ! TurbSim binary format
+!!!
+!!!         CALL Read_TurbSim_FF(UnWind, TRIM(BinFile), ErrStat, ErrMsg)
+!!!
+!!!         IF ( ErrStat >= ErrID_Fatal ) RETURN
+!!!
+!!!      CASE ( -1, -2, -3, -99 )                                         ! Bladed-style binary format
+!!!
+!!!         !...........................................................................................
+!!!         ! Create full-field summary file name from binary file root name.  Also get tower file
+!!!         ! name.
+!!!         !...........................................................................................
+!!!
+!!!            CALL GetRoot(BinFile, SumFile)
+!!!
+!!!            TwrFile = TRIM(SumFile)//'.twr'
+!!!            SumFile = TRIM(SumFile)//'.sum'
+!!!
+!!!         !...........................................................................................
+!!!         ! Read the summary file to get necessary scaling information
+!!!         !...........................................................................................
+!!!
+!!!            CALL Read_Summary_FF (UnWind, TRIM(SumFile), CWise, ZCenter, TI, ErrStat, ErrMsg )
+!!!            IF (ErrStat >= ErrID_Fatal) RETURN
+!!!
+!!!            UBar = MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
+!!!
+!!!         !...........................................................................................
+!!!         ! Open the binary file and read its header
+!!!         !...........................................................................................
+!!!
+!!!            CALL OpenBInpFile (UnWind, TRIM(BinFile), ErrStat, ErrMsg )
+!!!!FIXME: Add ErrMsg when it is available
+!!!
+!!!            IF (ErrStat >= ErrID_Fatal) RETURN
+!!!
+!!!            IF ( Dum_Int2 == -99 ) THEN                                       ! Newer-style BLADED format
+!!!               CALL Read_Bladed_FF_Header1 (UnWind, BinTI, ErrStat, ErrMsg)
+!!!
+!!!                  ! If the TIs are also in the binary file (BinTI > 0),
+!!!                  ! use those numbers instead of ones from the summary file
+!!!
+!!!               DO I =1,NFFComp
+!!!                  IF ( BinTI(I) > 0 ) TI(I) = BinTI(I)
+!!!               END DO
+!!!
+!!!            ELSE
+!!!               CALL Read_Bladed_FF_Header0 (UnWind, ErrStat, ErrMsg)          ! Older-style BLADED format
+!!!            END IF
+!!!
+!!!            IF (ErrStat >= ErrID_Fatal) RETURN
+!!!
+!!!         !...........................................................................................
+!!!         ! Let's see if the summary and binary FF wind files go together before continuing.
+!!!         !...........................................................................................
+!!!
+!!!            IF ( ABS( UBar - MeanFFWS ) > 0.1 )  THEN
+!!!               ErrMsg   = ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
+!!!                           '(Check that the .sum and .wnd files were generated together.)'
+!!!               ErrStat  = ErrID_Fatal      ! was '= 1'
+!!!               RETURN
+!!!            ENDIF
+!!!
+!!!         !...........................................................................................
+!!!         ! Calculate the height of the bottom of the grid
+!!!         !...........................................................................................
+!!!
+!!!            GridBase = ZCenter - FFZHWid         ! the location, in meters, of the bottom of the grid
+!!!
+!!!         !...........................................................................................
+!!!         ! Read the binary grids (converted to m/s) and close the file
+!!!         !...........................................................................................
+!!!
+!!!            CALL Read_Bladed_Grids( UnWind, CWise, TI, ErrStat, ErrMsg)
+!!!            CLOSE ( UnWind )
+!!!
+!!!            IF ( ErrStat /= 0 ) RETURN
+!!!
+!!!         !...........................................................................................
+!!!         ! Read the tower points file
+!!!         !...........................................................................................
+!!!
+!!!            INQUIRE ( FILE=TRIM(TwrFile) , EXIST=Exists )
+!!!
+!!!            IF (  Exists )  THEN
+!!!               CALL Read_FF_Tower( UnWind, TRIM(TwrFile), ErrStat, ErrMsg )
+!!!            ELSE
+!!!               NTgrids = 0
+!!!            END IF
+!!!
+!!!
+!!!      CASE DEFAULT
+!!!
+!!!         ErrMsg   = ' Error: Unrecognized binary wind file type.'
+!!!         ErrStat  = ErrID_Fatal
+!!!         RETURN
+!!!
+!!!   END SELECT
+!!!
+!!!
+!!!   IF (Periodic) THEN
+!!!      InitXPosition = 0                ! start at the hub
+!!!      TotalTime     = NFFSteps*FFDTime
+!!!   ELSE
+!!!      InitXPosition = FFYHWid          ! start half the grid with ahead of the turbine
+!!!      TotalTime     = (NFFSteps-1)*FFDTime
+!!!   END IF
+!!!
+!!!   Initialized = .TRUE.
 
    RETURN
 
-END SUBROUTINE FF_Init
+END SUBROUTINE IfW_FFWind_Init
 !====================================================================================================
 SUBROUTINE Read_Bladed_FF_Header0 (UnWind, ErrStat, ErrMsg)
 !   Reads the binary headers from the turbulence files of the old Bladed variety.  Note that
@@ -2165,23 +2201,263 @@ FUNCTION FF_Interp(Time, Position, ErrStat, ErrMsg)
 
 END FUNCTION FF_Interp
 !====================================================================================================
-SUBROUTINE FF_Terminate( ErrStat, ErrMsg )
+SUBROUTINE IfW_FFWind_End( InData,     ParamData,                                &
+                           ContStates, DiscStates, ConstrStates,  OtherStates,   &
+                           OutData,                                              &
+                           ErrStat,    ErrMsg)
 !  This subroutine cleans up any data that is still allocated.  The (possibly) open files are
 !  closed in InflowWindMod.
 !----------------------------------------------------------------------------------------------------
 
-   INTEGER,       INTENT(OUT) :: ErrStat           ! return 0 if no errors; non-zero otherwise
-   CHARACTER(*),  INTENT(OUT) :: ErrMsg
+      ! Passed Variables
+   TYPE(IfW_FFWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
+   TYPE(IfW_FFWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
+   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_FFWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
 
-   ErrStat = 0
 
-   IF ( ALLOCATED( FFData  ) )   DEALLOCATE( FFData,  STAT=ErrStat )
-   IF ( ALLOCATED( FFTower ) )   DEALLOCATE( FFTower, STAT=ErrStat )
-
-   Initialized = .FALSE.
+      ! Error Handling
+   INTEGER(IntKi),                        INTENT(OUT)    :: ErrStat        ! determines if an error has been encountered
+   CHARACTER(1024),                       INTENT(OUT)    :: ErrMsg         ! Message about errors
 
 
-END SUBROUTINE FF_Terminate
+      ! Local Variables
+   INTEGER(IntKi)                                        :: TmpErrStat     ! temporary error status
+   CHARACTER(1024)                                       :: TmpErrMsg      ! temporary error message
+
+
+      !-=- Initialize the routine -=-
+
+   ErrMsg   = ''
+   ErrStat  = ErrID_None
+
+   IF ( ALLOCATED( OtherStates%FFData  ) )   DEALLOCATE( OtherStates%FFData,  STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_FFWind_End: could not deallocate FFData array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
+
+   IF ( ALLOCATED( OtherStates%FFTower ) )   DEALLOCATE( OtherStates%FFTower, STAT=TmpErrStat )
+   IF ( TmpErrStat /=0 ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_FFWind_End: could not deallocate FFTower array'
+      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   ENDIF
+
+      ! flag as uninitialized
+   ParamData%Initialized = .FALSE.
+
+
+END SUBROUTINE IfW_FFWind_End
+
 !====================================================================================================
-END MODULE FFWind
 
+!====================================================================================================
+
+
+!====================================================================================================
+! The following are generic routines required by the framework.
+!====================================================================================================
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
+! Constraint states are solved for input Time; Continuous and discrete states are updated for Time + Interval
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
+                                                                           ! Output: Continuous states at Time + Interval
+      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+                                                                           ! Output: Discrete states at Time  + Interval
+      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
+                                                                           ! Output: Constraint states at Time
+      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+         ! Local variables
+
+      TYPE(IfW_FFWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_FFWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
+
+      INTEGER(IntKi)                                        :: ErrStat2    ! Error status of the operation (occurs after initial error)
+      CHARACTER(LEN(ErrMsg))                                :: ErrMsg2     ! Error message if ErrStat2 /= ErrID_None
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+
+         ! Solve for the constraint states (z) here:
+
+         ! Check if the z guess is correct and update z with a new guess.
+         ! Iterate until the value is within a given tolerance.
+
+      CALL IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+      ! DO WHILE ( z_Residual% > tolerance )
+      !
+      !  z =
+      !
+      !  CALL IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      !  IF ( ErrStat >= AbortErrLev ) THEN
+      !     CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+      !     ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+      !     RETURN
+      !  END IF
+      !
+      ! END DO
+
+
+         ! Destroy z_Residual because it is not necessary for the rest of the subroutine:
+
+      CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
+
+
+
+         ! Get first time derivatives of continuous states (dxdt):
+
+      CALL IfW_FFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_FFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+
+         ! Update discrete states:
+         !   Note that xd [discrete state] is changed in IfW_FFWind_UpdateDiscState(), so IfW_FFWind_CalcOutput(),
+         !   IfW_FFWind_CalcContStateDeriv(), and IfW_FFWind_CalcConstrStates() must be called first (see above).
+
+      CALL IfW_FFWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL IfW_FFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
+         RETURN
+      END IF
+
+
+         ! Integrate (update) continuous states (x) here:
+
+      !x = function of dxdt and x
+
+
+         ! Destroy dxdt because it is not necessary for the rest of the subroutine
+
+      CALL IfW_FFWind_DestroyContState( dxdt, ErrStat, ErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
+
+
+
+END SUBROUTINE IfW_FFWind_UpdateStates
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_FFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+! Tight coupling routine for computing derivatives of continuous states
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Compute the first time derivatives of the continuous states here:
+
+      dxdt%DummyContState = 0
+
+
+END SUBROUTINE IfW_FFWind_CalcContStateDeriv
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_FFWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+! Tight coupling routine for updating discrete states
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+                                                                           !   Output: Discrete states at Time + Interval
+      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Update discrete states here:
+
+      ! StateData%DiscState =
+
+END SUBROUTINE IfW_FFWind_UpdateDiscState
+!----------------------------------------------------------------------------------------------------------------------------------
+SUBROUTINE IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
+! Tight coupling routine for solving for the residual of the constraint state equations
+!..................................................................................................................................
+
+      REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
+      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
+      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
+                                                                           ! the input values described above
+      INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
+      CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
+
+
+         ! Initialize ErrStat
+
+      ErrStat = ErrID_None
+      ErrMsg  = ""
+
+
+         ! Solve for the constraint states here:
+
+      z_residual%DummyConstrState = 0
+
+END SUBROUTINE IfW_FFWind_CalcConstrStateResidual
+
+
+
+!====================================================================================================
+END MODULE IfW_FFWind
+
+!  SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
+!                             ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
+!                             OutData,       ErrStat,       ErrMsg)
+!  SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+!  SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+!  SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+!  SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )

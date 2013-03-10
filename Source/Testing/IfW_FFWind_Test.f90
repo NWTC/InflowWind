@@ -62,8 +62,7 @@ PROGRAM FFWind_Test
    FF_Interval = 0.01
 
       ! setup the file info
-   FF_InitData%WindFileName   = "../../Samples/Steady.wnd"           ! FFWind file
-   FF_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.hh"
+   FF_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.wnd"
    FF_InitData%ReferenceHeight = 80.                        ! meters
    FF_InitData%Width           = 100.                       ! meters
 
@@ -102,57 +101,57 @@ PROGRAM FFWind_Test
    ErrStat  = ErrID_None
    ErrMsg   = ""
 
-   CALL AllocAry( FF_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
-   IF ( ErrStat >= ErrID_Severe ) THEN
-      CALL ProgAbort(ErrMsg)
-   ELSEIF ( ErrStat /= ErrID_None ) THEN
-      CALL ProgWarn(ErrMsg)
-   ENDIF
-   ErrStat  = ErrID_None
-   ErrMsg   = ""
-
-      ! Copy the WindPosition over to the InData%Position array
-   FF_InData%Position   = WindPosition
-
-   !-=- Simple call to get windspeed at just the hub -=-=-=-=-=-=-=-
-
-   CALL WrScr(" Calculating wind velocity:")
-
-   CALL  IfW_FFWind_CalcOutput(  Time,    FF_InData,     FF_ParamData,                          &
-                           FF_ContStates, FF_DiscStates, FF_ConstrStates,     FF_OtherStates,   &
-                           FF_OutData,    ErrStat,       ErrMsg)
-
-      ! copy the Velocity data over for this timestep
-   WindVelocity=FF_OutData%Velocity
-
-   IF ( ErrStat >= ErrID_Severe ) THEN
-      CALL ProgAbort(ErrMsg)
-   ELSEIF ( ErrStat /= ErrID_None ) THEN
-      CALL ProgWarn(ErrMsg)
-   ENDIF
-   ErrMsg   = ""
-   ErrStat  = ErrID_None
-
-
-   !-=- Write out some info about what we just did -=-=-=-=-=-=-=-=-
-
-   CALL WrScr("   Time: "//TRIM(Num2LStr(Time)))
-   CALL WrScr("          (x, y, z)          (U, V, W)")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(1,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(1,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(1,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(1,3)))//")")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(2,1)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(2,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(2,1)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(2,3)))//")")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(3,1)))//", "//TRIM(Num2LStr(WindPosition(3,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(3,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(3,1)))//", "//TRIM(Num2LStr(WindVelocity(3,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(3,3)))//")")
+!!!   CALL AllocAry( FF_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
+!!!   IF ( ErrStat >= ErrID_Severe ) THEN
+!!!      CALL ProgAbort(ErrMsg)
+!!!   ELSEIF ( ErrStat /= ErrID_None ) THEN
+!!!      CALL ProgWarn(ErrMsg)
+!!!   ENDIF
+!!!   ErrStat  = ErrID_None
+!!!   ErrMsg   = ""
+!!!
+!!!      ! Copy the WindPosition over to the InData%Position array
+!!!   FF_InData%Position   = WindPosition
+!!!
+!!!   !-=- Simple call to get windspeed at just the hub -=-=-=-=-=-=-=-
+!!!
+!!!   CALL WrScr(" Calculating wind velocity:")
+!!!
+!!!   CALL  IfW_FFWind_CalcOutput(  Time,    FF_InData,     FF_ParamData,                          &
+!!!                           FF_ContStates, FF_DiscStates, FF_ConstrStates,     FF_OtherStates,   &
+!!!                           FF_OutData,    ErrStat,       ErrMsg)
+!!!
+!!!      ! copy the Velocity data over for this timestep
+!!!   WindVelocity=FF_OutData%Velocity
+!!!
+!!!   IF ( ErrStat >= ErrID_Severe ) THEN
+!!!      CALL ProgAbort(ErrMsg)
+!!!   ELSEIF ( ErrStat /= ErrID_None ) THEN
+!!!      CALL ProgWarn(ErrMsg)
+!!!   ENDIF
+!!!   ErrMsg   = ""
+!!!   ErrStat  = ErrID_None
+!!!
+!!!
+!!!   !-=- Write out some info about what we just did -=-=-=-=-=-=-=-=-
+!!!
+!!!   CALL WrScr("   Time: "//TRIM(Num2LStr(Time)))
+!!!   CALL WrScr("          (x, y, z)          (U, V, W)")
+!!!
+!!!   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(1,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindPosition(1,3)))//")        (" &
+!!!                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(1,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindVelocity(1,3)))//")")
+!!!
+!!!   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(2,1)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindPosition(2,3)))//")        (" &
+!!!                           //TRIM(Num2LStr(WindVelocity(2,1)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindVelocity(2,3)))//")")
+!!!
+!!!   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(3,1)))//", "//TRIM(Num2LStr(WindPosition(3,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindPosition(3,3)))//")        (" &
+!!!                           //TRIM(Num2LStr(WindVelocity(3,1)))//", "//TRIM(Num2LStr(WindVelocity(3,2)))//", " &
+!!!                           //TRIM(Num2LStr(WindVelocity(3,3)))//")")
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

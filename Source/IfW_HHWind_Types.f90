@@ -52,12 +52,12 @@ IMPLICIT NONE
     INTEGER(IntKi)  :: UnitWind 
   END TYPE IfW_HHWind_OtherStateType
   TYPE, PUBLIC :: IfW_HHWind_ParameterType
-    REAL(DbKi)  :: DT 
-    REAL(ReKi)  :: ReferenceHeight 
-    REAL(ReKi)  :: Width 
-    LOGICAL  :: Linearize = .FALSE. 
     CHARACTER(1024)  :: WindFileName 
     LOGICAL  :: Initialized = .FALSE. 
+    LOGICAL  :: Linearize = .FALSE. 
+    REAL(ReKi)  :: ReferenceHeight 
+    REAL(ReKi)  :: Width 
+    REAL(DbKi)  :: DT 
   END TYPE IfW_HHWind_ParameterType
   TYPE, PUBLIC :: IfW_HHWind_InputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position 
@@ -458,12 +458,12 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  DstParamData%DT = SrcParamData%DT
-  DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
-  DstParamData%Width = SrcParamData%Width
-  DstParamData%Linearize = SrcParamData%Linearize
   DstParamData%WindFileName = SrcParamData%WindFileName
   DstParamData%Initialized = SrcParamData%Initialized
+  DstParamData%Linearize = SrcParamData%Linearize
+  DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
+  DstParamData%Width = SrcParamData%Width
+  DstParamData%DT = SrcParamData%DT
  END SUBROUTINE IfW_HHWind_CopyParam
 
  SUBROUTINE IfW_HHWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -510,18 +510,18 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
+  Db_BufSz   = Db_BufSz   + 1  ! DT
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
-  Db_Xferred   = Db_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
+  Db_Xferred   = Db_Xferred   + 1
  END SUBROUTINE IfW_HHWind_PackParam
 
  SUBROUTINE IfW_HHWind_UnpackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -557,12 +557,12 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  OutData%DT = DbKiBuf ( Db_Xferred )
-  Db_Xferred   = Db_Xferred   + 1
   OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+  OutData%DT = DbKiBuf ( Db_Xferred )
+  Db_Xferred   = Db_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1

@@ -694,7 +694,8 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
 
       ! reset time index so we know the module is no longer initialized
-   OtherStates%TimeIndex = 0
+   OtherStates%TimeIndex   = 0
+   ParamData%Initialized   = .FALSE.
 
 END SUBROUTINE IfW_HHWind_End
 !====================================================================================================
