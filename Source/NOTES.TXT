@@ -59,6 +59,14 @@ Documentation:
       -  planned features
          -  storing info about the "grid size/stepsize/time length" of the file read in
 
+IfW_FFWind.f90
+   TODO:
+      -  Convert the READ statements to the new library ones.
+      -  Revisit End routine to make sure that we actually close out all the variables that we need to.
+
+   COMPLETED:
+      +  End routine
+
 
 IfW_HHWind.f90
    TODO:
