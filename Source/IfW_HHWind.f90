@@ -116,16 +116,18 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    CHARACTER(1024)                                       :: TmpErrMsg         ! Temp variable for the error message
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Set a few temporary variables
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Set a few temporary variables
+      !-------------------------------------------------------------------------------------------------
+
    TmpErrStat  = ErrID_None
    TmpErrMsg   = ""
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Check that it's not already initialized
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Check that it's not already initialized
+      !-------------------------------------------------------------------------------------------------
+
    IF ( OtherStates%TimeIndex /= 0 ) THEN
       ErrMsg   = ' HHWind has already been initialized.'
       ErrStat  = ErrId_Warn
@@ -139,6 +141,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
 
       ! Get a unit number to use
+
    CALL GetNewUnit(OtherStates%UnitWind, TmpErrStat, TmpErrMsg)
    IF ( TmpErrStat /= 0 ) THEN
       ErrStat  = ErrID_Fatal
@@ -147,18 +150,19 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    ENDIF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Copy things from the InitData to the ParamData
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Copy things from the InitData to the ParamData
+      !-------------------------------------------------------------------------------------------------
 
    ParamData%ReferenceHeight  =  InitData%ReferenceHeight
    ParamData%Width            =  InitData%Width
    ParamData%WindFileName         =  InitData%WindFileName
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Open the file for reading
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Open the file for reading
+      !-------------------------------------------------------------------------------------------------
+
    CALL OpenFInpFile (OtherStates%UnitWind, TRIM(InitData%WindFileName), TmpErrStat, TmpErrMsg)
    IF ( TmpErrStat >= AbortErrLev ) THEN
       ErrStat  = MAX(TmpErrStat, ErrStat)
@@ -167,9 +171,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    ENDIF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Find the number of comment lines
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Find the number of comment lines
+      !-------------------------------------------------------------------------------------------------
+
    LINE = '!'                          ! Initialize the line for the DO WHILE LOOP
    NumComments = -1
 
@@ -187,9 +192,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END DO !WHILE
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Find the number of data lines
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Find the number of data lines
+      !-------------------------------------------------------------------------------------------------
+
    OtherStates%NumDataLines = 0
 
    READ(LINE,*,IOSTAT=TmpErrStat) ( TmpData(I), I=1,NumCols )
@@ -213,12 +219,13 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END IF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Allocate arrays for the HH data
-   !-------------------------------------------------------------------------------------------------
-   ! BJJ note: If the subroutine AllocAry() is called, the CVF compiler with A2AD does not work
-   !   properly.  The arrays are not properly read even though they've been allocated.
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Allocate arrays for the HH data
+      !-------------------------------------------------------------------------------------------------
+      ! BJJ note: If the subroutine AllocAry() is called, the CVF compiler with A2AD does not work
+      !   properly.  The arrays are not properly read even though they've been allocated.
+      ! ADP note: the above note may or may not apply after conversion to the modular framework in 2013
+      !-------------------------------------------------------------------------------------------------
 
    IF (.NOT. ALLOCATED(OtherStates%Tdata) ) THEN
       CALL AllocAry( OtherStates%Tdata, OtherStates%NumDataLines, 'HH time', TmpErrStat, TmpErrMsg )
@@ -277,9 +284,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END IF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Rewind the file (to the beginning) and skip the comment lines
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Rewind the file (to the beginning) and skip the comment lines
+      !-------------------------------------------------------------------------------------------------
+
    REWIND( OtherStates%UnitWind )
 
    DO I=1,NumComments
@@ -290,9 +298,9 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END DO !I
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Read the data arrays
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Read the data arrays
+      !-------------------------------------------------------------------------------------------------
 
    DO I=1,OtherStates%NumDataLines
 
@@ -316,10 +324,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END DO !I
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Make sure the wind direction isn't jumping more than 180 degrees between any 2 consecutive
-   ! input times.  (Avoids interpolation errors with modular arithemetic.)
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Make sure the wind direction isn't jumping more than 180 degrees between any 2 consecutive
+      ! input times.  (Avoids interpolation errors with modular arithemetic.)
+      !-------------------------------------------------------------------------------------------------
 
    DO I=2,OtherStates%NumDataLines
 
@@ -348,16 +356,16 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END DO !I
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Close the file
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Close the file
+      !-------------------------------------------------------------------------------------------------
 
    CLOSE( OtherStates%UnitWind )
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Print warnings and messages
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Print warnings and messages
+      !-------------------------------------------------------------------------------------------------
 !   CALL WrScr ( ' Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of HH data' )
 
 
@@ -374,10 +382,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    END IF
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Set the initial index into the time array (it indicates that we've initialized the module, too)
-   ! and initialize the spatial scaling for the wind calculations
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Set the initial index into the time array (it indicates that we've initialized the module, too)
+      ! and initialize the spatial scaling for the wind calculations
+         !-------------------------------------------------------------------------------------------------
    OtherStates%TimeIndex = 1
 
    OtherStates%RefHt  = ParamData%ReferenceHeight
@@ -421,9 +429,9 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
 
 
 
-   !-------------------------------------------------------------------------------------------------
-   ! Initialize some things
-   !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
+      ! Initialize some things
+      !-------------------------------------------------------------------------------------------------
 
    TmpErrStat  = ErrID_None
    TmpErrMsg   = ""

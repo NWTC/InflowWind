@@ -28,7 +28,7 @@ typedef  ^                       OtherStateType          IntKi    TimeIndex     
 typedef  ^                       ^                       ReKi     FFData            ::::  -     -     "Array of FF data"                                             -
 typedef  ^                       ^                       ReKi     FFTower           :::   -     -     "Array of data along tower, below FF array"                    -
 #typedef  ^                       ^                       ReKi     TData             :     -     -     "Time array from the FF file"                                  seconds
-#typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
+typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
 
 
 # ..... Parameters ................................................................................................................
