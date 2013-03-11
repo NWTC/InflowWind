@@ -655,307 +655,327 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ErrStat  = MAX(TmpErrStat, ErrStat)
       ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
-   !!!!FIXME: Add in ErrMsg when it is available.
-   !!!   IF (ErrStat /= 0) RETURN
-   !!!
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!   ! Read the header information
-   !!!   !-------------------------------------------------------------------------------------------------
+
+      !-------------------------------------------------------------------------------------------------
+      ! Read the header information
+      !-------------------------------------------------------------------------------------------------
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2             ! the file identifier, INT(2)
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading the file identifier in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         Periodic = Dum_Int2 == INT( 8, B2Ki) ! the number 7 is used for non-periodic wind files; 8 is periodic wind
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2             ! the file identifier, INT(2)
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading the file identifier in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            Periodic = Dum_Int2 == INT( 8, B2Ki) ! the number 7 is used for non-periodic wind files; 8 is periodic wind
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of grid points vertically, INT(4)
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading the number of z grid points in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         NZgrids = Dum_Int4
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of grid points vertically, INT(4)
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading the number of z grid points in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            NZgrids = Dum_Int4
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of grid points laterally, INT(4)
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading the number of y grid points in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         NYgrids = Dum_Int4
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of grid points laterally, INT(4)
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading the number of y grid points in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            NYgrids = Dum_Int4
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of tower points, INT(4)
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading the number of tower points in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         NTgrids = Dum_Int4
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of tower points, INT(4)
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading the number of tower points in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            NTgrids = Dum_Int4
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of time steps, INT(4)
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading the number of time steps in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         NFFSteps = Dum_Int4
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4             ! the number of time steps, INT(4)
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading the number of time steps in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            NFFSteps = Dum_Int4
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in vertical direction (dz), REAL(4), in m
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading dz in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         InvFFZD = 1.0/Dum_Real4                            ! 1/dz
-   !!!         FFZHWid = 0.5*(NZgrids-1)*Dum_Real4                ! half the grid height
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in vertical direction (dz), REAL(4), in m
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading dz in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            InvFFZD = 1.0/Dum_Real4                            ! 1/dz
+            FFZHWid = 0.5*(NZgrids-1)*Dum_Real4                ! half the grid height
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in lateral direction (dy), REAL(4), in m
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading dy in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         InvFFYD = 1.0 / Dum_Real4                          ! 1/dy
-   !!!         FFYHWid = 0.5*(NYgrids-1)*Dum_Real4                ! half grid grid width
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in lateral direction (dy), REAL(4), in m
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading dy in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            InvFFYD = 1.0 / Dum_Real4                          ! 1/dy
+            FFYHWid = 0.5*(NYgrids-1)*Dum_Real4                ! half grid grid width
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in time (dt), REAL(4), in m/s
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading dt in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         FFDTime = Dum_Real4
-   !!!         FFRate  = 1.0/FFDTime
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! grid spacing in time (dt), REAL(4), in m/s
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading dt in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            FFDTime = Dum_Real4
+            FFRate  = 1.0/FFDTime
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! the mean wind speed at hub height, REAL(4), in m/s
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading mean wind speed in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         MeanFFWS = Dum_Real4
-   !!!         InvMFFWS = 1.0 / MeanFFWS
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! the mean wind speed at hub height, REAL(4), in m/s
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading mean wind speed in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            MeanFFWS = Dum_Real4
+            InvMFFWS = 1.0 / MeanFFWS
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! height of the hub, REAL(4), in m
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading zHub in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         RefHt = Dum_Real4
-   !!!
-   !!!
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! height of the hub, REAL(4), in m
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading zHub in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            RefHt = Dum_Real4
+
+
 !FIXME: convert READ to the library ones
-   !!!      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! height of the bottom of the grid, REAL(4), in m
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Error reading GridBase in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!         GridBase = Dum_Real4
-   !!!
-   !!! !        ZGOffset = RefHt - GridBase  - FFZHWid
-   !!!
-   !!!
-   !!!      !----------------------------------------------------------------------------------------------
-   !!!      ! Read the binary scaling factors
-   !!!      !----------------------------------------------------------------------------------------------
-   !!!
-   !!!         DO IC = 1,NFFComp
+         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Real4            ! height of the bottom of the grid, REAL(4), in m
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error reading GridBase in the FF binary file "'//TRIM( WindFile )//'."'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+            GridBase = Dum_Real4
+
+    !        ZGOffset = RefHt - GridBase  - FFZHWid
+
+
+         !----------------------------------------------------------------------------------------------
+         ! Read the binary scaling factors
+         !----------------------------------------------------------------------------------------------
+
+            DO IC = 1,NFFComp
 !FIXME: convert READ to the library ones
-   !!!            READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Vslope(IC)     ! the IC-component slope for scaling, REAL(4)
-   !!!               IF ( TmpErrStat /= 0 )  THEN
-   !!!                  ErrMsg   = ' Error reading Vslope('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!                  RETURN
-   !!!               ENDIF
-   !!!
-   !!!
+               READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Vslope(IC)     ! the IC-component slope for scaling, REAL(4)
+                  IF ( TmpErrStat /= 0 )  THEN
+                     ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                                 ' Error reading Vslope('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
+                     ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                     RETURN
+                  ENDIF
+
+
 !FIXME: convert READ to the library ones
-   !!!            READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Voffset(IC)    ! the IC-component offset for scaling, REAL(4)
-   !!!               IF ( TmpErrStat /= 0 )  THEN
-   !!!                  ErrMsg   = ' Error reading Voffset('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!                  RETURN
-   !!!               ENDIF
-   !!!
-   !!!         ENDDO !IC
-   !!!
-   !!!
-   !!!      !----------------------------------------------------------------------------------------------
-   !!!      ! Read the description string: "Generated by TurbSim (vx.xx, dd-mmm-yyyy) on dd-mmm-yyyy at hh:mm:ss."
-   !!!      !----------------------------------------------------------------------------------------------
-   !!!
+               READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Voffset(IC)    ! the IC-component offset for scaling, REAL(4)
+                  IF ( TmpErrStat /= 0 )  THEN
+                     ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                                 ' Error reading Voffset('//Num2LStr(IC)//') in the FF binary file "'//TRIM( WindFile )//'."'
+                     ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                     RETURN
+                  ENDIF
+
+            ENDDO !IC
+
+
+         !----------------------------------------------------------------------------------------------
+         ! Read the description string: "Generated by TurbSim (vx.xx, dd-mmm-yyyy) on dd-mmm-yyyy at hh:mm:ss."
+         !----------------------------------------------------------------------------------------------
+
 !FIXME: convert READ to the library ones
-   !!!         READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4          ! the number of characters in the description string, max 200, INT(4)
-   !!!            IF ( TmpErrStat /= 0 )  THEN
-   !!!               ErrMsg   = ' Error reading NCHAR in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!               ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!               RETURN
-   !!!            ENDIF
-   !!!            nchar = Dum_Int4
-   !!!
-   !!!         DescStr = ''                                       ! Initialize the description string
-   !!!
-   !!!         DO IC=1,nchar
-   !!!
+            READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int4          ! the number of characters in the description string, max 200, INT(4)
+               IF ( TmpErrStat /= 0 )  THEN
+                  ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                              ' Error reading NCHAR in the FF binary file "'//TRIM( WindFile )//'."'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                  RETURN
+               ENDIF
+               nchar = Dum_Int4
+
+            DescStr = ''                                       ! Initialize the description string
+
+            DO IC=1,nchar
+
 !FIXME: convert READ to the library ones
-   !!!            READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int1       ! the ASCII integer representation of the character, INT(1)
-   !!!            IF ( TmpErrStat /= 0 )  THEN
-   !!!               ErrMsg   = ' Error reading description line in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!               ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!               RETURN
-   !!!            ENDIF
-   !!!
-   !!!            IF ( LEN(DescStr) >= IC ) THEN
-   !!!               DescStr(IC:IC) = ACHAR( Dum_Int1 )              ! converted ASCII characters
-   !!!            ELSE
-   !!!               ErrMsg   =  ' Description string too long.'   ! should this be handled by an ErrMsg?
-   !!!               ErrStat  = ErrID_Warn
-   !!!               EXIT
-   !!!            ENDIF
-   !!!
-   !!!         ENDDO !IC
-   !!!
-   !!!
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!   ! Get the grid and tower velocities
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!
-   !!!      CALL WrScr( NewLine//' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
-   !!!               ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
-   !!!               TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
-   !!!               ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
-   !!!
-   !!!
-   !!!   !----------------------------------------------------------------------------------------------
-   !!!   ! Allocate arrays for the FF grid as well as the tower points, if they exist
-   !!!   !----------------------------------------------------------------------------------------------
-   !!!
-   !!!      IF ( .NOT. ALLOCATED( FFData ) ) THEN
-   !!!         ALLOCATE ( FFData(NZGrids,NYGrids,NFFComp,NFFSteps), STAT=TmpErrStat )
-   !!!
-   !!!         IF ( TmpErrStat /= 0 )  THEN
-   !!!            ErrMsg   = ' Cannot allocate the full-field wind data array.'
-   !!!            ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!            RETURN
-   !!!         ENDIF
-   !!!      ENDIF
-   !!!
-   !!!
-   !!!      IF ( NTgrids > 0 ) THEN
-   !!!
-   !!!         IF ( .NOT. ALLOCATED( FFtower ) ) THEN
-   !!!            ALLOCATE( FFtower( NFFComp, NTgrids, NFFSteps ), STAT=TmpErrStat )
-   !!!
-   !!!            IF ( TmpErrStat /= 0 )  THEN
-   !!!               ErrMsg   = ' Cannot allocate the tower wind data array.'
-   !!!               ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!               RETURN
-   !!!            ENDIF
-   !!!         ENDIF
-   !!!
-   !!!      ENDIF
-   !!!
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!   ! Read the 16-bit data and scale it to 32-bit reals
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!
-   !!!      ! Loop through time.
-   !!!
-   !!!      DO IT=1,NFFSteps
-   !!!
-   !!!         !...........................................................................................
-   !!!         ! Read grid data at this time step.
-   !!!         !...........................................................................................
-   !!!
-   !!!         DO IZ=1,NZgrids
-   !!!            ! Zgrid(IZ) = Z1 + (IZ-1)*dz                 ! Vertical location of grid data point, in m relative to ground
-   !!!
-   !!!            DO IY=1,NYgrids
-   !!!               ! Ygrid(IY) = -0.5*(ny-1)*dy + (IY-1)*dy  ! Horizontal location of grid data point, in m relative to tower centerline
-   !!!
-   !!!               DO IC=1,NFFComp                           ! number of wind components (U, V, W)
-   !!!
+               READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int1       ! the ASCII integer representation of the character, INT(1)
+               IF ( TmpErrStat /= 0 )  THEN
+                  ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                              ' Error reading description line in the FF binary file "'//TRIM( WindFile )//'."'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                  RETURN
+               ENDIF
+
+               IF ( LEN(DescStr) >= IC ) THEN
+                  DescStr(IC:IC) = ACHAR( Dum_Int1 )              ! converted ASCII characters
+               ELSE
+                  ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                              ' Description string too long.'   ! should this be handled by an ErrMsg?
+!FIXME: make this and others a MAX()
+                  ErrStat  = ErrID_Warn
+                  EXIT
+               ENDIF
+
+            ENDDO !IC
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Get the grid and tower velocities
+      !-------------------------------------------------------------------------------------------------
+
+!FIXME: change this to a message
+         CALL WrScr( NewLine//' Reading a '//TRIM( Num2LStr(NYGrids) )//'x'//TRIM( Num2LStr(NZGrids) )//  &
+                  ' grid ('//TRIM( Num2LStr(FFYHWid*2) )//' m wide, '// &
+                  TRIM( Num2LStr(GridBase) )//' m to '//TRIM( Num2LStr(GridBase+FFZHWid*2) )//&
+                  ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(MeanFFWS) )//' m/s. '//TRIM(DescStr) )
+
+
+      !----------------------------------------------------------------------------------------------
+      ! Allocate arrays for the FF grid as well as the tower points, if they exist
+      !----------------------------------------------------------------------------------------------
+
+         IF ( .NOT. ALLOCATED( OtherStates%FFData ) ) THEN
+            ALLOCATE ( OtherStates%FFData(NZGrids,NYGrids,NFFComp,NFFSteps), STAT=TmpErrStat )
+!FIXME: check how allocation errors are usually handled
+            IF ( TmpErrStat /= 0 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Cannot allocate the full-field wind data array.'
+               ErrStat  = ErrID_Fatal        ! fatal since not returning data
+               RETURN
+            ENDIF
+         ENDIF
+
+
+         IF ( NTgrids > 0 ) THEN
+
+            IF ( .NOT. ALLOCATED( OtherStates%FFtower ) ) THEN
+               ALLOCATE( OtherStates%FFtower( NFFComp, NTgrids, NFFSteps ), STAT=TmpErrStat )
+
+               IF ( TmpErrStat /= 0 )  THEN
+                  ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                              ' Cannot allocate the tower wind data array.'
+                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                  RETURN
+               ENDIF
+            ENDIF
+
+         ENDIF
+
+      !-------------------------------------------------------------------------------------------------
+      ! Read the 16-bit data and scale it to 32-bit reals
+      !-------------------------------------------------------------------------------------------------
+
+         ! Loop through time.
+
+         DO IT=1,NFFSteps
+
+            !...........................................................................................
+            ! Read grid data at this time step.
+            !...........................................................................................
+
+            DO IZ=1,NZgrids
+               ! Zgrid(IZ) = Z1 + (IZ-1)*dz                 ! Vertical location of grid data point, in m relative to ground
+
+               DO IY=1,NYgrids
+                  ! Ygrid(IY) = -0.5*(ny-1)*dy + (IY-1)*dy  ! Horizontal location of grid data point, in m relative to tower centerline
+
+                  DO IC=1,NFFComp                           ! number of wind components (U, V, W)
+
 !FIXME: convert READ to the library ones
-   !!!                  READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
-   !!!                  IF ( TmpErrStat /= 0 )  THEN
-   !!!                     ErrMsg   = ' Error reading grid wind components in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!                     ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!                     RETURN
-   !!!                  ENDIF
-   !!!
-   !!!                  FFData(IZ,IY,IC,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)
-   !!!
-   !!!               ENDDO !IC
-   !!!
-   !!!            ENDDO !IY
-   !!!
-   !!!         ENDDO ! IZ
-   !!!
-   !!!
-   !!!         !...........................................................................................
-   !!!         ! Read the tower data at this time step.
-   !!!         !...........................................................................................
-   !!!
-   !!!         DO IZ=1,NTgrids         ! If NTgrids<1, there are no tower points & FFtower is not allocated
-   !!!
-   !!!            ! Ytower     = 0               ! Lateral location of the tower data point, in m relative to tower centerline
-   !!!            ! Ztower(IZ) = Z1 - (IZ-1)*dz  ! Vertical location of tower data point, in m relative to ground
-   !!!
-   !!!            DO IC=1,NFFComp   ! number of wind components
-   !!!
+                     READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
+                     IF ( TmpErrStat /= 0 )  THEN
+                        ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                                    ' Error reading grid wind components in the FF binary file "'//TRIM( WindFile )//'."'
+                        ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                        RETURN
+                     ENDIF
+
+                     OtherStates%FFData(IZ,IY,IC,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)
+
+                  ENDDO !IC
+
+               ENDDO !IY
+
+            ENDDO ! IZ
+
+
+            !...........................................................................................
+            ! Read the tower data at this time step.
+            !...........................................................................................
+
+            DO IZ=1,NTgrids         ! If NTgrids<1, there are no tower points & FFtower is not allocated
+
+               ! Ytower     = 0               ! Lateral location of the tower data point, in m relative to tower centerline
+               ! Ztower(IZ) = Z1 - (IZ-1)*dz  ! Vertical location of tower data point, in m relative to ground
+
+               DO IC=1,NFFComp   ! number of wind components
+
 !FIXME: convert READ to the library ones
-   !!!               READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
-   !!!               IF ( TmpErrStat /= 0 )  THEN
-   !!!                  ErrMsg   = ' Error reading tower wind components in the FF binary file "'//TRIM( WindFile )//'."'
-   !!!                  ErrStat  = ErrID_Fatal        ! fatal since not returning data
-   !!!                  RETURN
-   !!!               ENDIF
-   !!!
-   !!!               FFtower(IC,IZ,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)  ! wind-component scaled to m/s
-   !!!
-   !!!            ENDDO !IC
-   !!!
-   !!!         ENDDO ! IZ
-   !!!
-   !!!
-   !!!      ENDDO ! IT
-   !!!
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!   ! close the file and return
-   !!!   !-------------------------------------------------------------------------------------------------
-   !!!
-   !!!   CLOSE ( OtherStates%UnitWind )
-   !!!
-   !!!
-   !!!   IF ( Periodic ) THEN
-   !!!      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// &
-   !!!                     '-Hz full-field data (period of '//TRIM( Num2LStr( FFDTime*( NFFSteps ) ) )//' seconds).' )
-   !!!   ELSE
-   !!!      CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// &
-   !!!                     '-Hz full-field data ('//TRIM( Num2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
-   !!!   ENDIF
+                  READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
+                  IF ( TmpErrStat /= 0 )  THEN
+                     ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                                 ' Error reading tower wind components in the FF binary file "'//TRIM( WindFile )//'."'
+                     ErrStat  = ErrID_Fatal        ! fatal since not returning data
+                     RETURN
+                  ENDIF
+
+                  OtherStates%FFtower(IC,IZ,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)  ! wind-component scaled to m/s
+
+               ENDDO !IC
+
+            ENDDO ! IZ
+
+
+         ENDDO ! IT
+
+      !-------------------------------------------------------------------------------------------------
+      ! close the file and return
+      !-------------------------------------------------------------------------------------------------
+
+      CLOSE ( OtherStates%UnitWind )
+
+!FIXME: change all WrScr to ErrMsg pices
+      IF ( Periodic ) THEN
+         CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// &
+                        '-Hz full-field data (period of '//TRIM( Num2LStr( FFDTime*( NFFSteps ) ) )//' seconds).' )
+      ELSE
+         CALL WrScr ( ' Processed '//TRIM( Num2LStr( NFFSteps ) )//' time steps of '//TRIM( Num2LStr ( FFRate ) )// &
+                        '-Hz full-field data ('//TRIM( Num2LStr( FFDTime*( NFFSteps - 1 ) ) )//' seconds).' )
+      ENDIF
    !!!
       RETURN
 
