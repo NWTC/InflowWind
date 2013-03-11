@@ -198,11 +198,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       !----------------------------------------------------------------------------------------------
 
    CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), TmpErrStat, TmpErrMsg)
-   IF ( TmpErrStat >= AbortErrLev ) THEN
-      ErrStat  = MAX(TmpErrStat, ErrStat)
-      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      RETURN
-   ENDIF
+   ErrStat  = MAX(TmpErrStat, ErrStat)
+   ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   IF ( ErrStat >= AbortErrLev ) RETURN
 
 !FIXME: convert READ to the library ones
    READ ( OtherStates%UnitWind, IOSTAT=TmpErrStat )  Dum_Int2
@@ -224,12 +222,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       CASE ( 7, 8 )                                                    ! TurbSim binary format
 
          CALL Read_TurbSim_FF(OtherStates%UnitWind, TRIM(ParamData%WindFileName), TmpErrStat, TmpErrMsg)
-
-         IF ( TmpErrStat >= AbortErrLev ) THEN
-            ErrStat  = MAX(TmpErrStat, ErrStat)
-            ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-            RETURN
-         ENDIF
+         ErrStat  = MAX(TmpErrStat, ErrStat)
+         ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+         IF ( ErrStat >= AbortErrLev ) RETURN
 
       CASE ( -1, -2, -3, -99 )                                         ! Bladed-style binary format
 
@@ -247,79 +242,89 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          ! Read the summary file to get necessary scaling information
          !...........................................................................................
 
-            CALL Read_Summary_FF (OtherStates%UnitWind, TRIM(SumFile), CWise, ZCenter, TI, ErrStat, ErrMsg )
-            IF ( TmpErrStat >= AbortErrLev ) THEN
-               ErrStat  = MAX(TmpErrStat, ErrStat)
-               ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-               RETURN
-            ENDIF
+            CALL Read_Summary_FF (OtherStates%UnitWind, TRIM(SumFile), CWise, ZCenter, TI, TmpErrStat, TmpErrMsg )
+            ErrStat  = MAX(TmpErrStat, ErrStat)
+            ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+            IF ( ErrStat >= AbortErrLev ) RETURN
 
             UBar = MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
 
-!!!         !...........................................................................................
-!!!         ! Open the binary file and read its header
-!!!         !...........................................................................................
-!!!
-!!!            CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), ErrStat, ErrMsg )
-!!!!FIXME: Add ErrMsg when it is available
-!!!
-!!!            IF (ErrStat >= ErrID_Fatal) RETURN
-!!!
-!!!            IF ( Dum_Int2 == -99 ) THEN                                       ! Newer-style BLADED format
-!!!               CALL Read_Bladed_FF_Header1 (OtherStates%UnitWind, BinTI, ErrStat, ErrMsg)
-!!!
-!!!                  ! If the TIs are also in the binary file (BinTI > 0),
-!!!                  ! use those numbers instead of ones from the summary file
-!!!
-!!!               DO I =1,NFFComp
-!!!                  IF ( BinTI(I) > 0 ) TI(I) = BinTI(I)
-!!!               ENDDO
-!!!
-!!!            ELSE
-!!!               CALL Read_Bladed_FF_Header0 (OtherStates%UnitWind, ErrStat, ErrMsg)          ! Older-style BLADED format
-!!!            ENDIF
-!!!
-!!!            IF (ErrStat >= ErrID_Fatal) RETURN
-!!!
-!!!         !...........................................................................................
-!!!         ! Let's see if the summary and binary FF wind files go together before continuing.
-!!!         !...........................................................................................
-!!!
-!!!            IF ( ABS( UBar - MeanFFWS ) > 0.1 )  THEN
-!!!               ErrMsg   = ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
-!!!                           '(Check that the .sum and .wnd files were generated together.)'
-!!!               ErrStat  = ErrID_Fatal      ! was '= 1'
-!!!               RETURN
-!!!            ENDIF
-!!!
-!!!         !...........................................................................................
-!!!         ! Calculate the height of the bottom of the grid
-!!!         !...........................................................................................
-!!!
-!!!            GridBase = ZCenter - FFZHWid         ! the location, in meters, of the bottom of the grid
-!!!
-!!!         !...........................................................................................
-!!!         ! Read the binary grids (converted to m/s) and close the file
-!!!         !...........................................................................................
-!!!
-!!!            CALL Read_Bladed_Grids( OtherStates%UnitWind, CWise, TI, ErrStat, ErrMsg)
-!!!            CLOSE ( OtherStates%UnitWind )
-!!!
-!!!            IF ( ErrStat /= 0 ) RETURN
-!!!
-!!!         !...........................................................................................
-!!!         ! Read the tower points file
-!!!         !...........................................................................................
-!!!
-!!!            INQUIRE ( FILE=TRIM(TwrFile) , EXIST=Exists )
-!!!
-!!!            IF (  Exists )  THEN
-!!!               CALL Read_FF_Tower( OtherStates%UnitWind, TRIM(TwrFile), ErrStat, ErrMsg )
-!!!            ELSE
-!!!               NTgrids = 0
-!!!            ENDIF
-!!!
-!!!
+         !...........................................................................................
+         ! Open the binary file and read its header
+         !...........................................................................................
+
+            CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), TmpErrStat, TmpErrMsg )
+            ErrStat  = MAX(TmpErrStat, ErrStat)
+            ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+            IF ( ErrStat >= AbortErrLev ) RETURN
+
+            IF ( Dum_Int2 == -99 ) THEN                                                      ! Newer-style BLADED format
+!!!               CALL Read_Bladed_FF_Header1 (OtherStates%UnitWind, BinTI, TmpErrStat, TmpErrMsg)
+               ErrStat  = MAX(TmpErrStat, ErrStat)
+               ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+               IF ( ErrStat >= AbortErrLev ) RETURN
+
+                  ! If the TIs are also in the binary file (BinTI > 0),
+                  ! use those numbers instead of ones from the summary file
+
+               DO I =1,NFFComp
+                  IF ( BinTI(I) > 0 ) TI(I) = BinTI(I)
+               ENDDO
+
+            ELSE
+!!!               CALL Read_Bladed_FF_Header0 (OtherStates%UnitWind, TmpErrStat, TmpErrMsg)     ! Older-style BLADED format
+               ErrStat  = MAX(TmpErrStat, ErrStat)
+               ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+               IF ( ErrStat >= AbortErrLev ) RETURN
+
+            ENDIF
+
+
+         !...........................................................................................
+         ! Let's see if the summary and binary FF wind files go together before continuing.
+         !...........................................................................................
+
+            IF ( ABS( UBar - MeanFFWS ) > 0.1 )  THEN
+               ErrMsg   = TRIM(ErrMsg)//NewLine// &
+                           ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
+                           '(Check that the .sum and .wnd files were generated together.)'
+               ErrStat  = ErrID_Fatal
+               RETURN
+            ENDIF
+
+         !...........................................................................................
+         ! Calculate the height of the bottom of the grid
+         !...........................................................................................
+
+            GridBase = ZCenter - FFZHWid         ! the location, in meters, of the bottom of the grid
+
+         !...........................................................................................
+         ! Read the binary grids (converted to m/s) and close the file
+         !...........................................................................................
+
+!!!            CALL Read_Bladed_Grids( OtherStates%UnitWind, CWise, TI, TmpErrStat, TmpErrMsg)
+            CLOSE ( OtherStates%UnitWind )
+
+            ErrStat  = MAX(TmpErrStat, ErrStat)
+            ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+            IF ( ErrStat >= AbortErrLev ) RETURN
+
+         !...........................................................................................
+         ! Read the tower points file
+         !...........................................................................................
+
+            INQUIRE ( FILE=TRIM(TwrFile) , EXIST=Exists )
+
+            IF (  Exists )  THEN
+!!!               CALL Read_FF_Tower( OtherStates%UnitWind, TRIM(TwrFile), TmpErrStat, TmpErrMsg )
+               ErrStat  = MAX(TmpErrStat, ErrStat)
+               ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+               IF ( ErrStat >= AbortErrLev ) RETURN
+            ELSE
+               NTgrids = 0
+            ENDIF
+
+
       CASE DEFAULT
 
          ErrMsg   = TRIM(ErrMsg)//NewLine//' Error: Unrecognized binary wind file type.'
@@ -327,17 +332,17 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          RETURN
 
    END SELECT
-!!!
-!!!
-!!!   IF (Periodic) THEN
-!!!      InitXPosition = 0                ! start at the hub
-!!!      TotalTime     = NFFSteps*FFDTime
-!!!   ELSE
-!!!      InitXPosition = FFYHWid          ! start half the grid with ahead of the turbine
-!!!      TotalTime     = (NFFSteps-1)*FFDTime
-!!!   ENDIF
-!!!
-!!!   ParamData%Initialized = .TRUE.
+
+
+   IF (Periodic) THEN
+      InitXPosition = 0                ! start at the hub
+      TotalTime     = NFFSteps*FFDTime
+   ELSE
+      InitXPosition = FFYHWid          ! start half the grid with ahead of the turbine
+      TotalTime     = (NFFSteps-1)*FFDTime
+   ENDIF
+
+   ParamData%Initialized = .TRUE.
 
    RETURN
 
@@ -396,11 +401,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          !----------------------------------------------------------------------------------------------
 
       CALL OpenFInpFile ( OtherStates%UnitWind, TRIM( FileName ), TmpErrStat, TmpErrMsg )
-      IF ( TmpErrStat >= AbortErrLev ) THEN
-         ErrStat  = MAX(TmpErrStat, ErrStat)
-         ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-         RETURN
-      ENDIF
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
 
 
          !----------------------------------------------------------------------------------------------
@@ -649,11 +652,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    !-------------------------------------------------------------------------------------------------
 
       CALL OpenBInpFile (OtherStates%UnitWind, TRIM(WindFile), ErrStat, ErrMsg)
-            IF ( TmpErrStat >= AbortErrLev ) THEN
-               ErrStat  = MAX(TmpErrStat, ErrStat)
-               ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-               RETURN
-            ENDIF
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+      IF ( ErrStat >= AbortErrLev ) RETURN
    !!!!FIXME: Add in ErrMsg when it is available.
    !!!   IF (ErrStat /= 0) RETURN
    !!!
