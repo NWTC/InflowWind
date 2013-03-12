@@ -636,7 +636,7 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
       ! Error Handling
    INTEGER(IntKi),                        INTENT(OUT)    :: ErrStat        ! determines if an error has been encountered
-   CHARACTER(1024),                       INTENT(OUT)    :: ErrMsg         ! Message about errors
+   CHARACTER(*),                          INTENT(OUT)    :: ErrMsg         ! Message about errors
 
 
       ! Local Variables

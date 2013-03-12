@@ -44,6 +44,7 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_FFWind_ParameterType
     CHARACTER(1024)  :: WindFileName 
     LOGICAL  :: Initialized = .FALSE. 
+    LOGICAL  :: Periodic = .FALSE. 
     LOGICAL  :: Linearize = .FALSE. 
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
@@ -339,6 +340,7 @@ CONTAINS
   ErrMsg  = ""
   DstParamData%WindFileName = SrcParamData%WindFileName
   DstParamData%Initialized = SrcParamData%Initialized
+  DstParamData%Periodic = SrcParamData%Periodic
   DstParamData%Linearize = SrcParamData%Linearize
   DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
   DstParamData%Width = SrcParamData%Width

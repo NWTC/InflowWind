@@ -27,7 +27,6 @@ typedef  ^                       ^                       ReKi     Width         
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
 typedef  ^                       ^                       ReKi     FFData            ::::  -     -     "Array of FF data"                                             -
 typedef  ^                       ^                       ReKi     FFTower           :::   -     -     "Array of data along tower, below FF array"                    -
-#typedef  ^                       ^                       ReKi     TData             :     -     -     "Time array from the FF file"                                  seconds
 typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
 
 
@@ -36,6 +35,7 @@ typedef  ^                       ^                       IntKi    UnitWind      
 # Time step for integration of continuous states (if a fixed-step integrator is used) and update of discrete states:
 typedef  ^                    ParameterType       CHARACTER(1024) WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       Logical  Initialized       -  .FALSE.  -     "Flag to indicate if the module was initialized"               -
+typedef  ^                       ^                       Logical  Periodic          -  .FALSE.  -     "Flag to indicate if the wind file is periodic"                -
 typedef  ^                       ^                       Logical  Linearize         -  .FALSE.  -     "If this is true, we are linearizing"                          -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Height of the hub"                                            meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field"                                      meters
