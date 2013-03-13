@@ -42,7 +42,7 @@ MODULE IfW_FFWind
 
    PUBLIC                                    :: IfW_FFWind_Init
    PUBLIC                                    :: IfW_FFWind_End
-!   PUBLIC                                    :: IfW_FFWind_CalcOutput
+   PUBLIC                                    :: IfW_FFWind_CalcOutput
 
 
       ! The following do not contain anything since there are no states.
@@ -60,11 +60,7 @@ MODULE IfW_FFWind
 
       ! former FF_Wind module
 
-!   REAL(ReKi), ALLOCATABLE          :: FFData  (:,:,:,:)          ! Array of FF data
-!   REAL(ReKi), ALLOCATABLE          :: FFTower (:,:,:)            ! Array of data along the tower, below the FF array
-
-
-!FIXME: move thise into at type
+!FIXME: move thise into at type --> OtherStateType. Check where they actually get calculated and move to Init if necessary.
    REAL(ReKi)                       :: FFDTime                    ! delta time
    REAL(ReKi)                       :: FFRate                     ! data rate in Hz (1/FFDTime)
    REAL(ReKi)                       :: FFYHWid                    ! half the grid width
@@ -89,10 +85,6 @@ MODULE IfW_FFWind
 !!!   INTERFACE FF_GetValue
 !!!      MODULE PROCEDURE FF_GetRValue                               ! routine to return scalar real values
 !!!   END INTERFACE
-
-
-!   PUBLIC                           :: FF_GetWindSpeed            ! interpolation function that returns velocities at specified time and space
-!   PUBLIC                           :: FF_GetValue                ! interface to return requested values
 
 CONTAINS
 !====================================================================================================
@@ -1966,378 +1958,467 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
    END SUBROUTINE Read_FF_Tower
 END SUBROUTINE IfW_FFWind_Init
+!====================================================================================================
+
+
+!====================================================================================================
+SUBROUTINE IfW_FFWind_CalcOutput(Time,    InData,        ParamData,                       &
+                           ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
+                           OutData,       ErrStat,       ErrMsg)
+   !-------------------------------------------------------------------------------------------------
+   ! This routine acts as a wrapper for the GetWindSpeed routine. It steps through the array of input
+   ! positions and calls the GetWindSpeed routine to calculate the velocities at each point.
+   !
+   ! There are inefficiencies in how this set of routines is coded, but that is a problem for another
+   ! day. For now, it merely needs to be functional. It can be fixed up and made all pretty later.
+   !-------------------------------------------------------------------------------------------------
+
+   IMPLICIT                                                 NONE
+
+      ! Passed Variables
+   REAL(DbKi),                            INTENT(IN   )  :: Time           ! time from the start of the simulation
+   TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
+   TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
+   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
+
+      ! Error handling
+   INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat        ! error status
+   CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg         ! The error message
+
+      ! local variables
+   INTEGER(IntKi)                                        :: NumPoints      ! Number of points specified by the InData%Position array
+
+      ! local counters
+   INTEGER(IntKi)                                        :: PointNum       ! a loop counter for the current point
+
+      ! temporary variables
+   INTEGER(IntKi)                                        :: TmpErrStat     ! temporary error status
+   CHARACTER(1024)                                       :: TmpErrMsg      ! temporary error message
 
 
 
+      !-------------------------------------------------------------------------------------------------
+      ! Initialize some things
+      !-------------------------------------------------------------------------------------------------
 
-!!!!====================================================================================================
-!!!FUNCTION FF_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
-!!!! This function receives time and position (in InputInfo) where (undisturbed) velocities are are
-!!!! requested.  It determines if the point is on the FF grid or tower points and calls the
-!!!! corresponding interpolation routine, which returns the velocities at the specified time and space.
-!!!!----------------------------------------------------------------------------------------------------
-!!!
-!!!   REAL(DbKi),       INTENT(IN)  :: Time
-!!!   REAL(ReKi),       INTENT(IN)  :: InputPosition(3)
-!!!   INTEGER(IntKi),          INTENT(OUT) :: ErrStat
-!!!   CHARACTER(*),     INTENT(OUT) :: ErrMsg
-!!!
-!!!   REAL(ReKi)                    :: FF_GetWindSpeed(3)
-!!!
-!!!!FIXME: this invokes SAVE
-!!!   REAL(ReKi), PARAMETER         :: TOL = 1E-3
-!!!
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Check that the module has been initialized.
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!   IF ( .NOT. Initialized ) THEN
-!!!      ErrMsg   = ' Initialialize the FFWind module before calling its subroutines.'
-!!!      ErrStat  = ErrID_Fatal     ! was '= 1'
-!!!      RETURN
-!!!   ELSE
-!!!      ErrStat = 0
-!!!   ENDIF
-!!!
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Find out if the location is on the grid on on tower points; interpolate and return the value.
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!    FF_GetWindSpeed = FF_Interp(Time,InputPosition, ErrStat, ErrMsg)
-!!!
-!!!
-!!!!   IF ( InputPosition(3) >= GridBase - TOL ) THEN
-!!!!
-!!!!         ! Get the velocities interpolated on the FF grid
-!!!!
-!!!!      FF_GetWindSpeed%Velocity = FF_Interp(Time,InputPosition, ErrStat)
-!!!!
-!!!!   ELSE
-!!!!
-!!!!         ! Get the velocities interpolated below the FF grid, on the tower points
-!!!!
-!!!!      IF ( NTgrids < 1 ) THEN
-!!!!
-!!!!         ErrMsg   = ' Error: FF interpolation height is below the grid and no tower points have been defined.'
-!!!!         ErrStat = ErrID_Fatal        ! was '= 1'
-!!!!         RETURN
-!!!!
-!!!!      ELSE
-!!!!
-!!!!         FF_GetWindSpeed%Velocity = FF_TowerInterp(Time,InputInfo%Position, ErrStat)
-!!!!
-!!!!      ENDIF   ! NTgrids < 1
-!!!!
-!!!!
-!!!!   ENDIF      ! InputInfo%Position(3)>= GridBase
-!!!
-!!!
-!!!END FUNCTION FF_GetWindSpeed
-!!!!====================================================================================================
-!!!FUNCTION FF_Interp(Time, Position, ErrStat, ErrMsg)
-!!!!    This function is used to interpolate into the full-field wind array or tower array if it has
-!!!!    been defined and is necessary for the given inputs.  It receives X, Y, Z and
-!!!!    TIME from the calling routine.  It then computes a time shift due to a nonzero X based upon
-!!!!    the average windspeed.  The modified time is used to decide which pair of time slices to interpolate
-!!!!    within and between.  After finding the two time slices, it decides which four grid points bound the
-!!!!    (Y,Z) pair.  It does a bilinear interpolation for each time slice. Linear interpolation is then used
-!!!!    to interpolate between time slices.  This routine assumes that X is downwind, Y is to the left when
-!!!!    looking downwind and Z is up.  It also assumes that no extrapolation will be needed.
-!!!!
-!!!!    If tower points are used, it assumes the velocity at the ground is 0.  It interpolates between
-!!!!    heights and between time slices, but ignores the Y input.
-!!!!
-!!!!    11/07/94 - Created by M. Buhl from the original TURBINT.
-!!!!    09/25/97 - Modified by M. Buhl to use f90 constructs and new variable names.  Renamed to FF_Interp.
-!!!!    09/23/09 - Modified by B. Jonkman to use arguments instead of modules to determine time and position.
-!!!!               Height is now relative to the ground
-!!!!
-!!!!----------------------------------------------------------------------------------------------------
-!!!
-!!!   IMPLICIT                      NONE
-!!!
-!!!   REAL(ReKi),       INTENT(IN)  :: Position(3)       ! takes the place of XGrnd, YGrnd, ZGrnd
-!!!   REAL(DbKi),       INTENT(IN)  :: Time
-!!!   REAL(ReKi)                    :: FF_Interp(3)      ! The U, V, W velocities
-!!!
-!!!   INTEGER(IntKi),          INTENT(OUT) :: ErrStat
-!!!   CHARACTER(*),     INTENT(OUT) :: ErrMsg
-!!!
-!!!      ! Local Variables:
-!!!
-!!!   REAL(ReKi)                    :: TimeShifted
-!!!!FIXME: this invokes SAVE
-!!!   REAL(ReKi),PARAMETER          :: Tol = 1.0E-3      ! a tolerance for determining if two reals are the same (for extrapolation)
-!!!   REAL(ReKi)                    :: W_YH_Z
-!!!   REAL(ReKi)                    :: W_YH_ZH
-!!!   REAL(ReKi)                    :: W_YH_ZL
-!!!   REAL(ReKi)                    :: W_YL_Z
-!!!   REAL(ReKi)                    :: W_YL_ZH
-!!!   REAL(ReKi)                    :: W_YL_ZL
-!!!   REAL(ReKi)                    :: Wnd(2)
-!!!   REAL(ReKi)                    :: T
-!!!   REAL(ReKi)                    :: TGRID
-!!!   REAL(ReKi)                    :: Y
-!!!   REAL(ReKi)                    :: YGRID
-!!!   REAL(ReKi)                    :: Z
-!!!   REAL(ReKi)                    :: ZGRID
-!!!
-!!!   INTEGER(IntKi)                       :: IDIM
-!!!   INTEGER(IntKi)                       :: IG
-!!!   INTEGER(IntKi)                       :: IT
-!!!   INTEGER(IntKi)                       :: ITHI
-!!!   INTEGER(IntKi)                       :: ITLO
-!!!   INTEGER(IntKi)                       :: IYHI
-!!!   INTEGER(IntKi)                       :: IYLO
-!!!   INTEGER(IntKi)                       :: IZHI
-!!!   INTEGER(IntKi)                       :: IZLO
-!!!
-!!!   LOGICAL                       :: OnGrid
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Initialize variables
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!   FF_Interp(:)          = 0.0                         ! the output velocities (in case NFFComp /= 3)
-!!!   Wnd(:)                = 0.0                         ! just in case we're on an end point
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Find the bounding time slices.
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!   ! Perform the time shift.  At time=0, a point half the grid width downstream (FFYHWid) will index into the zero time slice.
-!!!   ! If we did not do this, any point downstream of the tower at the beginning of the run would index outside of the array.
-!!!   ! This all assumes the grid width is at least as large as the rotor.  If it isn't, then the interpolation will not work.
-!!!
-!!!
-!!!   TimeShifted = TIME + ( InitXPosition - Position(1) )*InvMFFWS    ! in distance, X: InputInfo%Position(1) - InitXPosition - TIME*MeanFFWS
-!!!
-!!!
-!!!   IF ( ParamData%Periodic ) THEN ! translate TimeShifted to ( 0 <= TimeShifted < TotalTime )
-!!!
-!!!      TimeShifted = MODULO( TimeShifted, TotalTime )
-!!!
-!!!      TGRID = TimeShifted*FFRate
-!!!      ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
-!!!      T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
-!!!
-!!!      ITLO = ITLO + 1
-!!!      IF ( ITLO == NFFSteps ) THEN
-!!!         ITHI = 1
-!!!      ELSE
-!!!         ITHI = ITLO + 1
-!!!      ENDIF
-!!!
-!!!
-!!!   ELSE
-!!!
-!!!      TGRID = TimeShifted*FFRate
-!!!      ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
-!!!      T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
-!!!
-!!!      ITLO = ITLO + 1                  ! add one since our grids start at 1, not 0
-!!!      ITHI = ITLO + 1
-!!!
-!!!      IF ( ITLO >= NFFSteps .OR. ITLO < 1 ) THEN
-!!!         IF ( ITLO == NFFSteps  ) THEN
-!!!            ITHI = ITLO
-!!!            IF ( T <= TOL ) THEN ! we're on the last point
-!!!               T = 0.0
-!!!            ELSE  ! We'll extrapolate one dt past the last value in the file
-!!!               ITLO = ITHI - 1
-!!!            ENDIF
-!!!         ELSE
-!!!            ErrMsg   = ' Error: FF wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )// &
-!!!                       ' seconds (trying to access data at '//TRIM( Num2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'
-!!!            ErrStat  = ErrID_Fatal
-!!!            RETURN
-!!!         ENDIF
-!!!      ENDIF
-!!!
-!!!   ENDIF
-!!!
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Find the bounding rows for the Z position. [The lower-left corner is (1,1) when looking upwind.]
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!   ZGRID = ( Position(3) - GridBase )*InvFFZD
-!!!
-!!!   IF (ZGRID > -1*TOL) THEN
-!!!      OnGrid = .TRUE.
-!!!
-!!!      IZLO = INT( ZGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
-!!!      IZHI = IZLO + 1
-!!!
-!!!      Z = ZGRID - ( IZLO - 1 )            ! a value between 0 and 1 that indicates a relative location between IZLO and IZHI
-!!!
-!!!      IF ( IZLO < 1 ) THEN
-!!!         IF ( IZLO == 0 .AND. Z >= 1.0-TOL ) THEN
-!!!            Z    = 0.0
-!!!            IZLO = 1
-!!!         ELSE
-!!!            ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-!!!                       TRIM(Num2LStr(Position(3)))//' m is below the grid).'
-!!!            ErrStat  = ErrID_Fatal
-!!!            RETURN
-!!!         ENDIF
-!!!      ELSEIF ( IZLO >= NZGrids ) THEN
-!!!         IF ( IZLO == NZGrids .AND. Z <= TOL ) THEN
-!!!            Z    = 0.0
-!!!            IZHI = IZLO                   ! We're right on the last point, which is still okay
-!!!         ELSE
-!!!            ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
-!!!                       TRIM(Num2LStr(Position(3)))//' m is above the grid).'
-!!!            ErrStat  = ErrID_Fatal
-!!!            RETURN
-!!!         ENDIF
-!!!      ENDIF
-!!!
-!!!   ELSE
-!!!
-!!!      OnGrid = .FALSE.  ! this is on the tower
-!!!
-!!!      IF ( NTGrids < 1 ) THEN
-!!!         ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
-!!!                    '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).'
-!!!         ErrStat  = ErrID_Fatal
-!!!         RETURN
-!!!      ENDIF
-!!!
-!!!      IZLO = INT( -1.0*ZGRID ) + 1            ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
-!!!
-!!!
-!!!      IF ( IZLO >= NTGrids ) THEN  !our dz is the difference between the bottom tower point and the ground
-!!!         IZLO = NTGrids
-!!!
-!!!         Z    = 1.0 - Position(3) / (GridBase - (IZLO-1)/InvFFZD) !check that this isn't 0
-!!!      ELSE
-!!!         Z    = ABS(ZGRID) - (IZLO - 1)
-!!!      ENDIF
-!!!      IZHI = IZLO + 1
-!!!
-!!!   ENDIF
-!!!
-!!!
-!!!   IF ( OnGrid ) THEN      ! The tower points don't use this
-!!!
-!!!      !-------------------------------------------------------------------------------------------------
-!!!      ! Find the bounding columns for the Y position. [The lower-left corner is (1,1) when looking upwind.]
-!!!      !-------------------------------------------------------------------------------------------------
-!!!
-!!!         YGRID = ( Position(2) + FFYHWid )*InvFFYD    ! really, it's (Position(2) - -1.0*FFYHWid)
-!!!
-!!!         IYLO = INT( YGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
-!!!         IYHI = IYLO + 1
-!!!
-!!!         Y    = YGRID - ( IYLO - 1 )         ! a value between 0 and 1 that indicates a relative location between IYLO and IYHI
-!!!
-!!!         IF ( IYLO >= NYGrids .OR. IYLO < 1 ) THEN
-!!!            IF ( IYLO == 0 .AND. Y >= 1.0-TOL ) THEN
-!!!               Y    = 0.0
-!!!               IYLO = 1
-!!!            ELSE IF ( IYLO == NYGrids .AND. Y <= TOL ) THEN
-!!!               Y    = 0.0
-!!!               IYHI = IYLO                   ! We're right on the last point, which is still okay
-!!!            ELSE
-!!!               ErrMsg   = ' Error FF wind array boundaries violated: Grid too small in Y direction. Y='// &
-!!!                          TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*FFYHWid))// &
-!!!                          ', '//TRIM(Num2LStr(FFYHWid))//']'
-!!!               ErrStat = 2
-!!!               RETURN
-!!!            ENDIF
-!!!         ENDIF
-!!!
-!!!      !-------------------------------------------------------------------------------------------------
-!!!      ! Interpolate on the grid
-!!!      !-------------------------------------------------------------------------------------------------
-!!!
-!!!      DO IDIM=1,NFFComp       ! all the components
-!!!
-!!!         IT = ITLO            ! Start using the ITLO slice
-!!!
-!!!         DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
-!!!
-!!!            !-------------------------------------------------------------------------------------------
-!!!            ! Get the wind velocity values for the four corners of the grid for this time.
-!!!            !-------------------------------------------------------------------------------------------
-!!!
-!!!            W_YL_ZL = FFData( IZLO, IYLO, IDIM, IT )
-!!!            W_YL_ZH = FFData( IZHI, IYLO, IDIM, IT )
-!!!            W_YH_ZL = FFData( IZLO, IYHI, IDIM, IT )
-!!!            W_YH_ZH = FFData( IZHI, IYHI, IDIM, IT )
-!!!
-!!!
-!!!            !-------------------------------------------------------------------------------------------
-!!!            ! Interpolate within the grid for this time.
-!!!            !-------------------------------------------------------------------------------------------
-!!!
-!!!            W_YL_Z  = ( W_YL_ZH - W_YL_ZL )*Z + W_YL_ZL
-!!!            W_YH_Z  = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
-!!!            Wnd(IG) = ( W_YH_Z  - W_YL_Z  )*Y + W_YL_Z
-!!!
-!!!            IT = ITHI            ! repeat for the using the ITHI slice
-!!!
-!!!         END DO !IG
-!!!
-!!!         !----------------------------------------------------------------------------------------------
-!!!         ! Interpolate between the two times.
-!!!         !----------------------------------------------------------------------------------------------
-!!!
-!!!         FF_Interp(IDIM) = ( Wnd(2) - Wnd(1) ) * T + Wnd(1)    ! interpolated velocity
-!!!
-!!!      END DO !IDIM
-!!!
-!!!   ELSE
-!!!
-!!!   !-------------------------------------------------------------------------------------------------
-!!!   ! Interpolate on the tower array
-!!!   !-------------------------------------------------------------------------------------------------
-!!!
-!!!      DO IDIM=1,NFFComp    ! all the components
-!!!
-!!!         IT = ITLO            ! Start using the ITLO slice
-!!!
-!!!         DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
-!!!
-!!!            !-------------------------------------------------------------------------------------------
-!!!            ! Get the wind velocity values for the two corners of the grid for this time.
-!!!            !-------------------------------------------------------------------------------------------
-!!!
-!!!            W_YH_ZL = FFTower( IDIM, IZLO, IT )
-!!!
-!!!            IF ( IZHI > NTGrids ) THEN
-!!!               W_YH_ZH = 0.0
-!!!            ELSE
-!!!               W_YH_ZH = FFTower( IDIM, IZHI, IT )
-!!!            ENDIF
-!!!
-!!!
-!!!            !-------------------------------------------------------------------------------------------
-!!!            ! Interpolate within the grid for this time.
-!!!            !-------------------------------------------------------------------------------------------
-!!!
-!!!            Wnd(IG) = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
-!!!
-!!!            IT = ITHI            ! repeat for the using the ITHI slice
-!!!
-!!!         END DO !IG
-!!!
-!!!         !----------------------------------------------------------------------------------------------
-!!!         ! Interpolate between the two times.
-!!!         !----------------------------------------------------------------------------------------------
-!!!
-!!!         FF_Interp(IDIM) = ( Wnd(2) - Wnd(1) ) * T + Wnd(1)    ! interpolated velocity
-!!!
-!!!      END DO !IDIM
-!!!
-!!!   ENDIF ! OnGrid
-!!!
-!!!   RETURN
-!!!
-!!!END FUNCTION FF_Interp
+   TmpErrStat  = ErrID_None
+   TmpErrMsg   = ""
+   NumPoints   =  SIZE(InData%Position,1)
+
+
+      ! Allocate Velocity output array
+   CALL AllocAry( OutData%Velocity, NumPoints, 3,  "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
+   IF ( TmpErrStat >= AbortErrLev ) THEN
+      ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_FFWind:CalcOutput -- Could not allocate the output velocity array."
+      RETURN
+   ENDIF
+
+
+      ! Step through all the positions and get the velocities
+   DO PointNum = 1, NumPoints
+
+         ! Calculate the velocity for the position
+      OutData%Velocity(PointNum,:) = FF_GetWindSpeed(Time,InData%Position(PointNum,:),ParamData,OtherStates,TmpErrStat,TmpErrMsg)
+
+         ! Error handling
+      ErrStat  = MAX(TmpErrStat, ErrStat)
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)    ! This might be redundant given the next line (depends on what GetWindSpeed returns for TmpErrMsg).
+      IF (ErrStat >= AbortErrLev) THEN
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_FFWind:CalcOutput -- Error calculating the wind speed at position ("//   &
+                     TRIM(Num2LStr(InData%Position(PointNum,1)))//", "// &
+                     TRIM(Num2LStr(InData%Position(PointNum,2)))//", "// &
+                     TRIM(Num2LStr(InData%Position(PointNum,3)))//")"
+         RETURN
+      ENDIF
+
+   ENDDO
+
+
+   RETURN
+
+CONTAINS
+   !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
+   FUNCTION FF_GetWindSpeed(Time, InputPosition, ParamData, OtherStates, ErrStat, ErrMsg)
+   ! This function receives time and position (in InputInfo) where (undisturbed) velocities are are
+   ! requested.  It determines if the point is on the FF grid or tower points and calls the
+   ! corresponding interpolation routine, which returns the velocities at the specified time and space.
+   !----------------------------------------------------------------------------------------------------
+
+      IMPLICIT                                              NONE
+
+      REAL(DbKi),                         INTENT(IN   )  :: Time
+      REAL(ReKi),                         INTENT(IN   )  :: InputPosition(3)
+      TYPE(IfW_FFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
+      TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+      INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
+
+         ! returned values
+      REAL(ReKi)                                         :: FF_GetWindSpeed(3)
+
+   !FIXME: this invokes SAVE -- put elsewhere!
+      REAL(ReKi), PARAMETER                              :: TOL = 1E-3
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Check that the module has been initialized.
+      !-------------------------------------------------------------------------------------------------
+
+      IF ( .NOT. ParamData%Initialized ) THEN
+         ErrMsg   = ' Initialialize the FFWind module before calling its subroutines.'
+         ErrStat  = ErrID_Fatal
+         RETURN
+      ELSE
+         ErrStat = ErrID_None
+      ENDIF
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Find out if the location is on the grid on on tower points; interpolate and return the value.
+      !-------------------------------------------------------------------------------------------------
+
+      FF_GetWindSpeed = FF_Interp(Time, InputPosition, ParamData, OtherStates, ErrStat, ErrMsg)
+
+
+   !   IF ( InputPosition(3) >= GridBase - TOL ) THEN
+   !
+   !         ! Get the velocities interpolated on the FF grid
+   !
+   !      FF_GetWindSpeed%Velocity = FF_Interp(Time,InputPosition, ErrStat)
+   !
+   !   ELSE
+   !
+   !         ! Get the velocities interpolated below the FF grid, on the tower points
+   !
+   !      IF ( NTgrids < 1 ) THEN
+   !
+   !         ErrMsg   = ' Error: FF interpolation height is below the grid and no tower points have been defined.'
+   !         ErrStat = ErrID_Fatal        ! was '= 1'
+   !         RETURN
+   !
+   !      ELSE
+   !
+   !         FF_GetWindSpeed%Velocity = FF_TowerInterp(Time,InputInfo%Position, ErrStat)
+   !
+   !      ENDIF   ! NTgrids < 1
+   !
+   !
+   !   ENDIF      ! InputInfo%Position(3)>= GridBase
+
+
+   END FUNCTION FF_GetWindSpeed
+   !====================================================================================================
+   FUNCTION FF_Interp(Time, Position, ParamData, OtherStates, ErrStat, ErrMsg)
+   !    This function is used to interpolate into the full-field wind array or tower array if it has
+   !    been defined and is necessary for the given inputs.  It receives X, Y, Z and
+   !    TIME from the calling routine.  It then computes a time shift due to a nonzero X based upon
+   !    the average windspeed.  The modified time is used to decide which pair of time slices to interpolate
+   !    within and between.  After finding the two time slices, it decides which four grid points bound the
+   !    (Y,Z) pair.  It does a bilinear interpolation for each time slice. Linear interpolation is then used
+   !    to interpolate between time slices.  This routine assumes that X is downwind, Y is to the left when
+   !    looking downwind and Z is up.  It also assumes that no extrapolation will be needed.
+   !
+   !    If tower points are used, it assumes the velocity at the ground is 0.  It interpolates between
+   !    heights and between time slices, but ignores the Y input.
+   !
+   !    11/07/94 - Created by M. Buhl from the original TURBINT.
+   !    09/25/97 - Modified by M. Buhl to use f90 constructs and new variable names.  Renamed to FF_Interp.
+   !    09/23/09 - Modified by B. Jonkman to use arguments instead of modules to determine time and position.
+   !               Height is now relative to the ground
+   !
+   !----------------------------------------------------------------------------------------------------
+
+      IMPLICIT                                              NONE
+
+      REAL(DbKi),                         INTENT(IN   )  :: Time
+      REAL(ReKi),                         INTENT(IN   )  :: Position(3)    ! takes the place of XGrnd, YGrnd, ZGrnd
+      TYPE(IfW_FFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
+      TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+      REAL(ReKi)                                         :: FF_Interp(3)   ! The U, V, W velocities
+
+      INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
+      CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
+
+         ! Local Variables:
+
+      REAL(ReKi)                                         :: TimeShifted
+   !FIXME: this invokes SAVE
+      REAL(ReKi),PARAMETER                               :: Tol = 1.0E-3   ! a tolerance for determining if two reals are the same (for extrapolation)
+      REAL(ReKi)                                         :: W_YH_Z
+      REAL(ReKi)                                         :: W_YH_ZH
+      REAL(ReKi)                                         :: W_YH_ZL
+      REAL(ReKi)                                         :: W_YL_Z
+      REAL(ReKi)                                         :: W_YL_ZH
+      REAL(ReKi)                                         :: W_YL_ZL
+      REAL(ReKi)                                         :: Wnd(2)
+      REAL(ReKi)                                         :: T
+      REAL(ReKi)                                         :: TGRID
+      REAL(ReKi)                                         :: Y
+      REAL(ReKi)                                         :: YGRID
+      REAL(ReKi)                                         :: Z
+      REAL(ReKi)                                         :: ZGRID
+
+      INTEGER(IntKi)                                     :: IDIM
+      INTEGER(IntKi)                                     :: IG
+      INTEGER(IntKi)                                     :: IT
+      INTEGER(IntKi)                                     :: ITHI
+      INTEGER(IntKi)                                     :: ITLO
+      INTEGER(IntKi)                                     :: IYHI
+      INTEGER(IntKi)                                     :: IYLO
+      INTEGER(IntKi)                                     :: IZHI
+      INTEGER(IntKi)                                     :: IZLO
+
+      LOGICAL                                            :: OnGrid
+
+      !-------------------------------------------------------------------------------------------------
+      ! Initialize variables
+      !-------------------------------------------------------------------------------------------------
+
+      FF_Interp(:)          = 0.0                         ! the output velocities (in case NFFComp /= 3)
+      Wnd(:)                = 0.0                         ! just in case we're on an end point
+
+      !-------------------------------------------------------------------------------------------------
+      ! Find the bounding time slices.
+      !-------------------------------------------------------------------------------------------------
+
+      ! Perform the time shift.  At time=0, a point half the grid width downstream (FFYHWid) will index into the zero time slice.
+      ! If we did not do this, any point downstream of the tower at the beginning of the run would index outside of the array.
+      ! This all assumes the grid width is at least as large as the rotor.  If it isn't, then the interpolation will not work.
+
+
+      TimeShifted = TIME + ( InitXPosition - Position(1) )*InvMFFWS    ! in distance, X: InputInfo%Position(1) - InitXPosition - TIME*MeanFFWS
+
+
+      IF ( ParamData%Periodic ) THEN ! translate TimeShifted to ( 0 <= TimeShifted < TotalTime )
+
+         TimeShifted = MODULO( TimeShifted, TotalTime )
+
+         TGRID = TimeShifted*FFRate
+         ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
+         T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
+
+         ITLO = ITLO + 1
+         IF ( ITLO == NFFSteps ) THEN
+            ITHI = 1
+         ELSE
+            ITHI = ITLO + 1
+         ENDIF
+
+
+      ELSE
+
+         TGRID = TimeShifted*FFRate
+         ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
+         T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
+
+         ITLO = ITLO + 1                  ! add one since our grids start at 1, not 0
+         ITHI = ITLO + 1
+
+         IF ( ITLO >= NFFSteps .OR. ITLO < 1 ) THEN
+            IF ( ITLO == NFFSteps  ) THEN
+               ITHI = ITLO
+               IF ( T <= TOL ) THEN ! we're on the last point
+                  T = 0.0
+               ELSE  ! We'll extrapolate one dt past the last value in the file
+                  ITLO = ITHI - 1
+               ENDIF
+            ELSE
+               ErrMsg   = ' Error: FF wind array was exhausted at '//TRIM( Num2LStr( REAL( TIME,   ReKi ) ) )// &
+                          ' seconds (trying to access data at '//TRIM( Num2LStr( REAL( TimeShifted, ReKi ) ) )//' seconds).'
+               ErrStat  = ErrID_Fatal
+               RETURN
+            ENDIF
+         ENDIF
+
+      ENDIF
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Find the bounding rows for the Z position. [The lower-left corner is (1,1) when looking upwind.]
+      !-------------------------------------------------------------------------------------------------
+
+      ZGRID = ( Position(3) - GridBase )*InvFFZD
+
+      IF (ZGRID > -1*TOL) THEN
+         OnGrid = .TRUE.
+
+         IZLO = INT( ZGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
+         IZHI = IZLO + 1
+
+         Z = ZGRID - ( IZLO - 1 )            ! a value between 0 and 1 that indicates a relative location between IZLO and IZHI
+
+         IF ( IZLO < 1 ) THEN
+            IF ( IZLO == 0 .AND. Z >= 1.0-TOL ) THEN
+               Z    = 0.0
+               IZLO = 1
+            ELSE
+               ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
+                          TRIM(Num2LStr(Position(3)))//' m is below the grid).'
+               ErrStat  = ErrID_Fatal
+               RETURN
+            ENDIF
+         ELSEIF ( IZLO >= NZGrids ) THEN
+            IF ( IZLO == NZGrids .AND. Z <= TOL ) THEN
+               Z    = 0.0
+               IZHI = IZLO                   ! We're right on the last point, which is still okay
+            ELSE
+               ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction (Z='//&
+                          TRIM(Num2LStr(Position(3)))//' m is above the grid).'
+               ErrStat  = ErrID_Fatal
+               RETURN
+            ENDIF
+         ENDIF
+
+      ELSE
+
+         OnGrid = .FALSE.  ! this is on the tower
+
+         IF ( NTGrids < 1 ) THEN
+            ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
+                       '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).'
+            ErrStat  = ErrID_Fatal
+            RETURN
+         ENDIF
+
+         IZLO = INT( -1.0*ZGRID ) + 1            ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
+
+
+         IF ( IZLO >= NTGrids ) THEN  !our dz is the difference between the bottom tower point and the ground
+            IZLO = NTGrids
+
+            Z    = 1.0 - Position(3) / (GridBase - (IZLO-1)/InvFFZD) !check that this isn't 0
+         ELSE
+            Z    = ABS(ZGRID) - (IZLO - 1)
+         ENDIF
+         IZHI = IZLO + 1
+
+      ENDIF
+
+
+      IF ( OnGrid ) THEN      ! The tower points don't use this
+
+         !-------------------------------------------------------------------------------------------------
+         ! Find the bounding columns for the Y position. [The lower-left corner is (1,1) when looking upwind.]
+         !-------------------------------------------------------------------------------------------------
+
+            YGRID = ( Position(2) + FFYHWid )*InvFFYD    ! really, it's (Position(2) - -1.0*FFYHWid)
+
+            IYLO = INT( YGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
+            IYHI = IYLO + 1
+
+            Y    = YGRID - ( IYLO - 1 )         ! a value between 0 and 1 that indicates a relative location between IYLO and IYHI
+
+            IF ( IYLO >= NYGrids .OR. IYLO < 1 ) THEN
+               IF ( IYLO == 0 .AND. Y >= 1.0-TOL ) THEN
+                  Y    = 0.0
+                  IYLO = 1
+               ELSE IF ( IYLO == NYGrids .AND. Y <= TOL ) THEN
+                  Y    = 0.0
+                  IYHI = IYLO                   ! We're right on the last point, which is still okay
+               ELSE
+                  ErrMsg   = ' Error FF wind array boundaries violated: Grid too small in Y direction. Y='// &
+                             TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*FFYHWid))// &
+                             ', '//TRIM(Num2LStr(FFYHWid))//']'
+                  ErrStat = ErrID_Fatal         ! we don't return anything
+                  RETURN
+               ENDIF
+            ENDIF
+
+         !-------------------------------------------------------------------------------------------------
+         ! Interpolate on the grid
+         !-------------------------------------------------------------------------------------------------
+
+         DO IDIM=1,NFFComp       ! all the components
+
+            IT = ITLO            ! Start using the ITLO slice
+
+            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
+
+               !-------------------------------------------------------------------------------------------
+               ! Get the wind velocity values for the four corners of the grid for this time.
+               !-------------------------------------------------------------------------------------------
+
+               W_YL_ZL = OtherStates%FFData( IZLO, IYLO, IDIM, IT )
+               W_YL_ZH = OtherStates%FFData( IZHI, IYLO, IDIM, IT )
+               W_YH_ZL = OtherStates%FFData( IZLO, IYHI, IDIM, IT )
+               W_YH_ZH = OtherStates%FFData( IZHI, IYHI, IDIM, IT )
+
+
+               !-------------------------------------------------------------------------------------------
+               ! Interpolate within the grid for this time.
+               !-------------------------------------------------------------------------------------------
+
+               W_YL_Z  = ( W_YL_ZH - W_YL_ZL )*Z + W_YL_ZL
+               W_YH_Z  = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
+               Wnd(IG) = ( W_YH_Z  - W_YL_Z  )*Y + W_YL_Z
+
+               IT = ITHI            ! repeat for the using the ITHI slice
+
+            END DO !IG
+
+            !----------------------------------------------------------------------------------------------
+            ! Interpolate between the two times.
+            !----------------------------------------------------------------------------------------------
+
+            FF_Interp(IDIM) = ( Wnd(2) - Wnd(1) ) * T + Wnd(1)    ! interpolated velocity
+
+         END DO !IDIM
+
+      ELSE
+
+      !-------------------------------------------------------------------------------------------------
+      ! Interpolate on the tower array
+      !-------------------------------------------------------------------------------------------------
+
+         DO IDIM=1,NFFComp    ! all the components
+
+            IT = ITLO            ! Start using the ITLO slice
+
+            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be NFFSteps and 1 respectively)
+
+               !-------------------------------------------------------------------------------------------
+               ! Get the wind velocity values for the two corners of the grid for this time.
+               !-------------------------------------------------------------------------------------------
+
+               W_YH_ZL = OtherStates%FFTower( IDIM, IZLO, IT )
+
+               IF ( IZHI > NTGrids ) THEN
+                  W_YH_ZH = 0.0
+               ELSE
+                  W_YH_ZH = OtherStates%FFTower( IDIM, IZHI, IT )
+               ENDIF
+
+
+               !-------------------------------------------------------------------------------------------
+               ! Interpolate within the grid for this time.
+               !-------------------------------------------------------------------------------------------
+
+               Wnd(IG) = ( W_YH_ZH - W_YH_ZL )*Z + W_YH_ZL
+
+               IT = ITHI            ! repeat for the using the ITHI slice
+
+            END DO !IG
+
+            !----------------------------------------------------------------------------------------------
+            ! Interpolate between the two times.
+            !----------------------------------------------------------------------------------------------
+
+            FF_Interp(IDIM) = ( Wnd(2) - Wnd(1) ) * T + Wnd(1)    ! interpolated velocity
+
+         END DO !IDIM
+
+      ENDIF ! OnGrid
+
+      RETURN
+
+   END FUNCTION FF_Interp
+END SUBROUTINE IfW_FFWind_CalcOutput
+
+
 !====================================================================================================
 SUBROUTINE IfW_FFWind_End( InData,     ParamData,                                &
                            ContStates, DiscStates, ConstrStates,  OtherStates,   &
@@ -2651,14 +2732,3 @@ END MODULE IfW_FFWind
 !!!
 !!!END FUNCTION FF_GetRValue
 
-
-
-
-
-!  SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
-!                             ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
-!                             OutData,       ErrStat,       ErrMsg)
-!  SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
-!  SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
-!  SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
-!  SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )

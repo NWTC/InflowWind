@@ -402,6 +402,8 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
                            ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
                            OutData,       ErrStat,       ErrMsg)
 
+   IMPLICIT                                                 NONE
+
       ! Passed Variables
    REAL(DbKi),                            INTENT(IN   )  :: Time           ! time from the start of the simulation
    TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
@@ -490,17 +492,17 @@ CONTAINS
 
 
          ! Local Variables
-      REAL(ReKi)                       :: CosDelta             ! cosine of Delta_tmp
-      REAL(ReKi)                       :: Delta_tmp            ! interpolated Delta   at input TIME
-      REAL(ReKi)                       :: HShr_tmp             ! interpolated HShr    at input TIME
-      REAL(ReKi)                       :: P                    ! temporary storage for slope (in time) used in linear interpolation
-      REAL(ReKi)                       :: SinDelta             ! sine of Delta_tmp
-      REAL(ReKi)                       :: V_tmp                ! interpolated V       at input TIME
-      REAL(ReKi)                       :: VGust_tmp            ! interpolated VGust   at input TIME
-      REAL(ReKi)                       :: VLinShr_tmp          ! interpolated VLinShr at input TIME
-      REAL(ReKi)                       :: VShr_tmp             ! interpolated VShr    at input TIME
-      REAL(ReKi)                       :: VZ_tmp               ! interpolated VZ      at input TIME
-      REAL(ReKi)                       :: V1                   ! temporary storage for horizontal velocity
+      REAL(ReKi)                                            :: CosDelta          ! cosine of Delta_tmp
+      REAL(ReKi)                                            :: Delta_tmp         ! interpolated Delta   at input TIME
+      REAL(ReKi)                                            :: HShr_tmp          ! interpolated HShr    at input TIME
+      REAL(ReKi)                                            :: P                 ! temporary storage for slope (in time) used in linear interpolation
+      REAL(ReKi)                                            :: SinDelta          ! sine of Delta_tmp
+      REAL(ReKi)                                            :: V_tmp             ! interpolated V       at input TIME
+      REAL(ReKi)                                            :: VGust_tmp         ! interpolated VGust   at input TIME
+      REAL(ReKi)                                            :: VLinShr_tmp       ! interpolated VLinShr at input TIME
+      REAL(ReKi)                                            :: VShr_tmp          ! interpolated VShr    at input TIME
+      REAL(ReKi)                                            :: VZ_tmp            ! interpolated VZ      at input TIME
+      REAL(ReKi)                                            :: V1                ! temporary storage for horizontal velocity
 
 
       !-------------------------------------------------------------------------------------------------

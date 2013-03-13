@@ -15,8 +15,8 @@ TODO Now:
 New plan:
    +  convert HHWind to framework -- some bits remaining in the first three routines.???
    +  HHWind test routine
-   -- convert FFWind to framework just like HHWind.
-   -- FFWind test routine (make new)?
+   +  convert FFWind to framework just like HHWind.
+   +  FFWind test routine (make new)?
    -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
    -- Make the Driver work with paraprint
    -- Setup regression test with HHWind
@@ -63,14 +63,14 @@ Documentation:
 IfW_FFWind.f90
    TODO:
       -  Convert the READ statements to the new library ones.
-      -  Revisit End routine to make sure that we actually close out all the variables that we need to.
-      -  Change all WrScr calls to ErrMsg concatenations
       -  remove the global variables
-      -  make CalcOutput routine
+      -  Revisit End routine to make sure that we actually close out all the variables that we need to (reset things)
 
    COMPLETED:
       +  convert Init routines
       +  convert End routine
+      +  make CalcOutput routine
+      +  Change all WrScr calls to ErrMsg concatenations
 
 
 IfW_HHWind.f90
