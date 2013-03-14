@@ -28,7 +28,23 @@ typedef  ^                       OtherStateType          IntKi    TimeIndex     
 typedef  ^                       ^                       ReKi     FFData            ::::  -     -     "Array of FF data"                                             -
 typedef  ^                       ^                       ReKi     FFTower           :::   -     -     "Array of data along tower, below FF array"                    -
 typedef  ^                       ^                       IntKi    UnitWind          -     -     -     "Unit number for the wind file opened"                         -
-
+typedef  ^                       ^                       ReKi     FFDTime           -     0     -     "Delta time"                                                   seconds
+typedef  ^                       ^                       ReKi     FFRate            -     0     -     "Data rate (1/FFTime)"                                         Hertz
+typedef  ^                       ^                       ReKi     FFYHWid           -     0     -     "Half the grid width"                                          meters
+typedef  ^                       ^                       ReKi     FFZHWid           -     0     -     "Half the grid height"                                         meters
+typedef  ^                       ^                       ReKi     RefHt             -     0     -     "Reference (hub) height of the grid"                           meters
+typedef  ^                       ^                       ReKi     GridBase          -     0     -     "the height of the bottom of the grid"                         meters
+typedef  ^                       ^                       ReKi     InitXPosition     -     0     -     "the initial x position of grid (distance in FF is offset)"    meters
+typedef  ^                       ^                       ReKi     InvFFYD           -     0     -     "reciprocal of delta y"                                        1/meters
+typedef  ^                       ^                       ReKi     InvFFZD           -     0     -     "reciprocal of delta z"                                        1/meters
+typedef  ^                       ^                       ReKi     InvMFFWS          -     0     -     "reciprocal of mean wind speed (MeanFFWS)"                     seconds/meter
+typedef  ^                       ^                       ReKi     MeanFFWS          -     0     -     "Mean wind speed (as defined in FF file), not necessarily of the portion used"  meters/second
+typedef  ^                       ^                       ReKi     TotalTime         -     0     -     "The total time of the simulation"                             seconds
+typedef  ^                       ^                       IntKi    NFFComp           -     3     -     "Number of wind components"                                    -
+typedef  ^                       ^                       IntKi    NFFSteps          -     0     -     "Number of time steps in the FF array"                         -
+typedef  ^                       ^                       IntKi    NYGrids           -     0     -     "Number of points in the lateral (y) direction of the grids"   -
+typedef  ^                       ^                       IntKi    NZGrids           -     0     -     "Number of points in the vertical (z) direction of the grids"  -
+typedef  ^                       ^                       IntKi    NTGrids           -     0     -     "Number of points in the vertical (z) direction on the tower (below the grids)"  -
 
 # ..... Parameters ................................................................................................................
 # Define parameters here:

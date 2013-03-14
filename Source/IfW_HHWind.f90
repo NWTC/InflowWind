@@ -305,10 +305,9 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    DO I=1,OtherStates%NumDataLines
 
       CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFileName), TmpData(1:NumCols), NumCols, 'TmpData', &
-                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat ) !, TmpErrMsg)  FIXME: add error handling when available in the library
+                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat, TmpErrMsg)
       ErrStat  = MAX(TmpErrStat, ErrStat)
-!      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
-      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine// &           ! FIXME: replace this and the next line with the above line
+      IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)// &
          'Error retrieving data from the HH line'//TRIM(Num2LStr(NumComments+I))
       IF ( ErrStat >= AbortErrLev ) RETURN
 

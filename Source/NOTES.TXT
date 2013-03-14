@@ -63,7 +63,6 @@ Documentation:
 IfW_FFWind.f90
    TODO:
       -  Convert the READ statements to the new library ones.
-      -  remove the global variables
       -  Revisit End routine to make sure that we actually close out all the variables that we need to (reset things)
 
    COMPLETED:
@@ -71,6 +70,7 @@ IfW_FFWind.f90
       +  convert End routine
       +  make CalcOutput routine
       +  Change all WrScr calls to ErrMsg concatenations
+      +  remove the global variables
 
 
 IfW_HHWind.f90

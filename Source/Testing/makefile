@@ -62,7 +62,6 @@ LIB_SOURCES :=                   \
 	NWTC_Num.f90                  \
 	ModMesh_Types.f90             \
 	ModMesh.f90                   \
-	NWTC_Aero.f90                 \
 	NWTC_Library.f90
 
 #Location of the source files for InflowWind
@@ -133,9 +132,8 @@ $(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
 SysGnuLinux.o:          SingPrec.o
 NWTC_IO.o:              SysGnuLinux.o
 NWTC_Num.o:             NWTC_IO.o
-NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
 ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
-NWTC_Library.o:         NWTC_Aero.o ModMesh.o
+NWTC_Library.o:         ModMesh.o
 
 IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
 IfW_HHWind.o:           SharedInflowDefs.o InflowWind_Module_Types.o NWTC_Library.o IfW_HHWind_Types.o

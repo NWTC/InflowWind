@@ -40,6 +40,23 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:,:,:,:), ALLOCATABLE  :: FFData 
     REAL(ReKi) , DIMENSION(:,:,:), ALLOCATABLE  :: FFTower 
     INTEGER(IntKi)  :: UnitWind 
+    REAL(ReKi)  :: FFDTime = 0 
+    REAL(ReKi)  :: FFRate = 0 
+    REAL(ReKi)  :: FFYHWid = 0 
+    REAL(ReKi)  :: FFZHWid = 0 
+    REAL(ReKi)  :: RefHt = 0 
+    REAL(ReKi)  :: GridBase = 0 
+    REAL(ReKi)  :: InitXPosition = 0 
+    REAL(ReKi)  :: InvFFYD = 0 
+    REAL(ReKi)  :: InvFFZD = 0 
+    REAL(ReKi)  :: InvMFFWS = 0 
+    REAL(ReKi)  :: MeanFFWS = 0 
+    REAL(ReKi)  :: TotalTime = 0 
+    INTEGER(IntKi)  :: NFFComp = 3 
+    INTEGER(IntKi)  :: NFFSteps = 0 
+    INTEGER(IntKi)  :: NYGrids = 0 
+    INTEGER(IntKi)  :: NZGrids = 0 
+    INTEGER(IntKi)  :: NTGrids = 0 
   END TYPE IfW_FFWind_OtherStateType
   TYPE, PUBLIC :: IfW_FFWind_ParameterType
     CHARACTER(1024)  :: WindFileName 
@@ -204,6 +221,23 @@ CONTAINS
   IF (.NOT.ALLOCATED(DstOtherStateData%FFTower)) ALLOCATE(DstOtherStateData%FFTower(i1,i2,i3))
   DstOtherStateData%FFTower = SrcOtherStateData%FFTower
   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
+  DstOtherStateData%FFDTime = SrcOtherStateData%FFDTime
+  DstOtherStateData%FFRate = SrcOtherStateData%FFRate
+  DstOtherStateData%FFYHWid = SrcOtherStateData%FFYHWid
+  DstOtherStateData%FFZHWid = SrcOtherStateData%FFZHWid
+  DstOtherStateData%RefHt = SrcOtherStateData%RefHt
+  DstOtherStateData%GridBase = SrcOtherStateData%GridBase
+  DstOtherStateData%InitXPosition = SrcOtherStateData%InitXPosition
+  DstOtherStateData%InvFFYD = SrcOtherStateData%InvFFYD
+  DstOtherStateData%InvFFZD = SrcOtherStateData%InvFFZD
+  DstOtherStateData%InvMFFWS = SrcOtherStateData%InvMFFWS
+  DstOtherStateData%MeanFFWS = SrcOtherStateData%MeanFFWS
+  DstOtherStateData%TotalTime = SrcOtherStateData%TotalTime
+  DstOtherStateData%NFFComp = SrcOtherStateData%NFFComp
+  DstOtherStateData%NFFSteps = SrcOtherStateData%NFFSteps
+  DstOtherStateData%NYGrids = SrcOtherStateData%NYGrids
+  DstOtherStateData%NZGrids = SrcOtherStateData%NZGrids
+  DstOtherStateData%NTGrids = SrcOtherStateData%NTGrids
  END SUBROUTINE IfW_FFWind_CopyOtherState
 
  SUBROUTINE IfW_FFWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -256,6 +290,23 @@ CONTAINS
   Re_BufSz    = Re_BufSz    + SIZE( InData%FFData )  ! FFData 
   Re_BufSz    = Re_BufSz    + SIZE( InData%FFTower )  ! FFTower 
   Int_BufSz  = Int_BufSz  + 1  ! UnitWind
+  Re_BufSz   = Re_BufSz   + 1  ! FFDTime
+  Re_BufSz   = Re_BufSz   + 1  ! FFRate
+  Re_BufSz   = Re_BufSz   + 1  ! FFYHWid
+  Re_BufSz   = Re_BufSz   + 1  ! FFZHWid
+  Re_BufSz   = Re_BufSz   + 1  ! RefHt
+  Re_BufSz   = Re_BufSz   + 1  ! GridBase
+  Re_BufSz   = Re_BufSz   + 1  ! InitXPosition
+  Re_BufSz   = Re_BufSz   + 1  ! InvFFYD
+  Re_BufSz   = Re_BufSz   + 1  ! InvFFZD
+  Re_BufSz   = Re_BufSz   + 1  ! InvMFFWS
+  Re_BufSz   = Re_BufSz   + 1  ! MeanFFWS
+  Re_BufSz   = Re_BufSz   + 1  ! TotalTime
+  Int_BufSz  = Int_BufSz  + 1  ! NFFComp
+  Int_BufSz  = Int_BufSz  + 1  ! NFFSteps
+  Int_BufSz  = Int_BufSz  + 1  ! NYGrids
+  Int_BufSz  = Int_BufSz  + 1  ! NZGrids
+  Int_BufSz  = Int_BufSz  + 1  ! NTGrids
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -270,6 +321,40 @@ CONTAINS
     Re_Xferred   = Re_Xferred   + SIZE(InData%FFTower)
   ENDIF
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%UnitWind )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%FFDTime )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%FFRate )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%FFYHWid )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%FFZHWid )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%GridBase )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%InitXPosition )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%InvFFYD )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%InvFFZD )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%InvMFFWS )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%MeanFFWS )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%TotalTime )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NFFComp )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NFFSteps )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NYGrids )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NZGrids )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NTGrids )
   Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackOtherState
 
@@ -321,6 +406,40 @@ CONTAINS
     Re_Xferred   = Re_Xferred   + SIZE(OutData%FFTower)
   ENDIF
   OutData%UnitWind = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%FFDTime = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%FFRate = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%FFYHWid = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%FFZHWid = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%GridBase = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%InitXPosition = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%InvFFYD = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%InvFFZD = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%InvMFFWS = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%MeanFFWS = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%TotalTime = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%NFFComp = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%NFFSteps = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%NYGrids = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%NZGrids = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%NTGrids = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
