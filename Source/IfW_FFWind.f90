@@ -31,14 +31,14 @@ MODULE IfW_FFWind
 !----------------------------------------------------------------------------------------------------
 
    USE                                          NWTC_Library
-   USE                                          SharedInflowDefs
+   USE                                          InflowWind_Types
    USE                                          IfW_FFWind_Types
 
    IMPLICIT                                     NONE
    PRIVATE
 
    INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_FFWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v1.00.00', '25-Feb-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v1.00.00', '16-Mar-2013' )
 
    PUBLIC                                    :: IfW_FFWind_Init
    PUBLIC                                    :: IfW_FFWind_End

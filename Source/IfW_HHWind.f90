@@ -42,14 +42,14 @@ MODULE IfW_HHWind
 !----------------------------------------------------------------------------------------------------
 
    USE                                       NWTC_Library
-   USE                                       SharedInflowDefs
+   USE                                       InflowWind_Types
    USE                                       IfW_HHWind_Types
 
    IMPLICIT                                  NONE
    PRIVATE
 
    INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_HHWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v1.00.00', '25-Feb-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v1.00.00', '13-Mar-2013' )
 
    PUBLIC                                    :: IfW_HHWind_Init
    PUBLIC                                    :: IfW_HHWind_End

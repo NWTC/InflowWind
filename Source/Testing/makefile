@@ -75,7 +75,7 @@ IfW_Driver_DIR    := $(IfW_Test_DIR)
 
 #The source files for InflowWind
 InflowWind_SOURCES   :=          \
-   SharedInflowDefs.f90          \
+	InflowWind_Types.f90          \
    InflowWind_Module_Types.f90
 
 HH_SOURCES           :=          \
@@ -87,9 +87,9 @@ FF_SOURCES           :=          \
    $(FFRegistryF90)
 
 #Testing sources
-IfW_HH_Test_SOURCES  :=             \
+IfW_HH_Test_SOURCES  :=          \
    IfW_HHWind_Test.f90
-IfW_FF_Test_SOURCES  :=             \
+IfW_FF_Test_SOURCES  :=          \
    IfW_FFWind_Test.f90
 
 #Registry program
@@ -121,12 +121,12 @@ vpath %.o $(DEST_DIR) $(LIB_DIR)
 #specific rule for the HHWind registry file
 $(HHRegistryF90):   $(RegistryDIR)/$(HHRegistryTXT)
 	$(RegistryProgram) $<;
-	mv $@ $(RegistryDIR);
+	cp $@ $(RegistryDIR);
 
 #specific rule for the FFWind registry file
 $(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
 	$(RegistryProgram) $<;
-	mv $@ $(RegistryDIR);
+	cp $@ $(RegistryDIR);
 
 #Dependency rules
 SysGnuLinux.o:          SingPrec.o
@@ -173,6 +173,6 @@ $(DEST_DIR)/$(FFExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(FF_OBJS) $(If
 #cleanup afterwards
 clean:
 	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(HHExecutable_NAME) $(DEST_DIR)/$(FFExecutable_NAME);
-	rmdir $(DEST_DIR);
 	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90);
+	rmdir $(DEST_DIR);
 

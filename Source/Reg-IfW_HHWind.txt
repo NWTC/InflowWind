@@ -59,7 +59,6 @@ typedef  ^                    InputType                  ReKi     Position      
 
 # ..... Outputs ...................................................................................................................
 # Define outputs that are contained on the mesh here:
-typedef  ^                    OutputType                 ReKi     DummyOutput       -     -     -     "Remove this variable if you have output data"                 -
 typedef  ^                    OutputType                 ReKi     Velocity          ::    -     -     "Array holding the U,V,W velocity for a given timestep"        meters/sec
 
 

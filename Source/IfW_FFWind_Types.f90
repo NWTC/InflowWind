@@ -71,7 +71,6 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position 
   END TYPE IfW_FFWind_InputType
   TYPE, PUBLIC :: IfW_FFWind_OutputType
-    REAL(ReKi)  :: DummyOutput 
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity 
   END TYPE IfW_FFWind_OutputType
   TYPE, PUBLIC :: IfW_FFWind_ContinuousStateType
@@ -695,7 +694,6 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  DstOutputData%DummyOutput = SrcOutputData%DummyOutput
   i1 = SIZE(SrcOutputData%Velocity,1)
   i2 = SIZE(SrcOutputData%Velocity,2)
   IF (.NOT.ALLOCATED(DstOutputData%Velocity)) ALLOCATE(DstOutputData%Velocity(i1,i2))
@@ -747,13 +745,10 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Re_BufSz   = Re_BufSz   + 1  ! DummyOutput
   Re_BufSz    = Re_BufSz    + SIZE( InData%Velocity )  ! Velocity 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyOutput )
-  Re_Xferred   = Re_Xferred   + 1
   IF ( ALLOCATED(InData%Velocity) ) THEN
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) =  PACK(InData%Velocity ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
@@ -793,8 +788,6 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  OutData%DummyOutput = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
   IF ( ALLOCATED(OutData%Velocity) ) THEN
   ALLOCATE(mask2(SIZE(OutData%Velocity,1),SIZE(OutData%Velocity,2))); mask2 = .TRUE.
     OutData%Velocity = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Velocity))-1 ),mask2,OutData%Velocity)

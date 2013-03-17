@@ -39,8 +39,8 @@
 MODULE InflowWind_Module
 
 
-   USE                              SharedInflowDefs
-!   USE                              InflowWind_Types   !FIXME: this file will replace SharedInflowDefs when I can get it to work with the framework registry generator.
+!   USE                              SharedInflowDefs
+   USE                              InflowWind_Types   !FIXME: this file will replace SharedInflowDefs when I can get it to work with the framework registry generator.
    USE                              NWTC_Library
    USE                              InflowWind_Module_Types
 
@@ -50,18 +50,19 @@ MODULE InflowWind_Module
 
    USE                              IfW_HHWind_Types           ! Types for IfW_HHWind
    USE                              IfW_HHWind                 ! hub-height text wind files
-!   USE                              FFWind               ! full-field binary wind files
-!   USE                              HAWCWind             ! full-field binary wind files in HAWC format
-!   USE                              FDWind               ! 4-D binary wind files
-!   USE                              CTWind               ! coherent turbulence from KH billow - binary file superimposed on another wind type
-!   USE                              UserWind             ! user-defined wind module
+   USE                              IfW_FFWind_Types           ! Types for IfW_FFWind
+   USE                              IfW_FFWind                 ! full-field binary wind files
+!   USE                              HAWCWind                   ! full-field binary wind files in HAWC format
+!   USE                              FDWind                     ! 4-D binary wind files
+!   USE                              CTWind                     ! coherent turbulence from KH billow - binary file superimposed on another wind type
+!   USE                              UserWind                   ! user-defined wind module
 
 
       !-------------------------------------------------------------------------------------------------
       ! The subroutines
       !-------------------------------------------------------------------------------------------------
 
-   USE                              InflowWind_Subs      ! all the subroutines live here now.
+   USE                              InflowWind_Subs             ! all the subroutines live here now.
 
 
 
@@ -69,7 +70,7 @@ MODULE InflowWind_Module
    IMPLICIT NONE
    PRIVATE
 
-   INTEGER(IntKi), PARAMETER            :: DataFormatID = 1           ! Update this value if the data types change (used in IfW_Pack())
+   INTEGER(IntKi), PARAMETER            :: DataFormatID = 1     ! Update this value if the data types change (used in IfW_Pack())
 !FIXME: tie this to InitOut as well.
    TYPE(ProgDesc), PARAMETER            :: IfW_ProgDesc = ProgDesc( 'InflowWind', 'v1.00.00', '27-Dec-2012' )
 
@@ -77,9 +78,9 @@ MODULE InflowWind_Module
 
       ! ..... Public Subroutines ...................................................................................................
 
-   PUBLIC :: IfW_Init                                 ! Initialization routine
-   PUBLIC :: IfW_CalcOutput                           ! Calculate the wind velocities
-   PUBLIC :: IfW_End                                  ! Ending routine (includes clean up)
+   PUBLIC :: IfW_Init                                          ! Initialization routine
+   PUBLIC :: IfW_CalcOutput                                    ! Calculate the wind velocities
+   PUBLIC :: IfW_End                                           ! Ending routine (includes clean up)
 
 !   PUBLIC :: InflowWind_UpdateStates                   ! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
 !   PUBLIC :: InflowWind_CalcOutput                     ! Routine for computing outputs
@@ -105,33 +106,21 @@ MODULE InflowWind_Module
 
 !FIXME: handle this differently -- should be allocated by the library function to get an open unit number
       ! store as parameter in parametertype
-   INTEGER                                   :: UnWind          ! The unit number used for wind inflow files
+   INTEGER                                               :: UnWind         ! The unit number used for wind inflow files
 
 
    !-------------------------------------------------------------------------------------------------
    ! Definitions of public types and routines
    !-------------------------------------------------------------------------------------------------
 
-!FIXME: should not be public anymore
-!   PUBLIC                         :: InflowWind_GetVelocity    ! function to get wind speed at point in space and time
-
-!FIXME: not public anymore. may not even exist when done.
-!   PUBLIC                         :: InflowWind_ADhack_diskVel ! used to keep old AeroDyn functionality--remove soon!
-!   PUBLIC                         :: InflowWind_ADhack_DIcheck ! used to keep old AeroDyn functionality--remove soon!
-
-!FIXME: not public anymore.
-!   PUBLIC                         :: InflowWind_LinearizePerturbation !used for linearization; should be modified
-
-!!----Removed during conversion to new framework: may put back in as part of OtherStates
-!!       PUBLIC                         :: InflowWind_GetMean        ! function to get the mean wind speed at a point in space
-!!       PUBLIC                         :: InflowWind_GetStdDev      ! function to calculate standard deviation at a point in space
-!!       PUBLIC                         :: InflowWind_GetTI          ! function to get TI at a point in space
 
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, ConstrStateGuess, OtherStates, &
-                     OutData, Interval, ErrStat, ErrMsg )
+SUBROUTINE IfW_Init( InitData,   InputGuess,    ParamData,                          &
+                     ContStates, DiscStates,    ConstrStateGuess,    OtherStates,   &
+                     OutData,    Interval,                                          &
+                     ErrStat,    ErrMsg )
 ! This routine is called at the start of the simulation to perform initialization steps.
 ! The parameters are set here and not changed during the simulation.
 ! The initial states and initial guess for the input are defined.
@@ -161,22 +150,31 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
 
          ! Local variables
 
-      TYPE(IfW_HHWind_InitInputType)                     :: HH_InitData       ! initialization info FIXME:merge
-      TYPE(IfW_HHWind_InputType)                         :: HH_InitGuess      ! input positions. FIXME:merge
-      TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData      ! parameters FIXME:merge
-      TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates     ! Unused FIXME:merge
-      TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates     ! Unused FIXME:merge
-      TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates   ! Unused FIXME:merge
-      TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates    ! Data is stored here FIXME:merge
-      TYPE(IfW_HHWind_OutputType)                        :: HH_OutData        ! output velocities FIXME:merge
+      TYPE(IfW_HHWind_InitInputType)                     :: HH_InitData       ! initialization info   FIXME:merge
+      TYPE(IfW_HHWind_InputType)                         :: HH_InitGuess      ! input positions.      FIXME:merge
+      TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_HHWind_OutputType)                        :: HH_OutData        ! output velocities     FIXME:merge
+
+      TYPE(IfW_FFWind_InitInputType)                     :: FF_InitData       ! initialization info   FIXME:merge
+      TYPE(IfW_FFWind_InputType)                         :: FF_InitGuess      ! input positions.      FIXME:merge
+      TYPE(IfW_FFWind_ParameterType)                     :: FF_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_FFWind_ContinuousStateType)               :: FF_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_DiscreteStateType)                 :: FF_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_ConstraintStateType)               :: FF_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_OtherStateType)                    :: FF_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_FFWind_OutputType)                        :: FF_OutData        ! output velocities     FIXME:merge
 
 
 !     TYPE(CT_Backgr)                                    :: BackGrndValues
 
 
 !NOTE: It isn't entirely clear what the purpose of Height is. Does it sometimes occur that Height  /= ParamData%ReferenceHeight???
-      REAL(ReKi)                                         :: Height      ! Retrieved from FF
-      REAL(ReKi)                                         :: HalfWidth   ! Retrieved from FF
+      REAL(ReKi)                                         :: Height            ! Retrieved from FF
+      REAL(ReKi)                                         :: HalfWidth         ! Retrieved from FF
 !FIXME: remove the following. Should be passed to the modules through their types.
       CHARACTER(1024)                                    :: FileName
 
@@ -383,6 +381,36 @@ SUBROUTINE IfW_Init( InitData, InputGuess, ParamData, ContStates, DiscStates, Co
       REAL( ReKi )                                       :: Position(3)       ! Current position XYZ coords
       INTEGER( IntKi )                                   :: PointCounter      ! loop counter
 
+         ! Local variables
+
+      TYPE(IfW_HHWind_InitInputType)                     :: HH_InitData       ! initialization info   FIXME:merge
+      TYPE(IfW_HHWind_InputType)                         :: HH_InitGuess      ! input positions.      FIXME:merge
+      TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_HHWind_OutputType)                        :: HH_OutData        ! output velocities     FIXME:merge
+
+      TYPE(IfW_FFWind_InitInputType)                     :: FF_InitData       ! initialization info   FIXME:merge
+      TYPE(IfW_FFWind_InputType)                         :: FF_InitGuess      ! input positions.      FIXME:merge
+      TYPE(IfW_FFWind_ParameterType)                     :: FF_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_FFWind_ContinuousStateType)               :: FF_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_DiscreteStateType)                 :: FF_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_ConstraintStateType)               :: FF_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_OtherStateType)                    :: FF_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_FFWind_OutputType)                        :: FF_OutData        ! output velocities     FIXME:merge
+
+
+!     TYPE(CT_Backgr)                                    :: BackGrndValues
+
+
+!NOTE: It isn't entirely clear what the purpose of Height is. Does it sometimes occur that Height  /= ParamData%ReferenceHeight???
+      REAL(ReKi)                                         :: Height      ! Retrieved from FF
+      REAL(ReKi)                                         :: HalfWidth   ! Retrieved from FF
+!FIXME: remove the following. Should be passed to the modules through their types.
+      CHARACTER(1024)                                    :: FileName
+
 
          ! Sub modules use the InflIntrpOut derived type to store the wind information
 !      TYPE(InflIntrpOut)                                 :: CTWindSpeed       ! U, V, W velocities to superimpose on background wind
@@ -567,6 +595,34 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
       INTEGER( IntKi ),                   INTENT(  OUT)  :: ErrStat
       CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg
 
+         ! Local variables
+
+      TYPE(IfW_HHWind_InputType)                         :: HH_InitData       ! input positions.      FIXME:merge
+      TYPE(IfW_HHWind_ParameterType)                     :: HH_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_HHWind_ContinuousStateType)               :: HH_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_DiscreteStateType)                 :: HH_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_HHWind_OutputType)                        :: HH_OutData        ! output velocities     FIXME:merge
+
+      TYPE(IfW_FFWind_InputType)                         :: FF_InitData       ! input positions.      FIXME:merge
+      TYPE(IfW_FFWind_ParameterType)                     :: FF_ParamData      ! parameters            FIXME:merge
+      TYPE(IfW_FFWind_ContinuousStateType)               :: FF_ContStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_DiscreteStateType)                 :: FF_DiscStates     ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_ConstraintStateType)               :: FF_ConstrStates   ! Unused                FIXME:merge
+      TYPE(IfW_FFWind_OtherStateType)                    :: FF_OtherStates    ! Data is stored here   FIXME:merge
+      TYPE(IfW_FFWind_OutputType)                        :: FF_OutData        ! output velocities     FIXME:merge
+
+
+!     TYPE(CT_Backgr)                                    :: BackGrndValues
+
+
+!NOTE: It isn't entirely clear what the purpose of Height is. Does it sometimes occur that Height  /= ParamData%ReferenceHeight???
+      REAL(ReKi)                                         :: Height      ! Retrieved from FF
+      REAL(ReKi)                                         :: HalfWidth   ! Retrieved from FF
+!FIXME: remove the following. Should be passed to the modules through their types.
+      CHARACTER(1024)                                    :: FileName
+
 
 !FIXME: UnWind is not stored here anymore
 !         ! Close the wind file, if it happens to be open
@@ -579,17 +635,14 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
       SELECT CASE ( ParamData%WindFileType )
 
          CASE (HH_Wind)
-!FIXME:NEXT how do I want to deal with the types? put all into a single one? or what? Do I add a translation layer for everything? Would that even work?
-!SUBROUTINE IfW_HHWind_End( InData,     ParamData,                                &
-!                           ContStates, DiscStates, ConstrStates,  OtherStates,   &
-!                           OutData,                                              &
-!FIXME:NEXT add the types as needed.
-!            CALL IfW_HHWind_End( HH_InitData,   HH_ParamData,  &
-!                                 HH_ContStates, HH_DiscStates, HH_ConstrStateGuess, HH_OtherStates, &
-!                                 HH_OutData,    ErrStat,       ErrMsg )
+            CALL IfW_HHWind_End( HH_InitData,   HH_ParamData,  &
+                                 HH_ContStates, HH_DiscStates, HH_ConstrStates, HH_OtherStates, &
+                                 HH_OutData,    ErrStat,       ErrMsg )
 
 !         CASE (FF_Wind)
-!            CALL FF_Terminate(     ErrStat, ErrMsg )
+!            CALL IfW_FFWind_End( FF_InitData,   FF_ParamData,  &
+!                                 FF_ContStates, FF_DiscStates, FF_ConstrStateGuess, FF_OtherStates, &
+!                                 FF_OutData,    ErrStat,       ErrMsg )
 !
 !         CASE (UD_Wind)
 !            CALL UsrWnd_Terminate( ErrStat )
@@ -623,6 +676,14 @@ SUBROUTINE IfW_End( InitData, ParamData, ContStates, DiscStates, ConstrStateGues
 END SUBROUTINE IfW_End
 !====================================================================================================
 END MODULE InflowWind_Module
+
+!!----Removed during conversion to new framework: may put back in as part of OtherStates
+!!       PUBLIC                         :: InflowWind_GetMean        ! function to get the mean wind speed at a point in space
+!!       PUBLIC                         :: InflowWind_GetStdDev      ! function to calculate standard deviation at a point in space
+!!       PUBLIC                         :: InflowWind_GetTI          ! function to get TI at a point in space
+
+
+
 
 !SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
 !                           ContStates,    DiscStates,    ConstrStates,     OtherStates,   &

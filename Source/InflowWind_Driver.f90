@@ -26,7 +26,7 @@ PROGRAM InflowWind_Driver
 !   USE NWTC_Library       !NOTE: Not sure why this doesn't need to be specified
    USE InflowWind_Module
    USE InflowWind_Module_Types
-   USE SharedInflowDefs
+   USE InflowWind_Types
    USE IfW_Driver_Types    ! Contains types and routines for handling the input arguments
    USE IfW_Driver_Subs     ! Contains subroutines for the driver program
 
@@ -124,8 +124,11 @@ PROGRAM InflowWind_Driver
    !--------------------------------------------------------------------------------------------------------------------------------
 
    CALL RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
-
-   IF ( ErrStat == ErrID_Fatal ) CALL ProgAbort( ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
 
 
       ! Set the input file name and verify it exists
@@ -160,8 +163,13 @@ PROGRAM InflowWind_Driver
       IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find the points file "//TRIM(Settings%InputFile))
 
          ! Now open file
-      CALL GetNewUnit(     FiUnitPoints )
-      CALL OpenUInfile(   FiUnitPoints,  Settings%PointsFile, ErrStat )   ! Unformatted input file
+      CALL GetNewUnit(    FiUnitPoints )
+      CALL OpenUInfile(   FiUnitPoints,  Settings%PointsFile, ErrStat, ErrMsg )   ! Unformatted input file
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL ProgAbort( ErrMsg )
+      ELSEIF ( ErrStat /= 0 ) THEN
+         CALL ProgWarn( ErrMsg )
+      ENDIF
    ENDIF
 
 
@@ -180,8 +188,11 @@ PROGRAM InflowWind_Driver
 
 
       ! Make sure no errors occured that give us reason to terminate now.
-   IF ( ErrStat == ErrID_Severe ) CALL ProgAbort( ErrMsg )
-   IF ( ErrStat == ErrID_Fatal )  CALL ProgAbort( ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
 
 
       !FIXME: if not specified, should pick this info up from the initialization of the module -- I don't think the module provides this right now

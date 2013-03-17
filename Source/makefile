@@ -40,15 +40,31 @@ Executable_NAME := InflowWind_lin32
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../Doxygen--documentation
 
+#Name of the registry file
+RegistryDIR    := .
+
+HHRegistryTXT  := Reg-IfW_HHWind.txt
+HHRegistryF90	:= IfW_HHWind_Types.f90
+HHRegistryOBJ  := $(HHRegistryF90:.f90=.o)
+
+FFRegistryTXT  := Reg-IfW_FFWind.txt
+FFRegistryF90	:= IfW_FFWind_Types.f90
+FFRegistryOBJ  := $(FFRegistryF90:.f90=.o)
+
+IfWRegistryTXT := Reg-InflowWind.txt
+IfWRegistryF90	:= InflowWind_Types.f90
+IfWRegistryOBJ := $(IfWRegistryF90:.f90=.o)
+
+
+
 ##Change SingPrec.f90 to DoubPrec.f90 for double precision
-LIB_SOURCES := \
-	SingPrec.f90 \
-	SysGnuLinux.f90 \
-	NWTC_IO.f90 \
-	NWTC_Num.f90 \
-	ModMesh_Types.f90 \
-	ModMesh.f90 \
-	NWTC_Aero.f90 \
+LIB_SOURCES :=                   \
+	SingPrec.f90                  \
+	SysGnuLinux.f90               \
+	NWTC_IO.f90                   \
+	NWTC_Num.f90                  \
+	ModMesh_Types.f90             \
+	ModMesh.f90                   \
 	NWTC_Library.f90
 
 #Location of the source files for WT_Perf
@@ -61,10 +77,12 @@ Other_DIR	:= \
 
 #The source files for InflowWind
 InflowWind_SOURCES  :=           \
-	SharedInflowDefs.f90          \
    InflowWind_Module_Types.f90   \
+   InflowWind_Types.f90          \
 	IfW_HHWind.f90                \
    IfW_HHWind_Types.f90          \
+	IfW_FFWind.f90                \
+   IfW_FFWind_Types.f90          \
    InflowWind_Subs.f90           \
 	InflowWind_Module.f90         \
    InflowWind_Driver_Types.f90   \
@@ -77,6 +95,10 @@ InflowWind_SOURCES  :=           \
 	HAWCWind.f90                  \
 	UserWind.f90                  \
 
+
+#Registry program
+RegistryProgram   := ../../../../modularization_registry/registry.exe
+RegistryNWTC      := ../../../../modularization_registry/Registry_NWTC_Library.txt
 
 
 vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(InflowWind_Driver_DIR)
@@ -98,18 +120,27 @@ default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 
 #Dependency rules
-SysGnuLinux.o:          SingPrec.o
-NWTC_IO.o:              SysGnuLinux.o
-NWTC_Num.o:             NWTC_IO.o
-NWTC_Aero.o:            NWTC_IO.o NWTC_Num.o
-ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
-NWTC_Library.o:         NWTC_Aero.o ModMesh.o
-
 IfW_HHWind.o:           IfW_HHWind_Types.o
-InflowWind_Module.o:    SharedInflowDefs.o InflowWind_Subs.o IfW_HHWind.o
-InflowWind_Subs.o:      SharedInflowDefs.o NWTC_Library.o
+IfW_FFWind.o:           IfW_FFWind_Types.o
+InflowWind_Module.o:    InflowWind_Types.o InflowWind_Subs.o IfW_HHWind.o IfW_FFWind.o
+InflowWind_Subs.o:      InflowWind_Types.o
 InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
 
+#specific rule for the HHWind registry file
+$(HHRegistryF90):   $(RegistryDIR)/$(HHRegistryTXT)
+	$(RegistryProgram) $<;
+
+#specific rule for the FFWind registry file
+$(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
+	$(RegistryProgram) $<;
+
+#specific rule for the FFWind registry file
+$(IfWRegistryF90):   $(RegistryDIR)/$(IfWRegistryTXT)
+	$(RegistryProgram) $<;
+
+IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
+IfW_FFWind_Types.o:     NWTC_Library.o $(FFRegistryF90)
+IfW_IfWWind_Types.o:    NWTC_Library.o $(IfWRegistryF90)
 
 #Make sure the destination directory exists
 $(DEST_DIR):
@@ -120,7 +151,7 @@ libcopy:
 	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
 
 #For compiling InflowWind
-$(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)
+$(DEST_DIR)/$(Executable_NAME): $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)
 	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(Executable_NAME) \
 		$(foreach src, $(LIB_OBJS), $(addprefix $(DEST_DIR)/,$(src))) \
 		$(foreach src, $(InflowWind_OBJS), $(addprefix $(DEST_DIR)/,$(src)));
@@ -130,7 +161,8 @@ $(DEST_DIR)/$(Executable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(InflowWind_Driv
 #cleanup afterwards
 clean:
 	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_NAME);
-	rmdir $(DEST_DIR)
+	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90) $(RegistryDir)/$(IfWRegistry90);
+	rmdir $(DEST_DIR);
 
 #doxygen bits
 document: all
