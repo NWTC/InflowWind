@@ -1,0 +1,37 @@
+###################################################################################################################################
+# Registry for IfW_FFWind, creates MODULE IfW_FFWind_Types
+# Module IfW_FFWind_Types contains all of the user-defined types needed in IfW_FFWind. It also contains copy, destroy, pack, and
+# unpack routines associated with each defined data types.
+###################################################################################################################################
+# Entries are of the form
+# keyword <IfW_FFWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
+###################################################################################################################################
+# This is derived from IfW_FFWind_Types
+usefrom  IfW_FFWind_Types     IfW_FFWind_OtherStateType  IntKi    TimeIndex         -     0
+typedef  ^                       ^                       ReKi     FFData            ::::
+typedef  ^                       ^                       ReKi     FFTower           :::
+typedef  ^                       ^                       IntKi    UnitWind          -     
+typedef  ^                       ^                       ReKi     FFDTime           -     0
+typedef  ^                       ^                       ReKi     FFRate            -     0
+typedef  ^                       ^                       ReKi     FFYHWid           -     0
+typedef  ^                       ^                       ReKi     FFZHWid           -     0
+typedef  ^                       ^                       ReKi     RefHt             -     0
+typedef  ^                       ^                       ReKi     GridBase          -     0
+typedef  ^                       ^                       ReKi     InitXPosition     -     0
+typedef  ^                       ^                       ReKi     InvFFYD           -     0
+typedef  ^                       ^                       ReKi     InvFFZD           -     0
+typedef  ^                       ^                       ReKi     InvMFFWS          -     0
+typedef  ^                       ^                       ReKi     MeanFFWS          -     0
+typedef  ^                       ^                       ReKi     TotalTime         -     0
+typedef  ^                       ^                       IntKi    NFFComp           -     3
+typedef  ^                       ^                       IntKi    NFFSteps          -     0
+typedef  ^                       ^                       IntKi    NYGrids           -     0
+typedef  ^                       ^                       IntKi    NZGrids           -     0
+typedef  ^                       ^                       IntKi    NTGrids           -     0
+typedef  ^                IfW_FFWind_ParameterType       CHARACTER(1024) WindFileName      -     
+typedef  ^                       ^                       Logical  Initialized       -  .FALSE.
+typedef  ^                       ^                       Logical  Periodic          -  .FALSE.
+typedef  ^                       ^                       Logical  Linearize         -  .FALSE.
+typedef  ^                       ^                       ReKi     ReferenceHeight   -     
+typedef  ^                       ^                       ReKi     Width             -     
+typedef  ^                       ^                       DbKi     DT                -     

@@ -68,15 +68,15 @@ PROGRAM HHWind_Test
    HH_InitData%Width           = 100.                       ! meters
 
    WindPosition(1,1) = 0.0                                  ! longitudinal front/back of tower
-   WindPosition(1,2) = 0.0                                  ! lateral position left/right of tower
-   WindPosition(1,3) = HH_InitData%ReferenceHeight          ! Height above ground
+   WindPosition(2,1) = 0.0                                  ! lateral position left/right of tower
+   WindPosition(3,1) = HH_InitData%ReferenceHeight          ! Height above ground
 
-   WindPosition(2,1) = 30.0
+   WindPosition(1,2) = 30.0
    WindPosition(2,2) = 30.0
-   WindPosition(2,3) = HH_InitData%ReferenceHeight
+   WindPosition(3,2) = HH_InitData%ReferenceHeight
 
-   WindPosition(3,1) = 0.0
-   WindPosition(3,2) = 0.0
+   WindPosition(1,3) = 0.0
+   WindPosition(2,3) = 0.0
    WindPosition(3,3) = HH_InitData%ReferenceHeight+30
 
    ErrMsg   = ""
@@ -102,7 +102,7 @@ PROGRAM HHWind_Test
    ErrStat  = ErrID_None
    ErrMsg   = ""
 
-   CALL AllocAry( HH_InData%Position, 2, 3, "Input position data 2x3 array", ErrStat, ErrMsg )
+   CALL AllocAry( HH_InData%Position, 3, 2, "Input position data 3x2 array", ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
    ELSEIF ( ErrStat /= ErrID_None ) THEN
@@ -139,19 +139,19 @@ PROGRAM HHWind_Test
    CALL WrScr("   Time: "//TRIM(Num2LStr(Time)))
    CALL WrScr("          (x, y, z)          (U, V, W)")
 
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(1,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(1,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(1,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(1,3)))//")")
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(2,1)))//", " &
+                           //TRIM(Num2LStr(WindPosition(3,1)))//")        (" &
+                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(2,1)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(3,1)))//")")
 
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(2,1)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(2,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(2,1)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(2,3)))//")")
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,2)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
+                           //TRIM(Num2LStr(WindPosition(3,2)))//")        (" &
+                           //TRIM(Num2LStr(WindVelocity(1,2)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(3,2)))//")")
 
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(3,1)))//", "//TRIM(Num2LStr(WindPosition(3,2)))//", " &
+   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,3)))//", "//TRIM(Num2LStr(WindPosition(2,3)))//", " &
                            //TRIM(Num2LStr(WindPosition(3,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(3,1)))//", "//TRIM(Num2LStr(WindVelocity(3,2)))//", " &
+                           //TRIM(Num2LStr(WindVelocity(1,3)))//", "//TRIM(Num2LStr(WindVelocity(2,3)))//", " &
                            //TRIM(Num2LStr(WindVelocity(3,3)))//")")
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

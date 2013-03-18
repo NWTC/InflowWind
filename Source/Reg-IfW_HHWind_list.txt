@@ -1,0 +1,29 @@
+###################################################################################################################################
+# Registry for IfW_HHWind, creates MODULE IfW_HHWind_Types
+# Module IfW_HHWind_Types contains all of the user-defined types needed in IfW_HHWind. It also contains copy, destroy, pack, and
+# unpack routines associated with each defined data types.
+###################################################################################################################################
+# Entries are of the form
+# keyword <IfW_HHWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
+###################################################################################################################################
+#This is derived from teh IfW_HHWind_Types
+usefrom  IfW_HHWind_Types     IfW_HHWind_OtherStateType  IntKi    TimeIndex         -     0
+usefrom  ^                       ^                       ReKi     TData             :
+usefrom  ^                       ^                       ReKi     DELTA             :
+usefrom  ^                       ^                       ReKi     V                 :
+usefrom  ^                       ^                       ReKi     VZ                :
+usefrom  ^                       ^                       ReKi     HSHR              :
+usefrom  ^                       ^                       ReKi     VSHR              : 
+usefrom  ^                       ^                       ReKi     VLINSHR           : 
+usefrom  ^                       ^                       ReKi     VGUST             : 
+usefrom  ^                       ^                       ReKi     LinearizeDels     7  
+usefrom  ^                       ^                       ReKi     RefHt          
+usefrom  ^                       ^                       ReKi     RefWid          
+usefrom  ^                       ^                       IntKi    NumDataLines     
+usefrom  ^                       ^                       IntKi    UnitWind          
+usefrom  ^          IfW_HHWind_ParameterType       CHARACTER(1024) WindFileName      
+usefrom  ^                       ^                       Logical  Initialized       -  .FALSE. 
+usefrom  ^                       ^                       Logical  Linearize         -  .FALSE.  
+usefrom  ^                       ^                       ReKi     ReferenceHeight   
+usefrom  ^                       ^                       ReKi     Width            
+usefrom  ^                       ^                       DbKi     DT              

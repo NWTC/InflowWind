@@ -136,12 +136,12 @@ ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
 NWTC_Library.o:         ModMesh.o
 
 IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
-IfW_HHWind.o:           SharedInflowDefs.o InflowWind_Module_Types.o NWTC_Library.o IfW_HHWind_Types.o
-IfW_HHWind_Test.o:      IfW_HHWind.o SharedInflowDefs.o NWTC_Library.o IfW_HHWind_Types.o
+IfW_HHWind.o:           InflowWind_Types.o InflowWind_Module_Types.o NWTC_Library.o IfW_HHWind_Types.o
+IfW_HHWind_Test.o:      InflowWind_Types.o IfW_HHWind.o NWTC_Library.o IfW_HHWind_Types.o
 
 IfW_FFWind_Types.o:     NWTC_Library.o $(FFRegistryF90)
-IfW_FFWind.o:           SharedInflowDefs.o InflowWind_Module_Types.o NWTC_Library.o IfW_FFWind_Types.o
-IfW_FFWind_Test.o:      IfW_FFWind.o SharedInflowDefs.o NWTC_Library.o IfW_FFWind_Types.o
+IfW_FFWind.o:           InflowWind_Types.o InflowWind_Module_Types.o NWTC_Library.o IfW_FFWind_Types.o
+IfW_FFWind_Test.o:      IfW_FFWind.o InflowWind_Types.o NWTC_Library.o IfW_FFWind_Types.o
 
 #Make sure the destination directory exists
 $(DEST_DIR):

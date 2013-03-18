@@ -436,11 +436,14 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
 
    TmpErrStat  = ErrID_None
    TmpErrMsg   = ""
-   NumPoints   =  SIZE(InData%Position,1)
+
+      ! The array is transposed so that the number of points is the second index, x/y/z is the first.
+      ! This is just in case we only have a single point, the SIZE command returns the correct number of points.
+   NumPoints   =  SIZE(InData%Position,2)
 
 
       ! Allocate Velocity output array
-   CALL AllocAry( OutData%Velocity, NumPoints, 3,  "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
+   CALL AllocAry( OutData%Velocity, 3, NumPoints, "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
    IF ( TmpErrStat >= AbortErrLev ) THEN
       ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Could not allocate the output velocity array."
       RETURN
@@ -451,16 +454,16 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
    DO PointNum = 1, NumPoints
 
          ! Calculate the velocity for the position
-      OutData%Velocity(PointNum,:) = GetWindSpeed(Time, InData%Position(PointNum,:), ParamData, OtherStates, TmpErrStat, TmpErrMsg)
+      OutData%Velocity(:,PointNum) = GetWindSpeed(Time, InData%Position(:,PointNum), ParamData, OtherStates, TmpErrStat, TmpErrMsg)
 
          ! Error handling
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)    ! This might be redundant given the next line (depends on what GetWindSpeed returns for TmpErrMsg).
       IF (ErrStat >= AbortErrLev) THEN
          ErrMsg   = TRIM(ErrMsg)//NewLine//"IfW_HHWind:CalcOutput -- Error calculating the wind speed at position ("//   &
-                     TRIM(Num2LStr(InData%Position(PointNum,1)))//", "// &
-                     TRIM(Num2LStr(InData%Position(PointNum,2)))//", "// &
-                     TRIM(Num2LStr(InData%Position(PointNum,3)))//")"
+                     TRIM(Num2LStr(InData%Position(1,PointNum)))//", "// &
+                     TRIM(Num2LStr(InData%Position(2,PointNum)))//", "// &
+                     TRIM(Num2LStr(InData%Position(3,PointNum)))//")"
          RETURN
       ENDIF
 

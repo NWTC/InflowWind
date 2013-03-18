@@ -109,6 +109,15 @@ PROGRAM InflowWind_Driver
    NumZSteps = 0
    NumTSteps = 0
 
+   Settings%XRes  = 0.0
+   Settings%YRes  = 0.0
+   Settings%ZRes  = 0.0
+   Settings%TRes  = 0.0
+
+   Settings%XRange   = [0,0]
+   Settings%YRange   = [0,0]
+   Settings%ZRange   = [0,0]
+   Settings%TRange   = [0,0]
 
    !--------------------------------------------------------------------------------------------------------------------------------
    !-=-=- Setup the program -=-=-
@@ -147,6 +156,7 @@ PROGRAM InflowWind_Driver
    TimeStepSize                        = 10                       !seconds
 
 
+
       ! If they are specified by input arguments, use the following
 
    IF ( SettingsFlags%Height )         IfW_InitInputData%ReferenceHeight = Settings%Height
@@ -173,7 +183,8 @@ PROGRAM InflowWind_Driver
    ENDIF
 
 
-   !FIXME: check that the FFT file can be made
+      !check that the FFT file can be made, if requested as output
+      ! this section needs to be added at some point.
 
 
 
@@ -195,7 +206,7 @@ PROGRAM InflowWind_Driver
    ENDIF
 
 
-      !FIXME: if not specified, should pick this info up from the initialization of the module -- I don't think the module provides this right now
+      !FIXME: if not specified, should pick this info up from the initialization of the module -- the module does not provide this right now
       ! Calculate the number of steps for each of the dimensions (including time) -- remains at 0 if not calculated or supplied
       !     NOTE: subtract a micron or microsecond just in case the stepsize is exactly divisible.
    IF ( SettingsFlags%XRange ) THEN
@@ -225,20 +236,22 @@ PROGRAM InflowWind_Driver
 
 !FIXME: flip the array dimensions if that makes it faster to iterate
       ! Allocate the arrays that hold the entire dataset
-   CALL AllocAry( PositionTimeStep, NumXSteps+1, NumYSteps+1, NumZSteps+1, 3, 'Position matrix at timestep', ErrStat, ErrMsg )
-   CALL AllocAry( VelocityTimeStep, NumXSteps+1, NumYSteps+1, NumZSteps+1, 3, 'Velocity matrix at timestep', ErrStat, ErrMsg )
+   CALL AllocAry( PositionTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Position matrix at timestep', ErrStat, ErrMsg )
+   CALL AllocAry( VelocityTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Velocity matrix at timestep', ErrStat, ErrMsg )
 
 
 !FIXME: remove this and not store the entire thing. Only do each timestep at a time.
       ! Allocate the arrays that hold the current timesteps data
       ! Xindex, Yindex
-   CALL AllRAry5( PositionFullset, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 3, 'Position matrix (fullset)', &
+   CALL AllRAry5( PositionFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Position matrix (fullset)', &
                   ErrStat, ErrMsg )
-   CALL AllRAry5( VelocityFullset, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 3, 'Velocity matrix (fullset)', &
+   CALL AllRAry5( VelocityFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Velocity matrix (fullset)', &
                   ErrStat, ErrMsg )
 
 
       ! Total number of points per timestep (for allocating the passed arrays)
+      !     An extra point is added to account for the point on the other end (math above doesn't count it).
+      !     This also takes care of the case where we don't have any steps (no points specified)
    NumTotalPoints = (NumXSteps + 1) * (NumYSteps + 1) * (NumZSteps + 1)       ! Note that this has an upper limit of value before rolling over (IntKi)
 
 
@@ -253,13 +266,22 @@ PROGRAM InflowWind_Driver
       DO ZStep = 0, NumZSteps
          DO YStep = 0, NumYSteps
             DO XStep=0, NumXSteps
-               PositionFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 1) = XStep*Settings%XRes+Settings%XRange(1)
-               PositionFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 2) = YStep*Settings%YRes+Settings%YRange(1)
-               PositionFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 3) = ZStep*Settings%ZRes+Settings%ZRange(1)
+               PositionFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1) = XStep*Settings%XRes+Settings%XRange(1)
+               PositionFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1) = YStep*Settings%YRes+Settings%YRange(1)
+               PositionFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1) = ZStep*Settings%ZRes+Settings%ZRange(1)
             ENDDO    ! XStep
          ENDDO    ! YStep
       ENDDO     ! ZStep
    ENDDO    ! TStep
+
+
+      ! If we never specified any points to check, either by not giving ranges or by not specifying an input file,
+      ! then reset to the hub height at t=0 and return only that point. Print a message to that effect.
+      ! FIXME: add in a flag to allow for specifying to print out all points.
+   IF ( (NumTotalPoints == 1 ) .AND. .NOT. (SettingsFlags%XRange .OR. SettingsFlags%YRange .OR. SettingsFlags%ZRange )) THEN
+      CALL WrScr(NewLine//'No points were specified to check. Returning only the hub height at t=0.')
+      PositionFullSet( 3, 1, 1, 1, :)  = IfW_InitInputData%ReferenceHeight
+   ENDIF
 
 
 
@@ -276,7 +298,7 @@ PROGRAM InflowWind_Driver
    DO TStep = 0, NumTSteps
 
       TimeNow = TStep * TimeStepSize + Settings%TRange(1)
-print*, " Time: ",TimeNow
+
          ! Flatten out the current step of the array  -- loop through to create array of elements
                ! (X1, Y1, Z1), 1
                ! (X2, Y1, Z1), 2
@@ -291,11 +313,11 @@ print*, " Time: ",TimeNow
          DO YStep = 0, NumYSteps
             DO XStep = 0, NumXSteps
                Position(1, (XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ) ) = &
-                  PositionFullset( XStep+1, YStep+1, ZStep+1, TStep+1, 1)
+                  PositionFullset( 1, XStep+1, YStep+1, ZStep+1, TStep+1)
                Position(2, (XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ) ) = &
-                  PositionFullset( XStep+1, YStep+1, ZStep+1, TStep+1, 2)
+                  PositionFullset( 2, XStep+1, YStep+1, ZStep+1, TStep+1)
                Position(3, (XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ) ) = &
-                  PositionFullset( XStep+1, YStep+1, ZStep+1, TStep+1, 3)
+                  PositionFullset( 3, XStep+1, YStep+1, ZStep+1, TStep+1)
             ENDDO    ! XStep
          ENDDO    ! YStep
       ENDDO    ! ZStep
@@ -304,17 +326,16 @@ print*, " Time: ",TimeNow
          ! Copy the data into the array to pass in (this allocates the array)
       IfW_InputData%Position = Position
 
-
          ! Allocate the IfW_OutputData%Velocity array to match the Input one
       CALL AllocAry( IfW_OutputData%Velocity, SIZE(IfW_InputData%Position, 1), SIZE(IfW_InputData%Position, 2), &
                      'Velocity array to return from IfW_CalcOutput', ErrStat, ErrMsg )
-
 
          ! Call the Calculate routine and pass in the Position information
       CALL IfW_CalcOutput( TimeNow, IfW_InputData, IfW_ParamData, &
                            IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, & ! States -- not used
                            IfW_OutputData, ErrStat, ErrMsg)
 
+      Velocity = IfW_OutputData%Velocity
          ! Check that things ran correctly
       IF (ErrStat >= ErrID_Severe) CALL ProgAbort( ErrMsg )
 
@@ -323,11 +344,11 @@ print*, " Time: ",TimeNow
       DO ZStep = 0, NumZSteps
          DO YStep = 0, NumYSteps
             DO XStep = 0, NumXSteps
-               VelocityFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 1) = &
+               VelocityFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1) = &
                   Velocity(1, ( XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ))
-               VelocityFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 1) = &
+               VelocityFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1) = &
                   Velocity(2, ( XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ))
-               VelocityFullSet( XStep+1, YStep+1, ZStep+1, TStep+1, 1) = &
+               VelocityFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1) = &
                   Velocity(3, ( XStep+1 + YStep*(NumXSteps+1) + ZStep*(NumYSteps+1)*(NumXSteps+1) ))
             ENDDO    ! XStep
          ENDDO    ! YStep
@@ -350,8 +371,31 @@ print*, " Time: ",TimeNow
    !--------------------------------------------------------------------------------------------------------------------------------
    !-=-=- Output results -=-=-
    !--------------------------------------------------------------------------------------------------------------------------------
-   !  ParaPrint         -- will create a ParaView file that can be looked at
+   !  ParaPrint         -- will create a ParaView file that can be looked at  !FIXME: add this when I get to it.
    !  Write to screen   -- if ParaPrint isn't used
+
+!FIXME: make this a formatted output
+
+   CALL WrScr(NewLine//NewLine// &
+         '   Time,          x              y              z                   U              V              W     ')
+   DO TStep = 0, NumTSteps
+      DO ZStep = 0, NumZSteps
+         DO YStep = 0, NumYSteps
+            DO XStep = 0, NumXSteps
+               CALL WrScr( Num2LStr(TStep*Settings%TRes + Settings%TRange(1))//'       '//            &
+                           Num2LStr(PositionFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
+                           Num2LStr(PositionFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
+                           Num2LStr(PositionFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
+                           Num2LStr(VelocityFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
+                           Num2LStr(VelocityFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
+                           Num2LStr(VelocityFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '    &
+                         )
+            ENDDO    ! XStep
+         ENDDO    ! YStep
+      ENDDO    ! ZStep
+   ENDDO    ! TStep
+
+
 
 
    !--------------------------------------------------------------------------------------------------------------------------------

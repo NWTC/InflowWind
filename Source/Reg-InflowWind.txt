@@ -7,10 +7,8 @@
 # keyword <InflowWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
-include Registry_NWTC_Library.txt
-include Reg-IfW_HHWind.txt
-include Reg-IfW_FFWind.txt
-
+include Reg-IfW_FFWind_list.txt
+include Reg-IfW_HHWind_list.txt
 
 
 
@@ -27,6 +25,9 @@ typedef  ^                       ^                       IntKi    WindFileType  
 #   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
 #   at a given time, etc.)
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
+typedef  ^                       ^      IfW_FFWind_OtherStateType FFWind            -     -     -     "OtherStates from FFWind"                                      -
+typedef  ^                       ^      IfW_HHWind_OtherStateType HHWind            -     -     -     "OtherStates from HHWind"                                      -
+
 
 
 # ..... Parameters ................................................................................................................
@@ -42,8 +43,8 @@ typedef  ^                       ^                       IntKi    WindFileType  
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Height of the wind turbine"                                   meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind array"                                      meters
 typedef  ^                       ^                       ReKi     HalfWidth         -     -     -     "Half the Width of the wind array"                             meters
-
-
+typedef  ^                       ^       IfW_FFWind_ParameterType FFWind            -     -     -     "Parameters from FFWind"                                       -
+typedef  ^                       ^       IfW_HHWind_ParameterType HHWind            -     -     -     "Parameters from HHWind"                                       -
 
 # ..... Inputs ....................................................................................................................
 # Define inputs that are not on this mesh here:

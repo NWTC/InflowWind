@@ -250,14 +250,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
 
          ! check that if there is an opening bracket, then there is a closing one
       IF ( (Delim1 > 0 ) .and. (Delim2 < Delim1) ) THEN
-         ErrMsg   = "Syntax error in option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"Syntax error in option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
          ErrStat  = ErrID_Warn
          RETURN
       ENDIF
 
          ! check that if there is a colon, then there are brackets
       IF ( (DelimSep > 0) .and. (Delim1 == 0) ) THEN
-         ErrMsg   = "Syntax error in option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"Syntax error in option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
          ErrStat  = ErrID_Warn
          RETURN
       ENDIF
@@ -304,14 +304,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "height["    ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%Height = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%Height = .TRUE.
             Settings%Height      = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%Height = .FALSE.
          ENDIF
@@ -321,14 +321,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "width["     ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%Width  = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%Width  = .TRUE.
             Settings%Width       = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%Width  = .FALSE.
          ENDIF
@@ -341,14 +341,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! First Value
          TempReal = StringToReal( ThisArg(Delim1+1:DelimSep-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%XRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%XRange = .TRUE.
             Settings%XRange(1)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%XRange = .FALSE.
          ENDIF
@@ -356,21 +356,21 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! Second Value
          TempReal = StringToReal( ThisArg(DelimSep+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%XRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%XRange = .TRUE.
             Settings%XRange(2)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%XRange = .FALSE.
          ENDIF
 
             ! Check the order of values
          IF ( Settings%XRange(1) > Settings%Xrange(2) ) THEN
-            ErrMsg   = "Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
             ErrStat  = ErrID_Warn
             Settings%XRange(1)   = 0.0
             Settings%XRange(2)   = 0.0
@@ -384,14 +384,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! First Value
          TempReal = StringToReal( ThisArg(Delim1+1:DelimSep-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%YRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%YRange = .TRUE.
             Settings%YRange(1)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%YRange = .FALSE.
          ENDIF
@@ -399,21 +399,21 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! Second Value
          TempReal = StringToReal( ThisArg(DelimSep+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%YRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%YRange = .TRUE.
             Settings%YRange(2)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%YRange = .FALSE.
          ENDIF
 
             ! Check the order of values
          IF ( Settings%YRange(1) > Settings%Yrange(2) ) THEN
-            ErrMsg   = "Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
             ErrStat  = 1
             Settings%YRange(1)   = 0.0
             Settings%YRange(2)   = 0.0
@@ -427,14 +427,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! First Value
          TempReal = StringToReal( ThisArg(Delim1+1:DelimSep-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%ZRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%ZRange = .TRUE.
             Settings%ZRange(1)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%ZRange = .FALSE.
          ENDIF
@@ -442,21 +442,21 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! Second Value
          TempReal = StringToReal( ThisArg(DelimSep+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%ZRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%ZRange = .TRUE.
             Settings%ZRange(2)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%ZRange = .FALSE.
          ENDIF
 
             ! Check the order of values
          IF ( Settings%ZRange(1) > Settings%Zrange(2) ) THEN
-            ErrMsg   = "Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
             ErrStat  = 1
             Settings%ZRange(1)   = 0.0
             Settings%ZRange(2)   = 0.0
@@ -470,14 +470,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! First Value
          TempReal = StringToReal( ThisArg(Delim1+1:DelimSep-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%TRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%TRange = .TRUE.
             Settings%TRange(1)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%TRange = .FALSE.
          ENDIF
@@ -485,21 +485,21 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! Second Value
          TempReal = StringToReal( ThisArg(DelimSep+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%TRange = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%TRange = .TRUE.
             Settings%TRange(2)   = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%TRange = .FALSE.
          ENDIF
 
             ! Check the order of values
          IF ( Settings%TRange(1) > Settings%Trange(2) ) THEN
-            ErrMsg   = "Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Unexpected order of values in option '"//SwChar//TRIM(ThisArg)//"'. Ingoring."
             Settings%TRange(1)   = 0.0
             Settings%TRange(2)   = 0.0
             ErrStat  = 1
@@ -511,14 +511,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "xres["      ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%XRes   = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%XRes   = .TRUE.
             Settings%XRes        = abs(TempReal)
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%XRes   = .FALSE.
          ENDIF
@@ -527,14 +527,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "yres["      ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%YRes   = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%YRes   = .TRUE.
             Settings%YRes        = abs(TempReal)
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%YRes   = .FALSE.
          ENDIF
@@ -543,14 +543,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "zres["      ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%ZRes   = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%ZRes   = .TRUE.
             Settings%ZRes        = abs(TempReal)
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%ZRes   = .FALSE.
          ENDIF
@@ -559,14 +559,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
       ELSEIF( ThisArg(1:Delim1) == "tres["      ) THEN
          TempReal = StringToReal( ThisArg(Delim1+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%TRes   = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%TRes   = .TRUE.
             Settings%TRes        = abs(TempReal)
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%TRes   = .FALSE.
          ENDIF
@@ -574,13 +574,13 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
          ! "paraprint"
       ELSEIF( ThisArg(1:9)      == "paraprint"  ) THEN
          SettingsFlags%ParaPrint = .TRUE.
-         ErrMsg   = "Feature not implimented. Ignoring option '"//SwChar//TRIM(ThisArg)//"'."
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"Feature not implimented. Ignoring option '"//SwChar//TRIM(ThisArg)//"'."
          ErrStat  = ErrID_Warn
 
          ! "summary"
       ELSEIF( ThisArg(1:8)      == "summary"    ) THEN
          SettingsFlags%Summary   = .TRUE.
-         ErrMsg   = "Feature not implimented. Ignoring option '"//SwChar//TRIM(ThisArg)//"'."
+         ErrMsg   = TRIM(ErrMsg)//NewLine//"Feature not implimented. Ignoring option '"//SwChar//TRIM(ThisArg)//"'."
          ErrStat  = ErrID_Warn
 
          ! "fft[X,Y,Z]"
@@ -591,28 +591,28 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! First Value
          TempReal = StringToReal( ThisArg(Delim1+1:DelimSep-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%fft    = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%fft    = .TRUE.
             Settings%fft(1)      = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%fft    = .FALSE.
          ENDIF
 
             ! Second Value
          TempReal = StringToReal( ThisArg(DelimSep+1:DelimSep2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%fft    = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%fft    = .TRUE.
             Settings%fft(2)      = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%fft    = .FALSE.
          ENDIF
@@ -620,14 +620,14 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
             ! Third Value
          TempReal = StringToReal( ThisArg(DelimSep2+1:Delim2-1), ErrStat )
          IF ( ErrStat == ErrID_Warn ) THEN
-            ErrMsg   = "Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Invalid number in option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             SettingsFlags%fft    = .FALSE.
             RETURN
          ELSEIF ( ErrStat == ErrID_None ) THEN
             SettingsFlags%fft    = .TRUE.
             Settings%fft(3)      = TempReal
          ELSE
-            ErrMsg   = "Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+            ErrMsg   = TRIM(ErrMsg)//NewLine//"Something failed in parsing option '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
             ErrStat  = ErrID_Fatal
             SettingsFlags%fft    = .FALSE.
          ENDIF
@@ -638,7 +638,7 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
          Settings%PointsFile     = ThisArg(Delim1+1:Delim2-1)
 
       ELSE
-         ErrMsg  = "Unrecognized option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
+         ErrMsg  = TRIM(ErrMsg)//NewLine//"Unrecognized option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."
          ErrStat = ErrID_Warn
       ENDIF
 

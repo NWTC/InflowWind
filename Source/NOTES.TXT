@@ -17,6 +17,7 @@ New plan:
    +  HHWind test routine
    +  convert FFWind to framework just like HHWind.
    +  FFWind test routine (make new)?
+   -- Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
    -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
    -- Make the Driver work with paraprint
    -- Setup regression test with HHWind
@@ -30,6 +31,13 @@ Things to remember to change:
    -- UnWind -> UnitWind --> get this during init (stored in OtherStates)
 
 
+-=-=-=-
+FIXME: next, move the InflowWind_Modules_Types info elsewhere (maybe into the library?).
+FIXME: File bug report on the "usefrom" command not including the source.
+FIXME: transpose the velocity and position arrays
+-=-=-=-
+
+
 
 Module:
    TODO:
@@ -41,11 +49,15 @@ Module:
       -  Get CALL HHWind_Init working correctly (passing stuff out)
       -  Get CALL HHWind_End working correctly
       -  Get CALL HHWind_CalcOutput working correctly
+      -  Get the FFWind calls to work correctly
+
 
 
 Driver:
    TODO:
       -  Make sure that HHWind works correctly
+      -  Make sure that FFWind works correctly
+
 
 
 Documentation:
@@ -59,6 +71,10 @@ Documentation:
       -  planned features
          -  storing info about the "grid size/stepsize/time length" of the file read in
 
+
+
+
+-=-=-=-=-=-=-=-=- MOSTLY COMPLETED / COMPLETED -=-=-=-=-=-=-=-=-
 
 IfW_FFWind.f90
    TODO:
