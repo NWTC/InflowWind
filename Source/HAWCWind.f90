@@ -64,12 +64,15 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
       ! Local Variables:
 
+!FIXME:
+!   REAL(SiKi)                  :: DumReal                      ! real variable to temporarially store values read from binary file
    REAL(SiKi)                  :: TmpReal                      ! real variable to temporarially store values read from binary file
 
    REAL(ReKi)                  :: dx
    REAL(ReKi)                  :: dy
    REAL(ReKi)                  :: dz
    REAL(ReKi)                  :: PLExp                        ! Power law exponent, for the PL mean wind profile type
+   REAL(ReKi)                  :: SF        (3)                ! The turbulence scale factors for the three components.
    REAL(ReKi)                  :: U                            ! The mean wind speed
    REAL(ReKi)                  :: Z                            ! The height above ground/sea level
    REAL(ReKi)                  :: Z0                           ! Surface layer roughness length in meters, used for LOG profile type
@@ -205,6 +208,41 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
 
    !-------------------------------------------------------------------------------------------------
+   ! Read the section to determine the turbulence scaling factors
+   !-------------------------------------------------------------------------------------------------
+
+   CALL ReadCom( UnWind, InpFileName, 'scaling parameters for turbulence', ErrStat )
+   IF (ErrStat /= 0) RETURN
+
+
+   CALL ReadVar( UnWind, InpFileName, SF(1), 'SF1', 'Turbulence scaling factor for the x direction', ErrStat )
+   IF (ErrStat /= 0) RETURN
+   IF ( SF(1) < 0.0_ReKi ) THEN
+      CALL WrScr ( ' HAWCWind error: The turbulence scaling factor for the x direction, SF1, must not be negative.' )
+      ErrStat = 1
+      RETURN
+   END IF
+
+
+   CALL ReadVar( UnWind, InpFileName, SF(2), 'SF2', 'Turbulence scaling factor for the y direction', ErrStat )
+   IF (ErrStat /= 0) RETURN
+   IF ( SF(2) < 0.0_ReKi ) THEN
+      CALL WrScr ( ' HAWCWind error: The turbulence scaling factor for the y direction, SF2, must not be negative.' )
+      ErrStat = 1
+      RETURN
+   END IF
+
+
+   CALL ReadVar( UnWind, InpFileName, SF(3), 'SF3', 'Turbulence scaling factor for the z direction', ErrStat )
+   IF (ErrStat /= 0) RETURN
+   IF ( SF(3) < 0.0_ReKi ) THEN
+      CALL WrScr ( ' HAWCWind error: The turbulence scaling factor for the x direction, SF3, must not be negative.' )
+      ErrStat = 1
+      RETURN
+   END IF
+
+
+   !-------------------------------------------------------------------------------------------------
    ! Read the section to determine the mean wind profile
    !-------------------------------------------------------------------------------------------------
 
@@ -214,6 +252,13 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
    CALL ReadVar( UnWind, InpFileName, WindProfileType, 'WindProfileType', 'Wind profile type', ErrStat )
    IF (ErrStat /= 0) RETURN
+   CALL Conv2UC ( WindProfileType )
+   IF ( ( WindProfileType /= 'LOG' ) .AND. ( TRIM( WindProfileType ) /= 'PL' ) )  THEN
+       CALL WrScr ( ' HAWCWind error: the wind profile type, WindProfileType, must be either "LOG" or "PL".' )
+      ErrStat = 1
+      RETURN
+   END IF
+
 
 
    CALL ReadVar( UnWind, InpFileName, URef, 'URef', 'Reference wind speed', ErrStat )
@@ -231,8 +276,7 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
    CALL ReadVar( UnWind, InpFileName, Z0, 'Z0', 'Surface roughness length', ErrStat )
    IF (ErrStat /= 0) RETURN
-
-   IF ( Z0 <= EPSILON(Z0) ) THEN
+   IF ( ( WindProfileType == 'LOG' ) .AND. ( Z0 <= EPSILON(Z0) ) ) THEN
       CALL WrScr ( ' HAWCWind error: the surface roughness length, Z0, must be greater than zero.' )
       ErrStat = 1
       RETURN
@@ -300,7 +344,7 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
 
                READ( UnWind, IOSTAT=ErrStat ) TmpReal
 
-               WindData( IZ, IY, IX, IC ) = TmpReal    ! possible type conversion here
+               WindData( IZ, IY, IX, IC ) = SF(IC)*DumReal    ! possible type conversion here
 
                IF (ErrStat /= 0) THEN
                   CALL WrScr( ' Error reading binary data from "'//TRIM(DataFiles(IC))//'".' )
@@ -323,9 +367,10 @@ SUBROUTINE HW_Init ( UnWind, InpFileName, ErrStat )
    ! Add the mean wind speed to the u component.
    !-------------------------------------------------------------------------------------------------
 
-   CALL Conv2UC( WindProfileType )
-
-
+!FIXME: Marshall removed this. Check that it should be removed in the modularization.
+!   CALL Conv2UC( WindProfileType )
+!
+!
    IF ( RefHt > 0.0 ) THEN
 
       DO IZ = 1,NZ
