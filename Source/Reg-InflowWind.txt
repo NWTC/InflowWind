@@ -7,6 +7,9 @@
 # keyword <InflowWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
+#include Reg-IfW_FFWind.txt
+#include Reg-IfW_HHWind.txt
+#There is a bug in Registry that doesn't allow it to use the registry file directly at the moment
 include Reg-IfW_FFWind_list.txt
 include Reg-IfW_HHWind_list.txt
 

@@ -22,8 +22,15 @@
 
 #compiler to use
 FC = gfortran
+
+#architecture
+   #32 or 64
+BITS:=64
+   #lin or win
+OS:=lin
+
 #compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace -m32 #-g 
+FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g 
 REGSFLAGS = -ffree-line-length-none
 
 
@@ -37,8 +44,8 @@ LIB_DIR := \
 #	../../../../../NWTC_Library/trunk/source
 
 #Name of the executable
-HHExecutable_NAME := HHWind_Test.lin32
-FFExecutable_NAME := FFWind_Test.lin32
+HHExecutable_NAME := HHWind_Test.$(OS)$(BITS)
+FFExecutable_NAME := FFWind_Test.$(OS)$(BITS)
 
 #Name of the registry file
 RegistryDIR    := ..
@@ -132,16 +139,17 @@ $(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
 SysGnuLinux.o:          SingPrec.o
 NWTC_IO.o:              SysGnuLinux.o
 NWTC_Num.o:             NWTC_IO.o
-ModMesh.o:              SingPrec.o NWTC_IO.o ModMesh_Types.o
+ModMesh.o:              SingPrec.o     NWTC_IO.o      ModMesh_Types.o
 NWTC_Library.o:         ModMesh.o
+InflowWind_Types.o:     IfW_HHWind_Types.o   IfW_FFWind_Types.o
 
-IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
-IfW_HHWind.o:           InflowWind_Types.o InflowWind_Module_Types.o NWTC_Library.o IfW_HHWind_Types.o
-IfW_HHWind_Test.o:      InflowWind_Types.o IfW_HHWind.o NWTC_Library.o IfW_HHWind_Types.o
+IfW_HHWind_Types.o:     NWTC_Library.o       $(HHRegistryF90)
+IfW_HHWind.o:           InflowWind_Types.o   InflowWind_Module_Types.o  NWTC_Library.o    IfW_HHWind_Types.o
+IfW_HHWind_Test.o:      InflowWind_Types.o   IfW_HHWind.o               NWTC_Library.o    IfW_HHWind_Types.o
 
-IfW_FFWind_Types.o:     NWTC_Library.o $(FFRegistryF90)
-IfW_FFWind.o:           InflowWind_Types.o InflowWind_Module_Types.o NWTC_Library.o IfW_FFWind_Types.o
-IfW_FFWind_Test.o:      IfW_FFWind.o InflowWind_Types.o NWTC_Library.o IfW_FFWind_Types.o
+IfW_FFWind_Types.o:     NWTC_Library.o       $(FFRegistryF90)
+IfW_FFWind.o:           InflowWind_Types.o   InflowWind_Module_Types.o  NWTC_Library.o    IfW_FFWind_Types.o
+IfW_FFWind_Test.o:      IfW_FFWind.o         InflowWind_Types.o         NWTC_Library.o    IfW_FFWind_Types.o
 
 #Make sure the destination directory exists
 $(DEST_DIR):
@@ -174,5 +182,6 @@ $(DEST_DIR)/$(FFExecutable_NAME): $(LIB_OBJS) $(InflowWind_OBJS) $(FF_OBJS) $(If
 clean:
 	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(HHExecutable_NAME) $(DEST_DIR)/$(FFExecutable_NAME);
 	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90);
+	rm -f $(HHRegistryF90) $(FFRegistryF90);
 	rmdir $(DEST_DIR);
 

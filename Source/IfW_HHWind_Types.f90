@@ -76,7 +76,7 @@ IMPLICIT NONE
   END TYPE IfW_HHWind_ConstraintStateType
 CONTAINS
  SUBROUTINE IfW_HHWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_initinputtype), INTENT(IN   ) :: SrcInitInputData
+  TYPE(IfW_HHWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
   TYPE(IfW_HHWind_initinputtype), INTENT(  OUT) :: DstInitInputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -189,7 +189,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackInitInput
 
  SUBROUTINE IfW_HHWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_otherstatetype), INTENT(IN   ) :: SrcOtherStateData
+  TYPE(IfW_HHWind_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
   TYPE(IfW_HHWind_otherstatetype), INTENT(  OUT) :: DstOtherStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -447,7 +447,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackOtherState
 
  SUBROUTINE IfW_HHWind_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_parametertype), INTENT(IN   ) :: SrcParamData
+  TYPE(IfW_HHWind_parametertype), INTENT(INOUT) :: SrcParamData
   TYPE(IfW_HHWind_parametertype), INTENT(  OUT) :: DstParamData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -568,7 +568,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackParam
 
  SUBROUTINE IfW_HHWind_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_inputtype), INTENT(IN   ) :: SrcInputData
+  TYPE(IfW_HHWind_inputtype), INTENT(INOUT) :: SrcInputData
   TYPE(IfW_HHWind_inputtype), INTENT(  OUT) :: DstInputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -684,7 +684,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackInput
 
  SUBROUTINE IfW_HHWind_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_outputtype), INTENT(IN   ) :: SrcOutputData
+  TYPE(IfW_HHWind_outputtype), INTENT(INOUT) :: SrcOutputData
   TYPE(IfW_HHWind_outputtype), INTENT(  OUT) :: DstOutputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -800,7 +800,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackOutput
 
  SUBROUTINE IfW_HHWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(IN   ) :: SrcContStateData
+  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: SrcContStateData
   TYPE(IfW_HHWind_continuousstatetype), INTENT(  OUT) :: DstContStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -906,7 +906,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackContState
 
  SUBROUTINE IfW_HHWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_discretestatetype), INTENT(IN   ) :: SrcDiscStateData
+  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
   TYPE(IfW_HHWind_discretestatetype), INTENT(  OUT) :: DstDiscStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -1012,7 +1012,7 @@ CONTAINS
  END SUBROUTINE IfW_HHWind_UnpackDiscState
 
  SUBROUTINE IfW_HHWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(IN   ) :: SrcConstrStateData
+  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
   TYPE(IfW_HHWind_constraintstatetype), INTENT(  OUT) :: DstConstrStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
@@ -1622,6 +1622,340 @@ CONTAINS
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
  END SUBROUTINE IfW_HHWind_Unpack
+
+
+ SUBROUTINE IfW_HHWind_Input_ExtrapInterp(u, t, u_out, t_out, ErrStat, ErrMsg )
+!
+! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
+!
+!  expressions below based on either
+!
+!  f(t) = a
+!  f(t) = a + b * t, or
+!  f(t) = a + b * t + c * t**2
+!
+!  where a, b and c are determined as the solution to
+!  f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+!
+!..................................................................................................................................
+
+ TYPE(IfW_HHWind_inputtype), INTENT(IN   )  :: u(:)      ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: t(:)      ! Times associated with the inputs
+ TYPE(IfW_HHWind_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: t_out     ! time to be extrap/interp'd to
+ INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
+ CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
+   ! local variables
+ INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
+ REAL(ReKi)                                 :: a0       ! temporary for extrapolaton/interpolation
+ REAL(ReKi)                                 :: b0       ! temporary for extrapolation/interpolation
+ REAL(ReKi)                                 :: c0       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: a1       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: a2       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: a3       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: a4       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: a5       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
+ INTEGER                                    :: i01    ! dim1 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i11    ! dim1 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i21    ! dim1 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i31    ! dim1 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i41    ! dim1 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i51    ! dim1 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i61    ! dim1 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i71    ! dim1 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i81    ! dim1 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i91    ! dim1 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i02    ! dim2 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i12    ! dim2 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i22    ! dim2 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i32    ! dim2 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i42    ! dim2 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i52    ! dim2 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i62    ! dim2 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i72    ! dim2 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i82    ! dim2 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i92    ! dim2 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i03    ! dim3 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i13    ! dim3 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i23    ! dim3 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i33    ! dim3 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i43    ! dim3 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i53    ! dim3 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i63    ! dim3 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i73    ! dim3 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i83    ! dim3 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i93    ! dim3 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i04    ! dim4 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i14    ! dim4 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i24    ! dim4 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i34    ! dim4 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i44    ! dim4 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i54    ! dim4 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i64    ! dim4 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i74    ! dim4 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i84    ! dim4 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i94    ! dim4 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i05    ! dim5 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i15    ! dim5 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i25    ! dim5 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i35    ! dim5 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i45    ! dim5 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i55    ! dim5 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i65    ! dim5 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i75    ! dim5 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i85    ! dim5 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i95    ! dim5 level 9 counter variable for arrays of ddts
+    ! Initialize ErrStat
+    ! Initialize ErrStat
+ ErrStat = ErrID_None
+ ErrMsg  = ""
+ if ( size(t) .ne. size(u)) then
+    ErrStat = ErrID_Fatal
+    ErrMsg = ' Error in IfW_HHWind_Input_ExtrapInterp: size(t) must equal size(u) '
+    RETURN
+ endif
+
+ if (size(u) .gt. 3) then
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: size(u) must be less than 4 '
+    RETURN
+ endif
+ order = SIZE(u) - 1
+ IF ( order .eq. 0 ) THEN
+  u_out%Position = u(1)%Position
+ ELSE IF ( order .eq. 1 ) THEN
+  IF ( EqualRealNos( t(1), t(2) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  ALLOCATE(a2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  a2 = -((t(2)*u(1)%Position - t(1)*u(2)%Position)/(t(1) - t(2)))
+  b2 = -((-u(1)%Position + u(2)%Position)/(t(1) - t(2)))
+  u_out%Position = a2 + b2 * t_out
+  DEALLOCATE(a2)
+  DEALLOCATE(b2)
+  DEALLOCATE(c2)
+ ELSE IF ( order .eq. 2 ) THEN
+  IF ( EqualRealNos( t(1), t(2) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  IF ( EqualRealNos( t(2), t(3) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  IF ( EqualRealNos( t(1), t(3) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  ALLOCATE(a2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
+  a2 = (t(1)*t(3)*(-t(1) + t(3))*u(2)%Position &
+      + t(2)**2*(t(3)*u(1)%Position - t(1)*u(3)%Position)        &
+      + t(2)*(-(t(3)**2*u(1)%Position) + t(1)**2*u(3)%Position))                        &
+      / ((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
+  b2 = (t(3)**2*(u(1)%Position - u(2)%Position) &
+      + t(1)**2*(u(2)%Position - u(3)%Position) + t(2)**2*(-u(1)%Position &
+      + u(3)%Position))/((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))                  
+  c2 = (t(3)*(-u(1)%Position + u(2)%Position) &
+      + t(2)*(u(1)%Position - u(3)%Position) &
+      + t(1)*(-u(2)%Position + u(3)%Position))  &
+      /((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
+  u_out%Position = a2 + b2 * t_out + c2 * t_out**2
+  DEALLOCATE(a2)
+  DEALLOCATE(b2)
+  DEALLOCATE(c2)
+ ELSE 
+   ErrStat = ErrID_Fatal
+   ErrMsg = ' order must be less than 3 in IfW_HHWind_Input_ExtrapInterp '
+   RETURN
+ ENDIF 
+ END SUBROUTINE IfW_HHWind_Input_ExtrapInterp
+
+
+ SUBROUTINE IfW_HHWind_Output_ExtrapInterp(u, t, u_out, t_out, ErrStat, ErrMsg )
+!
+! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
+!
+!  expressions below based on either
+!
+!  f(t) = a
+!  f(t) = a + b * t, or
+!  f(t) = a + b * t + c * t**2
+!
+!  where a, b and c are determined as the solution to
+!  f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+!
+!..................................................................................................................................
+
+ TYPE(IfW_HHWind_outputtype), INTENT(IN   )  :: u(:)      ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: t(:)      ! Times associated with the inputs
+ TYPE(IfW_HHWind_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: t_out     ! time to be extrap/interp'd to
+ INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
+ CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
+   ! local variables
+ INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
+ REAL(ReKi)                                 :: a0       ! temporary for extrapolaton/interpolation
+ REAL(ReKi)                                 :: b0       ! temporary for extrapolation/interpolation
+ REAL(ReKi)                                 :: c0       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: a1       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: a2       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: a3       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: a4       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: a5       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
+ INTEGER                                    :: i01    ! dim1 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i11    ! dim1 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i21    ! dim1 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i31    ! dim1 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i41    ! dim1 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i51    ! dim1 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i61    ! dim1 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i71    ! dim1 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i81    ! dim1 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i91    ! dim1 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i02    ! dim2 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i12    ! dim2 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i22    ! dim2 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i32    ! dim2 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i42    ! dim2 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i52    ! dim2 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i62    ! dim2 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i72    ! dim2 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i82    ! dim2 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i92    ! dim2 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i03    ! dim3 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i13    ! dim3 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i23    ! dim3 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i33    ! dim3 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i43    ! dim3 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i53    ! dim3 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i63    ! dim3 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i73    ! dim3 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i83    ! dim3 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i93    ! dim3 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i04    ! dim4 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i14    ! dim4 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i24    ! dim4 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i34    ! dim4 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i44    ! dim4 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i54    ! dim4 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i64    ! dim4 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i74    ! dim4 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i84    ! dim4 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i94    ! dim4 level 9 counter variable for arrays of ddts
+ INTEGER                                    :: i05    ! dim5 level 0 counter variable for arrays of ddts
+ INTEGER                                    :: i15    ! dim5 level 1 counter variable for arrays of ddts
+ INTEGER                                    :: i25    ! dim5 level 2 counter variable for arrays of ddts
+ INTEGER                                    :: i35    ! dim5 level 3 counter variable for arrays of ddts
+ INTEGER                                    :: i45    ! dim5 level 4 counter variable for arrays of ddts
+ INTEGER                                    :: i55    ! dim5 level 5 counter variable for arrays of ddts
+ INTEGER                                    :: i65    ! dim5 level 6 counter variable for arrays of ddts
+ INTEGER                                    :: i75    ! dim5 level 7 counter variable for arrays of ddts
+ INTEGER                                    :: i85    ! dim5 level 8 counter variable for arrays of ddts
+ INTEGER                                    :: i95    ! dim5 level 9 counter variable for arrays of ddts
+    ! Initialize ErrStat
+    ! Initialize ErrStat
+ ErrStat = ErrID_None
+ ErrMsg  = ""
+ if ( size(t) .ne. size(u)) then
+    ErrStat = ErrID_Fatal
+    ErrMsg = ' Error in IfW_HHWind_Output_ExtrapInterp: size(t) must equal size(u) '
+    RETURN
+ endif
+
+ if (size(u) .gt. 3) then
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: size(u) must be less than 4 '
+    RETURN
+ endif
+ order = SIZE(u) - 1
+ IF ( order .eq. 0 ) THEN
+  u_out%Velocity = u(1)%Velocity
+ ELSE IF ( order .eq. 1 ) THEN
+  IF ( EqualRealNos( t(1), t(2) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  ALLOCATE(a2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  a2 = -((t(2)*u(1)%Velocity - t(1)*u(2)%Velocity)/(t(1) - t(2)))
+  b2 = -((-u(1)%Velocity + u(2)%Velocity)/(t(1) - t(2)))
+  u_out%Velocity = a2 + b2 * t_out
+  DEALLOCATE(a2)
+  DEALLOCATE(b2)
+  DEALLOCATE(c2)
+ ELSE IF ( order .eq. 2 ) THEN
+  IF ( EqualRealNos( t(1), t(2) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  IF ( EqualRealNos( t(2), t(3) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  IF ( EqualRealNos( t(1), t(3) ) ) THEN
+    ErrStat = ErrID_Fatal
+    ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
+    RETURN
+  END IF
+  ALLOCATE(a2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
+  a2 = (t(1)*t(3)*(-t(1) + t(3))*u(2)%Velocity &
+      + t(2)**2*(t(3)*u(1)%Velocity - t(1)*u(3)%Velocity)        &
+      + t(2)*(-(t(3)**2*u(1)%Velocity) + t(1)**2*u(3)%Velocity))                        &
+      / ((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
+  b2 = (t(3)**2*(u(1)%Velocity - u(2)%Velocity) &
+      + t(1)**2*(u(2)%Velocity - u(3)%Velocity) + t(2)**2*(-u(1)%Velocity &
+      + u(3)%Velocity))/((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))                  
+  c2 = (t(3)*(-u(1)%Velocity + u(2)%Velocity) &
+      + t(2)*(u(1)%Velocity - u(3)%Velocity) &
+      + t(1)*(-u(2)%Velocity + u(3)%Velocity))  &
+      /((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
+  u_out%Velocity = a2 + b2 * t_out + c2 * t_out**2
+  DEALLOCATE(a2)
+  DEALLOCATE(b2)
+  DEALLOCATE(c2)
+ ELSE 
+   ErrStat = ErrID_Fatal
+   ErrMsg = ' order must be less than 3 in IfW_HHWind_Output_ExtrapInterp '
+   RETURN
+ ENDIF 
+ END SUBROUTINE IfW_HHWind_Output_ExtrapInterp
 
 END MODULE IfW_HHWind_Types
 !ENDOFREGISTRYGENERATEDFILE

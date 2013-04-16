@@ -2184,7 +2184,7 @@ CONTAINS
          TimeShifted = MODULO( TimeShifted, OtherStates%TotalTime )
              ! If TimeShifted is a very small negative number, modulo returns the incorrect value due to internal rounding errors.
              ! See bug report #471
-         IF (TimeShifted == TotalTime) TimeShifted = 0.0_ReKi
+         IF (TimeShifted == OtherStates%TotalTime) TimeShifted = 0.0_ReKi
 
          TGRID = TimeShifted*OtherStates%FFRate
          ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)

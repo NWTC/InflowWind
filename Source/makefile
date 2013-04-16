@@ -22,8 +22,15 @@
 
 #compiler to use
 FC = gfortran
+
+#architecture
+   #32 or 64
+BITS:=64
+   #lin or win
+OS:=lin
+
 #compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace -m32 #-g 
+FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g 
 
 #Destination for compiled pieces
 DEST_DIR := _compiled--linux
@@ -35,7 +42,8 @@ LIB_DIR := \
 #	../../../../NWTC_Library/trunk/source
 
 #Name of the executable
-Executable_NAME := InflowWind_lin32
+Executable_ROOT := InflowWind_
+Executable_NAME := $(Executable_ROOT)$(OS)$(BITS)
 
 #Where the doxygen generated documentation is stored
 Doxy_DIR = ../Doxygen--documentation
@@ -110,9 +118,10 @@ LIB_OBJS = $(LIB_SOURCES:.f90=.o)
 InflowWind_OBJS = $(InflowWind_SOURCES:.f90=.o)
 
 #rule to do everything
-all:     default
+all:           default
+SETUP:         $(DEST_DIR) libcopy
 InflowWind:    clean default
-default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
+default:       SETUP $(DEST_DIR)/$(Executable_NAME)
 
 #general rule for making the files
 %.o: %.f90
@@ -120,8 +129,11 @@ default: $(DEST_DIR) libcopy $(DEST_DIR)/$(Executable_NAME)
 
 
 #Dependency rules
+IfW_HHWind_Types.o:     $(HHRegistryF90)
+IfW_FFWind_Types.o:     $(FFRegistryF90)
 IfW_HHWind.o:           IfW_HHWind_Types.o
 IfW_FFWind.o:           IfW_FFWind_Types.o
+InflowWind_Types.o:     IfW_HHWind_Types.o IfW_FFWind_Types.o
 InflowWind_Module.o:    InflowWind_Types.o InflowWind_Subs.o IfW_HHWind.o IfW_FFWind.o
 InflowWind_Subs.o:      InflowWind_Types.o
 InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
@@ -134,7 +146,7 @@ $(HHRegistryF90):   $(RegistryDIR)/$(HHRegistryTXT)
 $(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
 	$(RegistryProgram) $<;
 
-#specific rule for the FFWind registry file
+#specific rule for the IfW registry file
 $(IfWRegistryF90):   $(RegistryDIR)/$(IfWRegistryTXT)
 	$(RegistryProgram) $<;
 
@@ -160,8 +172,8 @@ $(DEST_DIR)/$(Executable_NAME): $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(Inf
 
 #cleanup afterwards
 clean:
-	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_NAME);
-	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90) $(RegistryDir)/$(IfWRegistry90);
+	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_ROOT)*;
+	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90) $(RegistryDIR)/$(IfWRegistryF90);
 	rmdir $(DEST_DIR);
 
 #doxygen bits
