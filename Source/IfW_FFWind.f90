@@ -10,8 +10,10 @@ MODULE IfW_FFWind
 !     using subroutines and modules from AeroDyn v12.58
 !
 !----------------------------------------------------------------------------------------------------
-!  Feb 2013    v2.00.00          A. Platt    -- updated to the new framework
-!                    - Note:  Jacobians are not included in this version.
+!  Feb 2013    v2.00.00          A. Platt
+!     -- updated to the new framework
+!     -- Modified to use NWTC_Library v. 2.0
+!     -- Note:  Jacobians are not included in this version.
 !
 !----------------------------------------------------------------------------------------------------
 ! LICENSING
@@ -38,7 +40,7 @@ MODULE IfW_FFWind
    PRIVATE
 
    INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_FFWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v1.00.00', '16-Mar-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v2.00.00', '16-Mar-2013' )
 
    PUBLIC                                    :: IfW_FFWind_Init
    PUBLIC                                    :: IfW_FFWind_End
@@ -67,10 +69,12 @@ CONTAINS
 SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
                            OutData,    Interval,   ErrStat,          ErrMsg)
-!  This routine is used read the full-field turbulence data.
-!  09/25/97 - Created by M. Buhl from GETFILES in ViewWind.
-!  09/23/09 - modified by B. Jonkman: this subroutine was split into several subroutines (was ReadFF)
-!----------------------------------------------------------------------------------------------------
+   !-------------------------------------------------------------------------------------------------
+   !  This routine is used read the full-field turbulence data.
+   !  09/25/1997  - Created by M. Buhl from GETFILES in ViewWind.
+   !  09/23/2009  - modified by B. Jonkman: this subroutine was split into several subroutines (was ReadFF)
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+   !-------------------------------------------------------------------------------------------------
 
    IMPLICIT                       NONE
 
@@ -321,6 +325,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    SUBROUTINE Read_Summary_FF ( UnitWind, FileName, CWise, ZCenter, TI, ErrStat, ErrMsg )
    ! This subroutine reads the text summary file to get normalizing parameters, the location of the
    ! grid, and the direction the grid was written to the binary file
+   !
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
          ! Passed variables
@@ -580,6 +586,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ! This subroutine reads the binary TurbSim-format FF file (.bts).  It fills the FFData array with
    ! velocity data for the grids and fills the FFTower array with velocities at points on the tower
    ! (if data exists).
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
          ! Passed Variables:
@@ -959,6 +966,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    !   Reads the binary headers from the turbulence files of the old Bladed variety.  Note that
    !   because of the normalization, neither OtherStates%NZGrids or OtherStates%NYGrids are larger than 32 points.
    !   21-Sep-2009 - B. Jonkman, NREL/NWTC.
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
 
@@ -1133,6 +1141,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    !   Reads the binary headers from the turbulence files of the new Bladed variety.
    !   16-May-2002 - Windward Engineering.
    !   21-Sep-2009 - B. Jonkman, NREL.  updated to trap errors and add extra parameters for MANN model
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
 
@@ -1546,6 +1555,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    SUBROUTINE Read_Bladed_Grids ( OtherStates, CWise, TI, ErrStat, ErrMsg )
    ! This subroutine continues reading OtherStates%UnitWind, starting after the headers have been read.
    ! It reads the Grids and converts the data to un-normalized wind speeds in m/s.
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
       IMPLICIT                                              NONE
@@ -1709,6 +1719,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ! This subroutine reads the binary tower file that corresponds with the Bladed-style FF binary file.
    ! The FF grid must be read before this subroutine is called! (many checks are made to ensure the
    ! files belong together)
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
          ! Passed Variables:
@@ -1956,6 +1967,8 @@ SUBROUTINE IfW_FFWind_CalcOutput(Time,    InData,        ParamData,             
    !
    ! There are inefficiencies in how this set of routines is coded, but that is a problem for another
    ! day. For now, it merely needs to be functional. It can be fixed up and made all pretty later.
+   !
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !-------------------------------------------------------------------------------------------------
 
    IMPLICIT                                                 NONE
@@ -2032,6 +2045,7 @@ CONTAINS
    ! This function receives time and position (in InputInfo) where (undisturbed) velocities are are
    ! requested.  It determines if the point is on the FF grid or tower points and calls the
    ! corresponding interpolation routine, which returns the velocities at the specified time and space.
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
       IMPLICIT                                              NONE
@@ -2111,10 +2125,11 @@ CONTAINS
    !    If tower points are used, it assumes the velocity at the ground is 0.  It interpolates between
    !    heights and between time slices, but ignores the Y input.
    !
-   !    11/07/94 - Created by M. Buhl from the original TURBINT.
-   !    09/25/97 - Modified by M. Buhl to use f90 constructs and new variable names.  Renamed to FF_Interp.
-   !    09/23/09 - Modified by B. Jonkman to use arguments instead of modules to determine time and position.
-   !               Height is now relative to the ground
+   !    11/07/1994 - Created by M. Buhl from the original TURBINT.
+   !    09/25/1997 - Modified by M. Buhl to use f90 constructs and new variable names.  Renamed to FF_Interp.
+   !    09/23/2009 - Modified by B. Jonkman to use arguments instead of modules to determine time and position.
+   !                 Height is now relative to the ground
+   !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !
    !----------------------------------------------------------------------------------------------------
 
@@ -2413,9 +2428,12 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
                            ContStates, DiscStates, ConstrStates,  OtherStates,   &
                            OutData,                                              &
                            ErrStat,    ErrMsg)
-!  This subroutine cleans up any data that is still allocated.  The (possibly) open files are
-!  closed in InflowWindMod.
-!----------------------------------------------------------------------------------------------------
+   !-------------------------------------------------------------------------------------------------
+   !  This subroutine cleans up any data that is still allocated.  The (possibly) open files are
+   !  closed in InflowWindMod.
+   !
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+   !-------------------------------------------------------------------------------------------------
 
       ! Passed Variables
    TYPE(IfW_FFWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
@@ -2461,12 +2479,14 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
 END SUBROUTINE IfW_FFWind_End
 
 !====================================================================================================
-
 !====================================================================================================
+!====================================================================================================
+
 
 
 !====================================================================================================
 ! The following are generic routines required by the framework.
+!  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
 !====================================================================================================
 !----------------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
@@ -2663,6 +2683,7 @@ END SUBROUTINE IfW_FFWind_CalcConstrStateResidual
 END MODULE IfW_FFWind
 
 !!! The following routine was removed during conversion to the the modular framework
+!  16-Apr-2013 - A. Platt, NREL.
 !!!!====================================================================================================
 !!!FUNCTION FF_GetRValue(RVarName, ErrStat, ErrMsg)
 !!!!  This function returns a real scalar value whose name is listed in the RVarName input argument.

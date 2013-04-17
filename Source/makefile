@@ -25,7 +25,7 @@ FC = gfortran
 
 #architecture
    #32 or 64
-BITS:=64
+BITS:=32
    #lin or win
 OS:=lin
 

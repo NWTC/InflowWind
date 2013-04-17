@@ -21,8 +21,9 @@ MODULE IfW_HHWind
 !      + V * VLinShr/RefWid * ( Z-RefHt )                               ! vertical linear shear
 !      + VGust                                                          ! gust speed
 !----------------------------------------------------------------------------------------------------
-!  Feb 2013    v2.00.00          A. Platt    -- updated to the new framework
-!                    - Note:  Jacobians are not included in this version.
+!  Feb 2013    v2.00.00          A. Platt
+!     -- updated to the new framework
+!     -- Note:  Jacobians are not included in this version.
 !
 !----------------------------------------------------------------------------------------------------
 ! LICENSING
@@ -49,7 +50,7 @@ MODULE IfW_HHWind
    PRIVATE
 
    INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_HHWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v1.00.00', '13-Mar-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v2.00.00', '13-Mar-2013' )
 
    PUBLIC                                    :: IfW_HHWind_Init
    PUBLIC                                    :: IfW_HHWind_End
@@ -74,11 +75,14 @@ CONTAINS
 SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
                            OutData,    Interval,   ErrStat,          ErrMsg)
-! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
-! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
-! both in meters, which are used to define the volume where wind velocities will be calculated.  This
-! information is necessary because of the way the shears are defined.
-!----------------------------------------------------------------------------------------------------
+   !----------------------------------------------------------------------------------------------------
+   ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
+   ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
+   ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
+   ! information is necessary because of the way the shears are defined.
+   !
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+   !----------------------------------------------------------------------------------------------------
 
 
       ! Passed Variables
@@ -384,7 +388,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
       ! Set the initial index into the time array (it indicates that we've initialized the module, too)
       ! and initialize the spatial scaling for the wind calculations
-         !-------------------------------------------------------------------------------------------------
+      !-------------------------------------------------------------------------------------------------
    OtherStates%TimeIndex = 1
 
    OtherStates%RefHt  = ParamData%ReferenceHeight
@@ -400,7 +404,12 @@ END SUBROUTINE IfW_HHWind_Init
 SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
                            ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
                            OutData,       ErrStat,       ErrMsg)
-
+   !-------------------------------------------------------------------------------------------------
+   !  This routine and its subroutines calculate the wind velocity at a set of points given in
+   !  InData%Position.  The UVW velocities are returned in OutData%Velocity
+   !
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+   !-------------------------------------------------------------------------------------------------
    IMPLICIT                                                 NONE
 
       ! Passed Variables
@@ -475,9 +484,12 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
 CONTAINS
    !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
    FUNCTION GetWindSpeed(Time,   InputPosition,   ParamData,     OtherStates,   ErrStat, ErrMsg)
+   !----------------------------------------------------------------------------------------------------
    ! This subroutine linearly interpolates the columns in the HH input file to get the values for
    ! the requested time, then uses the interpolated values to calclate the wind speed at a point
    ! in space represented by InputPosition.
+   !
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
          ! Passed Variables
@@ -626,6 +638,10 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
                            ContStates, DiscStates, ConstrStates,  OtherStates,   &
                            OutData,                                              &
                            ErrStat,    ErrMsg)
+   !----------------------------------------------------------------------------------------------------
+   !  This routine closes any open files and clears all data stored in HHWind derived Types
+   !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+   !----------------------------------------------------------------------------------------------------
 
 
       ! Passed Variables
@@ -718,6 +734,7 @@ END SUBROUTINE IfW_HHWind_End
 
 !====================================================================================================
 ! The following are generic routines required by the framework.
+!  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
 !====================================================================================================
 !----------------------------------------------------------------------------------------------------------------------------------
 SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
@@ -913,7 +930,46 @@ END MODULE IfW_HHWind
 
 !====================================================================================================
 !====================================================================================================
-!REMOVED:
+!====================================================================================================
+!  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
+!!MOVED FROM ABOVE:  This was removed during the conversion to the modular framework. It may be necessary
+!!                   to put this into OtherStates if it is needed later.
+!!----------------------------------------------------------------------------------------------------
+!SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
+!! This subroutine sets the perturbation values for the linearization scheme.
+!
+!   REAL(ReKi),                        INTENT(IN   )  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
+!   INTEGER(IntKi),                    INTENT(  OUT)  :: ErrStat              ! time from the start of the simulation
+!   CHARACTER(*),                      INTENT(  OUT)  :: ErrMsg               ! Error Message
+!
+!   !-------------------------------------------------------------------------------------------------
+!   ! verify the module was initialized first
+!   !-------------------------------------------------------------------------------------------------
+!
+!   IF ( TimeIndex == 0 ) THEN
+!      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+!      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
+!      RETURN
+!   ELSE
+!      ErrStat = 0
+!   END IF
+!
+!   ParamData%Linearize = .TRUE.
+!   OtherStates%LinearizeDels(:) = Perturbations(:)
+!
+!   RETURN
+!
+!END SUBROUTINE IfW_HHWind_SetLinearizeDels
+!!====================================================================================================
+
+
+
+
+!====================================================================================================
+!FIXME:delete
+!====================================================================================================
+!REMOVED:  This routine was removed during the conversion to the new modularization framework. This will
+!           be deleted once conversion is completed.
 !!====================================================================================================
 !FUNCTION HH_Get_ADHack_WindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 !! This subroutine linearly interpolates the columns in the HH input file to get the values for
@@ -1011,36 +1067,3 @@ END MODULE IfW_HHWind
 
 
 
-
-!====================================================================================================
-!====================================================================================================
-!====================================================================================================
-!!MOVED FROM ABOVE:
-!!----------------------------------------------------------------------------------------------------
-!!FIXME: might need to move this into states???
-!SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
-!! This subroutine sets the perturbation values for the linearization scheme.
-!
-!   REAL(ReKi),                        INTENT(IN   )  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
-!   INTEGER(IntKi),                    INTENT(  OUT)  :: ErrStat              ! time from the start of the simulation
-!   CHARACTER(*),                      INTENT(  OUT)  :: ErrMsg               ! Error Message
-!
-!   !-------------------------------------------------------------------------------------------------
-!   ! verify the module was initialized first
-!   !-------------------------------------------------------------------------------------------------
-!
-!   IF ( TimeIndex == 0 ) THEN
-!      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
-!      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
-!      RETURN
-!   ELSE
-!      ErrStat = 0
-!   END IF
-!
-!   ParamData%Linearize = .TRUE.
-!   OtherStates%LinearizeDels(:) = Perturbations(:)
-!
-!   RETURN
-!
-!END SUBROUTINE IfW_HHWind_SetLinearizeDels
-!!====================================================================================================

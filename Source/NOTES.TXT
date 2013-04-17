@@ -7,24 +7,18 @@ REVISION:
 After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code.
 
 
-TODO Now:
-   anything left in HHWind?
-   Convert FFWind
-
 
 New plan:
-   +  convert HHWind to framework -- some bits remaining in the first three routines.???
-   +  HHWind test routine
-   +  convert FFWind to framework just like HHWind.
-   +  FFWind test routine (make new)?
-   -- Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
    -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
-   -- Make the Driver work with paraprint
-   -- Setup regression test with HHWind
    -- do the other modules
+   -- Make the Driver work with paraprint
    -- merge all the wind file types together (if possible)
    -- write documentation on use
 
+
+Things to add sometime:
+   -  Add information in the Parameters about how many time steps there are, bounds on time
+   -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
 
 
 Things to remember to change:
@@ -32,10 +26,10 @@ Things to remember to change:
 
 
 -=-=-=-
-FIXME: next, move the InflowWind_Modules_Types info elsewhere (maybe into the library?).
-FIXME: File bug report on the "usefrom" command not including the source.
-FIXME: transpose the velocity and position arrays
 -=-=-=-
+
+Architectural question:
+   Should we use a single common set of types in all sub-modules, or does each module keep its own types?
 
 
 
@@ -51,7 +45,8 @@ Module:
       -  Get CALL HHWind_CalcOutput working correctly
       -  Get the FFWind calls to work correctly
 
-
+   Completed:
+      +  Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
 
 Driver:
    TODO:
@@ -87,12 +82,11 @@ IfW_FFWind.f90
       +  make CalcOutput routine
       +  Change all WrScr calls to ErrMsg concatenations
       +  remove the global variables
+      +  FFWind test routine
 
 
 IfW_HHWind.f90
    TODO:
-      -  Add information in the Parameters about how many time steps there are, bounds on time
-      -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
       -  Add in tests of the empty state routines
 
    COMPLETED:
@@ -103,4 +97,6 @@ IfW_HHWind.f90
       +  Err handling in Init
       +  Err handling in End
       +  Add the other modular framework required routines into the file.
+      +  HHWind test routine
+      +  Setup regression test with HHWind
    
