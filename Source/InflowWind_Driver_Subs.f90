@@ -41,6 +41,9 @@ SUBROUTINE DispHelpText( ErrStat, ErrMsg )
       ! Error Handling
    INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
    CHARACTER(1024),                    INTENT(  OUT)  :: ErrMsg
+   
+   ErrStat  =   ErrID_None
+   ErrMsg   =   ''
 
 
       !  Statement about usage

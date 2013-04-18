@@ -3,22 +3,22 @@ Ran into an unexpected problem with the allocation of the arrays. When we make t
 
 Anyhow, now I need to figure out how to allocate the receiving array also.
 
-REVISION:
-After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code.
-
 
 
 New plan:
-   -- Interface layer --> modify IfW_Module to handle the revisions to HHWind
+   -- Interface layer --> modify IfW_Module to handle the revisions to HHWind and FFWind
    -- do the other modules
    -- Make the Driver work with paraprint
    -- merge all the wind file types together (if possible)
    -- write documentation on use
 
 
-Things to add sometime:
+Things to add/decide on sometime:
    -  Add information in the Parameters about how many time steps there are, bounds on time
    -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
+   -  In the driver, add some help info with the -h flag.
+   -  In the driver, add some additional info with the -v for verbose flag
+   -  What should I do with the InflowWind_Module_Types --> specifies file types numbering scheme.
 
 
 Things to remember to change:
@@ -44,6 +44,7 @@ Module:
       -  Get CALL HHWind_End working correctly
       -  Get CALL HHWind_CalcOutput working correctly
       -  Get the FFWind calls to work correctly
+      -  set defaults in FFWind and HHWind in the Init routine for all INTENT(OUT)
 
    Completed:
       +  Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
@@ -52,6 +53,14 @@ Driver:
    TODO:
       -  Make sure that HHWind works correctly
       -  Make sure that FFWind works correctly
+      -  Add in
+
+
+Test Programs:
+   TODO:
+      -  change test programs to allow for input filenames -> default to the specified if name not given (with warning)    ***NEXT***
+      -  Add in tests of the empty state routines
+
 
 
 
@@ -87,7 +96,6 @@ IfW_FFWind.f90
 
 IfW_HHWind.f90
    TODO:
-      -  Add in tests of the empty state routines
 
    COMPLETED:
       +  properly allocate array for the output
@@ -99,4 +107,9 @@ IfW_HHWind.f90
       +  Add the other modular framework required routines into the file.
       +  HHWind test routine
       +  Setup regression test with HHWind
-   
+
+
+-=-=-=-=-=-=-=-=- NOTES -=-=-=-=-=-=-=-=-
+NOTES:
+After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code.
+

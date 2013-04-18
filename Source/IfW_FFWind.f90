@@ -33,7 +33,6 @@ MODULE IfW_FFWind
 !----------------------------------------------------------------------------------------------------
 
    USE                                          NWTC_Library
-   USE                                          InflowWind_Types
    USE                                          IfW_FFWind_Types
 
    IMPLICIT                                     NONE
@@ -140,7 +139,6 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       RETURN
    ELSE
       ErrStat = ErrId_None
-
    ENDIF
 
 
@@ -158,9 +156,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Copy things from the InitData to the ParamData
       !-------------------------------------------------------------------------------------------------
 
-   ParamData%ReferenceHeight  =  InitData%ReferenceHeight
-   ParamData%Width            =  InitData%Width
-   ParamData%WindFileName     =  InitData%WindFileName
+   ParamData%ReferenceHeight  =  InitData%ReferenceHeight       ! Height of the turbine
+   ParamData%Width            =  InitData%Width                 ! width of the wind profile box
+   ParamData%WindFileName     =  InitData%WindFileName          ! Filename of the FF wind file
 
 
       !----------------------------------------------------------------------------------------------

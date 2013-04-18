@@ -43,7 +43,7 @@ MODULE IfW_HHWind
 !----------------------------------------------------------------------------------------------------
 
    USE                                       NWTC_Library
-   USE                                       InflowWind_Types
+!   USE                                       InflowWind_Types
    USE                                       IfW_HHWind_Types
 
    IMPLICIT                                  NONE

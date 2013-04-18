@@ -101,7 +101,7 @@ PROGRAM InflowWind_Driver
 
 !FIXME
       ! Set the beep to false. This is a temporary workaround since the beepcode on linux may be incorrectly set. This may also be an artifact of my current development environment.
-   Beep = .FALSE.
+!   Beep = .FALSE.
 
       ! Just in case we end up reading a wind file that has no ranges (steady wind for example)
    NumXSteps = 0
@@ -293,6 +293,7 @@ PROGRAM InflowWind_Driver
    !     -- should get back a matrix of wind velocities at each coordinate
    !     -- Assemble the large matrix with all the small pieces
 
+
       ! Loop over the whole time of interest
 
    DO TStep = 0, NumTSteps
@@ -324,6 +325,8 @@ PROGRAM InflowWind_Driver
 
 
          ! Copy the data into the array to pass in (this allocates the array)
+      CALL AllocAry( IfW_InputData%Position, SIZE(Position, 1), SIZE(Position, 2), &
+                     'Position array in IfW_InputData', ErrStat, ErrMsg )
       IfW_InputData%Position = Position
 
          ! Allocate the IfW_OutputData%Velocity array to match the Input one
@@ -362,7 +365,7 @@ PROGRAM InflowWind_Driver
    !--------------------------------------------------------------------------------------------------------------------------------
    !-=-=- Calculate OtherStates -=-=-
    !--------------------------------------------------------------------------------------------------------------------------------
-   !  Iff we add in some averaging / TI / mean etc, it would be in OtherStates
+   !  Iff we add in some averaging / TI / mean etc, it would be in OtherStates. Right now it doesn't look like we need to do that.
    !     -- Test that here.
 
 
