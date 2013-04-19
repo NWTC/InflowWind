@@ -45,6 +45,8 @@ Module:
       -  Get CALL HHWind_CalcOutput working correctly
       -  Get the FFWind calls to work correctly
       -  set defaults in FFWind and HHWind in the Init routine for all INTENT(OUT)
+      -  Make HHWind_End and FFWind_End use the DestroyContState/DestroyDiscState/DestroyConstrSttae/DestroyOtherState/DestroyOutput/DestroyParam/DestroyInput routines created by the registry. (see example)
+      -  Add in correct returns for unused routines (CalcConstrStateResiduals etc) -- see example.
 
    Completed:
       +  Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
