@@ -2458,17 +2458,60 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
    ErrMsg   = ''
    ErrStat  = ErrID_None
 
-   IF ( ALLOCATED( OtherStates%FFData  ) )   DEALLOCATE( OtherStates%FFData,  STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_FFWind_End: could not deallocate FFData array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+
+      ! Destroy the input data
+
+   CALL IfW_FFWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED( OtherStates%FFTower ) )   DEALLOCATE( OtherStates%FFTower, STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_FFWind_End: could not deallocate FFTower array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+
+      ! Destroy parameter data
+
+   CALL IfW_FFWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
+
+
+      ! Destroy the state data
+
+   CALL IfW_FFWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   ENDIF
+
+   CALL IfW_FFWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   ENDIF
+
+   CALL IfW_FFWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   ENDIF
+
+   CALL IfW_FFWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   ENDIF
+
+
+      ! Destroy the output data
+
+   CALL IfW_FFWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
+   ENDIF
+
 
       ! flag as uninitialized
    ParamData%Initialized = .FALSE.

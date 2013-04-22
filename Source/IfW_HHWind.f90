@@ -670,58 +670,62 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
    ErrStat  = ErrID_None
 
 
-      ! Deallocate all arrays
+      ! Destroy the input data
 
-   IF ( ALLOCATED(OtherStates%Tdata  ) ) DEALLOCATE( OtherStates%Tdata,   STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate Tdata array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   CALL IfW_HHWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%Delta  ) ) DEALLOCATE( OtherStates%Delta,   STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate Delta array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+
+      ! Destroy parameter data
+
+   CALL IfW_HHWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%V      ) ) DEALLOCATE( OtherStates%V,       STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate V array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+
+      ! Destroy the state data
+
+   CALL IfW_HHWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%VZ     ) ) DEALLOCATE( OtherStates%VZ,      STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VZ array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   CALL IfW_HHWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%HShr   ) ) DEALLOCATE( OtherStates%HShr,    STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate HShr array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   CALL IfW_HHWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%VShr   ) ) DEALLOCATE( OtherStates%VShr,    STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VShr array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+   CALL IfW_HHWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
-   IF ( ALLOCATED(OtherStates%VLinShr) ) DEALLOCATE( OtherStates%VLinShr, STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VLinShr array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
-   ENDIF
 
-   IF ( ALLOCATED(OtherStates%VGust  ) ) DEALLOCATE( OtherStates%VGust,   STAT=TmpErrStat )
-   IF ( TmpErrStat /=0 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//NewLine//'IfW_HHWind_End: could not deallocate VGust array'
-      ErrStat  = MAX(ErrStat, ErrID_Severe)
+      ! Destroy the output data
+
+   CALL IfW_HHWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
+   If (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(ErrStat,TmpErrStat)
+      ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    ENDIF
 
 
       ! reset time index so we know the module is no longer initialized
+
    OtherStates%TimeIndex   = 0
    ParamData%Initialized   = .FALSE.
 

@@ -45,11 +45,14 @@ Module:
       -  Get CALL HHWind_CalcOutput working correctly
       -  Get the FFWind calls to work correctly
       -  set defaults in FFWind and HHWind in the Init routine for all INTENT(OUT)
-      -  Make HHWind_End and FFWind_End use the DestroyContState/DestroyDiscState/DestroyConstrSttae/DestroyOtherState/DestroyOutput/DestroyParam/DestroyInput routines created by the registry. (see example)
       -  Add in correct returns for unused routines (CalcConstrStateResiduals etc) -- see example.
+      -  Change how newline is handled -> add to the end of the ErrMsg, not when appending 
+         -->   TRIM(ErrMsg)//Newline//TRIM(TmpErrMsg) becomes TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
+         -->   Verify that this actually works as intended (Extra lines, or does the Newline get chopped by TRIM?)
 
    Completed:
       +  Put the InflowWind_Module_Types.f90 contents into something else (standard registry type perhaps?)
+      +  Make HHWind_End and FFWind_End use the DestroyContState/DestroyDiscState/DestroyConstrSttae/DestroyOtherState/DestroyOutput/DestroyParam/DestroyInput routines created by the registry. (see example)
 
 Driver:
    TODO:
