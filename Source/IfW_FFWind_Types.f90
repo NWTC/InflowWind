@@ -1,5 +1,5 @@
 !STARTOFREGISTRYGENERATEDFILE './IfW_FFWind_Types.f90'
-!
+
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
@@ -85,7 +85,7 @@ IMPLICIT NONE
 CONTAINS
  SUBROUTINE IfW_FFWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
-  TYPE(IfW_FFWind_initinputtype), INTENT(  OUT) :: DstInitInputData
+  TYPE(IfW_FFWind_initinputtype), INTENT(INOUT) :: DstInitInputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -154,7 +154,7 @@ CONTAINS
   Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackInitInput
 
- SUBROUTINE IfW_FFWind_UnpackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -194,11 +194,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackInitInput
+ END SUBROUTINE IfW_FFWind_UnPackInitInput
 
  SUBROUTINE IfW_FFWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
-  TYPE(IfW_FFWind_otherstatetype), INTENT(  OUT) :: DstOtherStateData
+  TYPE(IfW_FFWind_otherstatetype), INTENT(INOUT) :: DstOtherStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -208,17 +208,21 @@ CONTAINS
   ErrStat = ErrID_None
   ErrMsg  = ""
   DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
+IF ( ALLOCATED( SrcOtherStateData%FFData ) ) THEN
   i1 = SIZE(SrcOtherStateData%FFData,1)
   i2 = SIZE(SrcOtherStateData%FFData,2)
   i3 = SIZE(SrcOtherStateData%FFData,3)
   i4 = SIZE(SrcOtherStateData%FFData,4)
   IF (.NOT.ALLOCATED(DstOtherStateData%FFData)) ALLOCATE(DstOtherStateData%FFData(i1,i2,i3,i4))
   DstOtherStateData%FFData = SrcOtherStateData%FFData
+ENDIF
+IF ( ALLOCATED( SrcOtherStateData%FFTower ) ) THEN
   i1 = SIZE(SrcOtherStateData%FFTower,1)
   i2 = SIZE(SrcOtherStateData%FFTower,2)
   i3 = SIZE(SrcOtherStateData%FFTower,3)
   IF (.NOT.ALLOCATED(DstOtherStateData%FFTower)) ALLOCATE(DstOtherStateData%FFTower(i1,i2,i3))
   DstOtherStateData%FFTower = SrcOtherStateData%FFTower
+ENDIF
   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
   DstOtherStateData%FFDTime = SrcOtherStateData%FFDTime
   DstOtherStateData%FFRate = SrcOtherStateData%FFRate
@@ -357,7 +361,7 @@ CONTAINS
   Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackOtherState
 
- SUBROUTINE IfW_FFWind_UnpackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -443,11 +447,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackOtherState
+ END SUBROUTINE IfW_FFWind_UnPackOtherState
 
  SUBROUTINE IfW_FFWind_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_parametertype), INTENT(INOUT) :: SrcParamData
-  TYPE(IfW_FFWind_parametertype), INTENT(  OUT) :: DstParamData
+  TYPE(IfW_FFWind_parametertype), INTENT(INOUT) :: DstParamData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -523,7 +527,7 @@ CONTAINS
   Db_Xferred   = Db_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackParam
 
- SUBROUTINE IfW_FFWind_UnpackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -565,11 +569,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackParam
+ END SUBROUTINE IfW_FFWind_UnPackParam
 
  SUBROUTINE IfW_FFWind_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_inputtype), INTENT(INOUT) :: SrcInputData
-  TYPE(IfW_FFWind_inputtype), INTENT(  OUT) :: DstInputData
+  TYPE(IfW_FFWind_inputtype), INTENT(INOUT) :: DstInputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -578,10 +582,12 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+IF ( ALLOCATED( SrcInputData%Position ) ) THEN
   i1 = SIZE(SrcInputData%Position,1)
   i2 = SIZE(SrcInputData%Position,2)
   IF (.NOT.ALLOCATED(DstInputData%Position)) ALLOCATE(DstInputData%Position(i1,i2))
   DstInputData%Position = SrcInputData%Position
+ENDIF
  END SUBROUTINE IfW_FFWind_CopyInput
 
  SUBROUTINE IfW_FFWind_DestroyInput( InputData, ErrStat, ErrMsg )
@@ -639,7 +645,7 @@ CONTAINS
   ENDIF
  END SUBROUTINE IfW_FFWind_PackInput
 
- SUBROUTINE IfW_FFWind_UnpackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -681,11 +687,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackInput
+ END SUBROUTINE IfW_FFWind_UnPackInput
 
  SUBROUTINE IfW_FFWind_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_outputtype), INTENT(INOUT) :: SrcOutputData
-  TYPE(IfW_FFWind_outputtype), INTENT(  OUT) :: DstOutputData
+  TYPE(IfW_FFWind_outputtype), INTENT(INOUT) :: DstOutputData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -694,10 +700,12 @@ CONTAINS
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+IF ( ALLOCATED( SrcOutputData%Velocity ) ) THEN
   i1 = SIZE(SrcOutputData%Velocity,1)
   i2 = SIZE(SrcOutputData%Velocity,2)
   IF (.NOT.ALLOCATED(DstOutputData%Velocity)) ALLOCATE(DstOutputData%Velocity(i1,i2))
   DstOutputData%Velocity = SrcOutputData%Velocity
+ENDIF
  END SUBROUTINE IfW_FFWind_CopyOutput
 
  SUBROUTINE IfW_FFWind_DestroyOutput( OutputData, ErrStat, ErrMsg )
@@ -755,7 +763,7 @@ CONTAINS
   ENDIF
  END SUBROUTINE IfW_FFWind_PackOutput
 
- SUBROUTINE IfW_FFWind_UnpackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -797,11 +805,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackOutput
+ END SUBROUTINE IfW_FFWind_UnPackOutput
 
  SUBROUTINE IfW_FFWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_continuousstatetype), INTENT(INOUT) :: SrcContStateData
-  TYPE(IfW_FFWind_continuousstatetype), INTENT(  OUT) :: DstContStateData
+  TYPE(IfW_FFWind_continuousstatetype), INTENT(INOUT) :: DstContStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -865,7 +873,7 @@ CONTAINS
   Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackContState
 
- SUBROUTINE IfW_FFWind_UnpackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -903,11 +911,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackContState
+ END SUBROUTINE IfW_FFWind_UnPackContState
 
  SUBROUTINE IfW_FFWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
-  TYPE(IfW_FFWind_discretestatetype), INTENT(  OUT) :: DstDiscStateData
+  TYPE(IfW_FFWind_discretestatetype), INTENT(INOUT) :: DstDiscStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -971,7 +979,7 @@ CONTAINS
   Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackDiscState
 
- SUBROUTINE IfW_FFWind_UnpackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -1009,11 +1017,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackDiscState
+ END SUBROUTINE IfW_FFWind_UnPackDiscState
 
  SUBROUTINE IfW_FFWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
-  TYPE(IfW_FFWind_constraintstatetype), INTENT(  OUT) :: DstConstrStateData
+  TYPE(IfW_FFWind_constraintstatetype), INTENT(INOUT) :: DstConstrStateData
   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -1077,7 +1085,7 @@ CONTAINS
   Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_FFWind_PackConstrState
 
- SUBROUTINE IfW_FFWind_UnpackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_UnPackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
@@ -1115,7 +1123,7 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_UnpackConstrState
+ END SUBROUTINE IfW_FFWind_UnPackConstrState
 
  SUBROUTINE IfW_FFWind_Pack( Re_RetAry, Db_RetAry, Int_RetAry, &
                      InData, ParamData, ContStateData, DiscStateData, &
@@ -1436,7 +1444,7 @@ CONTAINS
   Int_Xferred  = Int_Xferred - 1
  END SUBROUTINE IfW_FFWind_Pack
 
- SUBROUTINE IfW_FFWind_Unpack( Re_RetAry, Db_RetAry, Int_RetAry, &
+ SUBROUTINE IfW_FFWind_UnPack( Re_RetAry, Db_RetAry, Int_RetAry, &
                      InData, ParamData, ContStateData, DiscStateData, &
                      ConstrStateData, OtherStateData, OutData, ErrStat, ErrMsg )
   TYPE(IfW_FFWind_InputType),           INTENT(INOUT) :: InData
@@ -1471,7 +1479,7 @@ CONTAINS
   Re_Xferred  = 1
   Db_Xferred  = 1
   Int_Xferred  = 1
-    ! Unpack Input
+    ! UnPack Input
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1488,11 +1496,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackInput(Re_Ary,Db_Ary,Int_Ary,InData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackInput(Re_Ary,Db_Ary,Int_Ary,InData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack Param
+    ! UnPack Param
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1509,11 +1517,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackParam(Re_Ary,Db_Ary,Int_Ary,ParamData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackParam(Re_Ary,Db_Ary,Int_Ary,ParamData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack ContState
+    ! UnPack ContState
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1530,11 +1538,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackContState(Re_Ary,Db_Ary,Int_Ary,ContStateData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackContState(Re_Ary,Db_Ary,Int_Ary,ContStateData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack DiscState
+    ! UnPack DiscState
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1551,11 +1559,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackDiscState(Re_Ary,Db_Ary,Int_Ary,DiscStateData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackDiscState(Re_Ary,Db_Ary,Int_Ary,DiscStateData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack ConstrState
+    ! UnPack ConstrState
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1572,11 +1580,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackConstrState(Re_Ary,Db_Ary,Int_Ary,ConstrStateData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackConstrState(Re_Ary,Db_Ary,Int_Ary,ConstrStateData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack OtherState
+    ! UnPack OtherState
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1593,11 +1601,11 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackOtherState(Re_Ary,Db_Ary,Int_Ary,OtherStateData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackOtherState(Re_Ary,Db_Ary,Int_Ary,OtherStateData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
-    ! Unpack Output
+    ! UnPack Output
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
@@ -1614,17 +1622,17 @@ CONTAINS
     Int_Ary = Int_RetAry(Int_Xferred:Int_Xferred+SIZE(Int_Ary)-1)
     Int_Xferred = Int_Xferred + SIZE( Int_Ary )
   ENDIF
-  CALL IfW_FFWind_UnpackOutput(Re_Ary,Db_Ary,Int_Ary,OutData,ErrStat2,ErrMsg2)
+  CALL IfW_FFWind_UnPackOutput(Re_Ary,Db_Ary,Int_Ary,OutData,ErrStat2,ErrMsg2)
   IF ( ALLOCATED( Re_Ary ) )  DEALLOCATE(Re_Ary)
   IF ( ALLOCATED( Db_Ary ) )  DEALLOCATE(Db_Ary)
   IF ( ALLOCATED( Int_Ary ) )  DEALLOCATE(Int_Ary)
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_FFWind_Unpack
+ END SUBROUTINE IfW_FFWind_UnPack
 
 
- SUBROUTINE IfW_FFWind_Input_ExtrapInterp(u, t, u_out, t_out, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_Input_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
 !
 ! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
 ! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
@@ -1640,32 +1648,38 @@ CONTAINS
 !
 !..................................................................................................................................
 
- TYPE(IfW_FFWind_inputtype), INTENT(IN   )  :: u(:)      ! Inputs at t1 > t2 > t3
- REAL(DbKi),         INTENT(IN   )  :: t(:)      ! Times associated with the inputs
+ TYPE(IfW_FFWind_inputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
  TYPE(IfW_FFWind_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
- REAL(DbKi),         INTENT(IN   )  :: t_out     ! time to be extrap/interp'd to
+ REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
    ! local variables
+ REAL(DbKi) :: t(SIZE(tin))    ! Times associated with the inputs
+ REAL(DbKi) :: t_out           ! Time to which to be extrap/interpd
+ TYPE(MeshType) :: tmpmesh
  INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
- REAL(ReKi)                                 :: a0       ! temporary for extrapolaton/interpolation
- REAL(ReKi)                                 :: b0       ! temporary for extrapolation/interpolation
- REAL(ReKi)                                 :: c0       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: a1       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: a2       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: a3       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: a4       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: a5       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr1       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md1       ! temporary for extrapolaton/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md3       ! temporary for extrapolation/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi1       ! temporary for extrapolaton/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi2       ! temporary for extrapolation/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi3       ! temporary for extrapolation/interpolation
+ REAL(DbKi)                                 :: b0       ! temporary for extrapolation/interpolation
+ REAL(DbKi)                                 :: c0       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
  INTEGER                                    :: i01    ! dim1 level 0 counter variable for arrays of ddts
  INTEGER                                    :: i11    ! dim1 level 1 counter variable for arrays of ddts
  INTEGER                                    :: i21    ! dim1 level 2 counter variable for arrays of ddts
@@ -1720,12 +1734,16 @@ CONTAINS
     ! Initialize ErrStat
  ErrStat = ErrID_None
  ErrMsg  = ""
+    ! we're subtract a constant from the times to resolve some 
+    ! numerical issues when t gets large (and to simplify the equations)
+ t = tin - tin(1)
+ t_out = tin_out - tin(1)
+
  if ( size(t) .ne. size(u)) then
     ErrStat = ErrID_Fatal
     ErrMsg = ' Error in IfW_FFWind_Input_ExtrapInterp: size(t) must equal size(u) '
     RETURN
  endif
-
  if (size(u) .gt. 3) then
     ErrStat = ErrID_Fatal
     ErrMsg  = ' Error in IfW_FFWind_Input_ExtrapInterp: size(u) must be less than 4 '
@@ -1740,13 +1758,10 @@ CONTAINS
     ErrMsg  = ' Error in IfW_FFWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
-  ALLOCATE(a2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  a2 = -((t(2)*u(1)%Position - t(1)*u(2)%Position)/(t(1) - t(2)))
-  b2 = -((-u(1)%Position + u(2)%Position)/(t(1) - t(2)))
-  u_out%Position = a2 + b2 * t_out
-  DEALLOCATE(a2)
+  b2 = -(u(1)%Position - u(2)%Position)/t(2)
+  u_out%Position = u(1)%Position + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
  ELSE IF ( order .eq. 2 ) THEN
@@ -1765,22 +1780,11 @@ CONTAINS
     ErrMsg  = ' Error in IfW_FFWind_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
-  ALLOCATE(a2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  a2 = (t(1)*t(3)*(-t(1) + t(3))*u(2)%Position &
-      + t(2)**2*(t(3)*u(1)%Position - t(1)*u(3)%Position)        &
-      + t(2)*(-(t(3)**2*u(1)%Position) + t(1)**2*u(3)%Position))                        &
-      / ((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
-  b2 = (t(3)**2*(u(1)%Position - u(2)%Position) &
-      + t(1)**2*(u(2)%Position - u(3)%Position) + t(2)**2*(-u(1)%Position &
-      + u(3)%Position))/((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))                  
-  c2 = (t(3)*(-u(1)%Position + u(2)%Position) &
-      + t(2)*(u(1)%Position - u(3)%Position) &
-      + t(1)*(-u(2)%Position + u(3)%Position))  &
-      /((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
-  u_out%Position = a2 + b2 * t_out + c2 * t_out**2
-  DEALLOCATE(a2)
+  b2 = (t(3)**2*(u(1)%Position - u(2)%Position) + t(2)**2*(-u(1)%Position + u(3)%Position))/(t(2)*t(3)*(t(2) - t(3)))
+  c2 = ( (t(2)-t(3))*u(1)%Position + t(3)*u(2)%Position - t(2)*u(3)%Position ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%Position = u(1)%Position + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
  ELSE 
@@ -1791,7 +1795,7 @@ CONTAINS
  END SUBROUTINE IfW_FFWind_Input_ExtrapInterp
 
 
- SUBROUTINE IfW_FFWind_Output_ExtrapInterp(u, t, u_out, t_out, ErrStat, ErrMsg )
+ SUBROUTINE IfW_FFWind_Output_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
 !
 ! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
 ! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
@@ -1807,32 +1811,38 @@ CONTAINS
 !
 !..................................................................................................................................
 
- TYPE(IfW_FFWind_outputtype), INTENT(IN   )  :: u(:)      ! Inputs at t1 > t2 > t3
- REAL(DbKi),         INTENT(IN   )  :: t(:)      ! Times associated with the inputs
+ TYPE(IfW_FFWind_outputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
+ REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
  TYPE(IfW_FFWind_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
- REAL(DbKi),         INTENT(IN   )  :: t_out     ! time to be extrap/interp'd to
+ REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
    ! local variables
+ REAL(DbKi) :: t(SIZE(tin))    ! Times associated with the inputs
+ REAL(DbKi) :: t_out           ! Time to which to be extrap/interpd
+ TYPE(MeshType) :: tmpmesh
  INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
- REAL(ReKi)                                 :: a0       ! temporary for extrapolaton/interpolation
- REAL(ReKi)                                 :: b0       ! temporary for extrapolation/interpolation
- REAL(ReKi)                                 :: c0       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: a1       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: a2       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: a3       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: a4       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: a5       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr1       ! temporary for extrapolaton/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr2       ! temporary for extrapolation/interpolation
+ REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md1       ! temporary for extrapolaton/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md3       ! temporary for extrapolation/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi1       ! temporary for extrapolaton/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi2       ! temporary for extrapolation/interpolation
+ INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi3       ! temporary for extrapolation/interpolation
+ REAL(DbKi)                                 :: b0       ! temporary for extrapolation/interpolation
+ REAL(DbKi)                                 :: c0       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: c1       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:)      :: b2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:)      :: c2       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:)    :: b3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:)    :: c3       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: b4       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:)  :: c4       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: b5       ! temporary for extrapolation/interpolation
+ REAL(DbKi),ALLOCATABLE,DIMENSION(:,:,:,:,:):: c5       ! temporary for extrapolation/interpolation
  INTEGER                                    :: i01    ! dim1 level 0 counter variable for arrays of ddts
  INTEGER                                    :: i11    ! dim1 level 1 counter variable for arrays of ddts
  INTEGER                                    :: i21    ! dim1 level 2 counter variable for arrays of ddts
@@ -1887,12 +1897,16 @@ CONTAINS
     ! Initialize ErrStat
  ErrStat = ErrID_None
  ErrMsg  = ""
+    ! we're subtract a constant from the times to resolve some 
+    ! numerical issues when t gets large (and to simplify the equations)
+ t = tin - tin(1)
+ t_out = tin_out - tin(1)
+
  if ( size(t) .ne. size(u)) then
     ErrStat = ErrID_Fatal
     ErrMsg = ' Error in IfW_FFWind_Output_ExtrapInterp: size(t) must equal size(u) '
     RETURN
  endif
-
  if (size(u) .gt. 3) then
     ErrStat = ErrID_Fatal
     ErrMsg  = ' Error in IfW_FFWind_Output_ExtrapInterp: size(u) must be less than 4 '
@@ -1907,13 +1921,10 @@ CONTAINS
     ErrMsg  = ' Error in IfW_FFWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
-  ALLOCATE(a2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  a2 = -((t(2)*u(1)%Velocity - t(1)*u(2)%Velocity)/(t(1) - t(2)))
-  b2 = -((-u(1)%Velocity + u(2)%Velocity)/(t(1) - t(2)))
-  u_out%Velocity = a2 + b2 * t_out
-  DEALLOCATE(a2)
+  b2 = -(u(1)%Velocity - u(2)%Velocity)/t(2)
+  u_out%Velocity = u(1)%Velocity + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
  ELSE IF ( order .eq. 2 ) THEN
@@ -1932,22 +1943,11 @@ CONTAINS
     ErrMsg  = ' Error in IfW_FFWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
-  ALLOCATE(a2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  a2 = (t(1)*t(3)*(-t(1) + t(3))*u(2)%Velocity &
-      + t(2)**2*(t(3)*u(1)%Velocity - t(1)*u(3)%Velocity)        &
-      + t(2)*(-(t(3)**2*u(1)%Velocity) + t(1)**2*u(3)%Velocity))                        &
-      / ((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
-  b2 = (t(3)**2*(u(1)%Velocity - u(2)%Velocity) &
-      + t(1)**2*(u(2)%Velocity - u(3)%Velocity) + t(2)**2*(-u(1)%Velocity &
-      + u(3)%Velocity))/((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))                  
-  c2 = (t(3)*(-u(1)%Velocity + u(2)%Velocity) &
-      + t(2)*(u(1)%Velocity - u(3)%Velocity) &
-      + t(1)*(-u(2)%Velocity + u(3)%Velocity))  &
-      /((t(1) - t(2))*(t(1) - t(3))*(t(2) - t(3)))
-  u_out%Velocity = a2 + b2 * t_out + c2 * t_out**2
-  DEALLOCATE(a2)
+  b2 = (t(3)**2*(u(1)%Velocity - u(2)%Velocity) + t(2)**2*(-u(1)%Velocity + u(3)%Velocity))/(t(2)*t(3)*(t(2) - t(3)))
+  c2 = ( (t(2)-t(3))*u(1)%Velocity + t(3)*u(2)%Velocity - t(2)*u(3)%Velocity ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%Velocity = u(1)%Velocity + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
  ELSE 

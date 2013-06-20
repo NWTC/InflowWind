@@ -25,7 +25,7 @@ FC = gfortran
 
 #architecture
    #32 or 64
-BITS:=32
+BITS:=64
    #lin or win
 OS:=lin
 
@@ -39,9 +39,7 @@ DEST_DIR := ../_compiled--linux
 
 #Location of source files for the NWTC Library
 LIB_DIR := \
-   ../../../../../NWTC_Library/branches/BJonkman/source
-
-#	../../../../../NWTC_Library/trunk/source
+   ../../../../../NWTC_Library/trunk/source
 
 #Name of the executable
 HHExecutable_NAME := HHWind_Test.$(OS)$(BITS)
