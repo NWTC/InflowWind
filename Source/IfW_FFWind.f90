@@ -108,6 +108,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    REAL(ReKi)                                            :: UBar
    REAL(ReKi)                                            :: ZCenter
 
+!FIXME: change DumInt and Dum_Int2 into something useful.
    INTEGER(B2Ki)                                         :: Dum_Int2
    INTEGER(IntKi)                                        :: DumInt
    INTEGER(IntKi)                                        :: I
@@ -127,6 +128,26 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
    TmpErrMsg   = ''
    TmpErrStat  = ErrID_None
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Set values for unused output types.
+      !     This is just to keep the compiler from complaining (not really necessary).
+      !-------------------------------------------------------------------------------------------------
+
+      ! Allocate the empty position array.
+   CALL AllocAry( InputGuess%Position, 3, 1, &
+                  'Empty position array in initialization.', ErrStat, ErrMsg )
+   InputGuess%Position(:,1)      = 0.0
+
+      ! Allocate the empty velocity array.
+   CALL AllocAry( OutData%Velocity, 3, 1, &
+                  'Empty velocity array in initialization.', ErrStat, ErrMsg )
+   OutData%Velocity(:,1)         = 0.0
+
+   ContStates%DummyContState     = 0.0
+   DiscStates%DummyDiscState     = 0.0
+   ConstrStates%DummyConstrState = 0.0
 
 
       !-------------------------------------------------------------------------------------------------
@@ -171,7 +192,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ErrMsg   = TRIM(ErrMsg)//NewLine//TRIM(TmpErrMsg)
    IF ( ErrStat >= AbortErrLev ) RETURN
 
-!FIXME: convert READ to the library ones
+      !FIXME: convert READ to the library ones -- no B2Ki integer support though. Not possible right now.
    READ ( OtherStates%UnitWind, IOSTAT=TmpErrStat )  Dum_Int2
    CLOSE( OtherStates%UnitWind )
 
@@ -1723,7 +1744,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          ! Passed Variables:
 
       TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! unit number for the wind file
-!FIXME: put this in a type
+!FIXME: put this in a type -- should be in ParamDataType
       CHARACTER(*),                       INTENT(IN   )  :: WindFile       ! name of the binary TurbSim file
       INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat        ! error status return value (0=no error; non-zero is error)
       CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg         ! a message for errors that occur

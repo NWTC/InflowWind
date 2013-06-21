@@ -22,7 +22,7 @@ typedef  ^                       ^                       ReKi     Width         
 
 
 # Define any data that are not considered actual states here:
-#   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
+#   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output
 #   at a given time, etc.)
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
 typedef  ^                       ^                       ReKi     FFData            ::::  -     -     "Array of FF data"                                             -
@@ -71,6 +71,6 @@ typedef  ^                    OutputType                 ReKi     Velocity      
 
 
 # ..... States not used by this module ...................................................................................................................
-typedef  ^                       ContinuousStateType     ReKi     DummyContState    -     -     -     "Remove this variable if you have continuous states"           -
-typedef  ^                       DiscreteStateType       ReKi     DummyDiscState    -     -     -     "Remove this variable if you have discrete states"             -
-typedef  ^                       ConstraintStateType     ReKi     DummyConstrState  -     -     -     "Remove this variable if you have constraint states"           -
+typedef  ^                    ContinuousStateType        ReKi     DummyContState    -     -     -     "Remove this variable if you have continuous states"           -
+typedef  ^                    DiscreteStateType          ReKi     DummyDiscState    -     -     -     "Remove this variable if you have discrete states"             -
+typedef  ^                    ConstraintStateType        ReKi     DummyConstrState  -     -     -     "Remove this variable if you have constraint states"           -

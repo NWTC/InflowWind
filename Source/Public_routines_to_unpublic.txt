@@ -7,8 +7,6 @@ FD_GetValue                FDWind.f90
 FD_GetWindSpeed            FDWind.f90
 FD_Init                    FDWind.f90
 FD_Terminate               FDWind.f90
-   FF_GetValue                FFWind.f90
-   FF_GetWindSpeed            FFWind.f90
    FF_Init                    FFWind.f90
    FF_Terminate               FFWind.f90
 HW_GetValue                HAWCWind.f90
@@ -22,27 +20,27 @@ UsrWnd_Terminate           UserWind.f90
 
 
 ##Instances of SAVE that must be removed.
-CTWind.f90:66:                INTEGER, SAVE                 :: TimeIndx  = 0                              
-FDWind.f90:35:                REAL(ReKi), SAVE              :: PrevTime                                   
+CTWind.f90:66:                INTEGER, SAVE                 :: TimeIndx  = 0
+FDWind.f90:35:                REAL(ReKi), SAVE              :: PrevTime
 FDWind.f90:80:                LOGICAL, SAVE                 :: Initialized = .FALSE.
-   FFWind.f90:47:                LOGICAL, SAVE                 :: Initialized = .FALSE.      
-HAWCWind.f90:40:              LOGICAL, SAVE                 :: Initialized = .FALSE.      
-UserWind.f90:15:              LOGICAL, SAVE                 :: Initialized = .FALSE.         
+   FFWind.f90:47:                LOGICAL, SAVE                 :: Initialized = .FALSE.
+HAWCWind.f90:40:              LOGICAL, SAVE                 :: Initialized = .FALSE.
+UserWind.f90:15:              LOGICAL, SAVE                 :: Initialized = .FALSE.
 
 
 ##Implied SAVE uses that must be removed.
-CTWind.f90:27:                INTEGER, PARAMETER            :: NumComps  = 3                              
-FDWind.f90:61:                INTEGER, PARAMETER            :: Num4DtD = 2                                
-   FFWind.f90:48:                LOGICAL                       :: Periodic    = .FALSE.      
-   FFWind.f90:935:               INTEGER, PARAMETER            :: NumStrings = 6 
-   FFWind.f90:1508:              REAL(ReKi), PARAMETER         :: TOL = 1E-4        
+CTWind.f90:27:                INTEGER, PARAMETER            :: NumComps  = 3
+FDWind.f90:61:                INTEGER, PARAMETER            :: Num4DtD = 2
+   FFWind.f90:48:                LOGICAL                       :: Periodic    = .FALSE.
+   FFWind.f90:935:               INTEGER, PARAMETER            :: NumStrings = 6
+   FFWind.f90:1508:              REAL(ReKi), PARAMETER         :: TOL = 1E-4
    FFWind.f90:1770:              REAL(ReKi), PARAMETER         :: TOL = 1E-3
-   FFWind.f90:1853:              REAL(ReKi),PARAMETER          :: Tol = 1.0E-3      
-HAWCWind.f90:28:              INTEGER, PARAMETER            :: NC = 3                     
-HAWCWind.f90:491:             REAL(ReKi),PARAMETER          :: Tol = 1.0E-3      
+   FFWind.f90:1853:              REAL(ReKi),PARAMETER          :: Tol = 1.0E-3
+HAWCWind.f90:28:              INTEGER, PARAMETER            :: NC = 3
+HAWCWind.f90:491:             REAL(ReKi),PARAMETER          :: Tol = 1.0E-3
 InflowWind_Driver.f90:36:     TYPE( ProgDesc ), PARAMETER   :: ProgInfo = ProgDesc("InflowWind_Driver","v1.00.00a-adp","31-Dec-2012")
-InflowWind_Module.f90:71:     INTEGER(IntKi), PARAMETER     :: DataFormatID = 1           
+InflowWind_Module.f90:71:     INTEGER(IntKi), PARAMETER     :: DataFormatID = 1
 InflowWind_Module.f90:73:     TYPE(ProgDesc), PARAMETER     :: IfW_ProgDesc = ProgDesc( 'InflowWind', 'v1.00.00', '27-Dec-2012' )
-SharedInflowDefs.f90:91:      INTEGER                       :: WindFileType   = 0 
-SharedInflowDefs.f90:100:     LOGICAL                       :: CT_Flag        = .FALSE.   
-SharedInflowDefs.f90:101:     LOGICAL                       :: Initialized    = .FALSE.   
+SharedInflowDefs.f90:91:      INTEGER                       :: WindFileType   = 0
+SharedInflowDefs.f90:100:     LOGICAL                       :: CT_Flag        = .FALSE.
+SharedInflowDefs.f90:101:     LOGICAL                       :: Initialized    = .FALSE.

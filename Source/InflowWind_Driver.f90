@@ -184,7 +184,7 @@ PROGRAM InflowWind_Driver
 
 
       !check that the FFT file can be made, if requested as output
-      ! this section needs to be added at some point.
+      ! FIXME: this feature does not currently exist. It should be written sometime.
 
 
 
