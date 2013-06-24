@@ -43,10 +43,9 @@ Module:
       -  Get CALL HHWind_Init working correctly (passing stuff out)
       -  Get CALL HHWind_End working correctly
       -  Get CALL HHWind_CalcOutput working correctly
-      -  Get the FFWind calls to work correctly
-      -  set defaults in FFWind and HHWind in the Init routine for all INTENT(OUT)
+      -  set empty values in HHWind in the Init routine for all INTENT(OUT)
       -  Add in correct returns for unused routines (CalcConstrStateResiduals etc) -- see example.
-      -  Change how newline is handled -> add to the end of the ErrMsg, not when appending 
+      -  Change how newline is handled -> add to the end of the ErrMsg, not when appending
          -->   TRIM(ErrMsg)//Newline//TRIM(TmpErrMsg) becomes TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
          -->   Verify that this actually works as intended (Extra lines, or does the Newline get chopped by TRIM?)
 
@@ -57,7 +56,6 @@ Module:
 Driver:
    TODO:
       -  Make sure that HHWind works correctly
-      -  Make sure that FFWind works correctly
       -  Add in
 
 
@@ -87,10 +85,11 @@ Documentation:
 
 IfW_FFWind.f90
    TODO:
-      -  Convert the READ statements to the new library ones.
       -  Revisit End routine to make sure that we actually close out all the variables that we need to (reset things)
 
    COMPLETED:
+      +  Convert the READ statements to the new library ones.
+      +  Convert the Allocate statements to the new library ones.
       +  convert Init routines
       +  convert End routine
       +  make CalcOutput routine

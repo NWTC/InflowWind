@@ -41,7 +41,7 @@ SUBROUTINE DispHelpText( ErrStat, ErrMsg )
       ! Error Handling
    INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
    CHARACTER(1024),                    INTENT(  OUT)  :: ErrMsg
-   
+
    ErrStat  =   ErrID_None
    ErrMsg   =   ''
 
@@ -652,63 +652,7 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
 
 END SUBROUTINE RetrieveArgs
 
-!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-   SUBROUTINE AllRAry5 (  Ary, AryDim1, AryDim2, AryDim3, AryDim4, AryDim5, Descr, ErrStat, ErrMsg )
-
-
-      ! This routine allocates a 4-D REAL array.
-
-
-      ! Argument declarations.
-
-   REAL(ReKi),      ALLOCATABLE      :: Ary    (:,:,:,:,:)                         ! Array to be allocated
-
-   INTEGER,      INTENT(IN)          :: AryDim1                                    ! The size of the first dimension of the array.
-   INTEGER,      INTENT(IN)          :: AryDim2                                    ! The size of the second dimension of the array.
-   INTEGER,      INTENT(IN)          :: AryDim3                                    ! The size of the third dimension of the array.
-   INTEGER,      INTENT(IN)          :: AryDim4                                    ! The size of the fourth dimension of the array.
-   INTEGER,      INTENT(IN)          :: AryDim5                                    ! The size of the fourth dimension of the array.
-   CHARACTER(*), INTENT(IN)          :: Descr                                      ! Brief array description.
-   INTEGER,      INTENT(OUT),OPTIONAL:: ErrStat                                    ! Error status; if present, program does not abort on error
-   CHARACTER(*), INTENT(OUT),OPTIONAL:: ErrMsg                                     ! Error message corresponding to ErrStat
-
-
-      ! Local declarations.
-
-   INTEGER                           :: Sttus                                      ! Status of allocation attempt.
-   CHARACTER(200)                    :: Msg                                        ! Temporary string to hold error message
-
-
-
-   ALLOCATE ( Ary(AryDim1,AryDim2,AryDim3,AryDim4,AryDim5) , STAT=Sttus )
-
-   IF ( Sttus /= 0 ) THEN
-      Msg = ' Error allocating memory for the '//TRIM( Descr )//' array.'
-
-      IF ( PRESENT(ErrStat) ) THEN
-         ErrStat = ErrID_Fatal
-         IF ( PRESENT(ErrMsg) ) THEN
-            ErrMsg  = Msg
-         END IF
-      ELSE
-         CALL ProgAbort ( Msg )
-      END IF
-
-   ELSE
-
-      IF ( PRESENT(ErrStat) ) THEN
-         ErrStat = Sttus
-         IF ( PRESENT(ErrMsg) ) THEN
-            ErrMsg  = ''
-         END IF
-      END IF
-
-   END IF
-
-
-
-   RETURN
-  END SUBROUTINE AllRAry5 ! (  Ary, AryDim1, AryDim2, AryDim3, AryDim4, AryDim5, Descr )
+!!-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 !-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-

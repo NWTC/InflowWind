@@ -234,7 +234,6 @@ PROGRAM InflowWind_Driver
 !check the bounds that were read in against those from the file. Reset as appropriate
 
 
-!FIXME: flip the array dimensions if that makes it faster to iterate
       ! Allocate the arrays that hold the entire dataset
    CALL AllocAry( PositionTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Position matrix at timestep', ErrStat, ErrMsg )
    CALL AllocAry( VelocityTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Velocity matrix at timestep', ErrStat, ErrMsg )
@@ -243,9 +242,9 @@ PROGRAM InflowWind_Driver
 !FIXME: remove this and not store the entire thing. Only do each timestep at a time.
       ! Allocate the arrays that hold the current timesteps data
       ! Xindex, Yindex
-   CALL AllRAry5( PositionFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Position matrix (fullset)', &
+   CALL AllocAry( PositionFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Position matrix (fullset)', &
                   ErrStat, ErrMsg )
-   CALL AllRAry5( VelocityFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Velocity matrix (fullset)', &
+   CALL AllocAry( VelocityFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Velocity matrix (fullset)', &
                   ErrStat, ErrMsg )
 
 
