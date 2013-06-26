@@ -142,10 +142,10 @@ PROGRAM InflowWind_Driver
 
       ! Set the input file name and verify it exists
 
-   IfW_InitInputData%WindFileName      = Settings%InputFile
+   IfW_InitInputData%WindFileName      = Settings%WindFileName
 
-   INQUIRE( file=Settings%InputFile, exist=TempFileExist )
-   IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find input file "//TRIM(Settings%InputFile))
+   INQUIRE( file=Settings%WindFileName, exist=TempFileExist )
+   IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find input file "//TRIM(Settings%WindFileName))
 
 
       ! In the event things are not specified on the input line, use the following
@@ -169,12 +169,12 @@ PROGRAM InflowWind_Driver
       ! Sanity check: if an input points file is specified, make sure it actually exists. Open it if specified
 
    IF ( SettingsFlags%PointsFile ) THEN
-      INQUIRE( file=Settings%PointsFile, exist=TempFileExist )
-      IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find the points file "//TRIM(Settings%InputFile))
+      INQUIRE( file=Settings%PointsFileName, exist=TempFileExist )
+      IF ( TempFileExist .eqv. .FALSE. ) CALL ProgAbort( "Cannot find the points file "//TRIM(Settings%PointsFileName))
 
          ! Now open file
       CALL GetNewUnit(    FiUnitPoints )
-      CALL OpenUInfile(   FiUnitPoints,  Settings%PointsFile, ErrStat, ErrMsg )   ! Unformatted input file
+      CALL OpenUInfile(   FiUnitPoints,  Settings%PointsFileName, ErrStat, ErrMsg )   ! Unformatted input file
       IF ( ErrStat >= AbortErrLev ) THEN
          CALL ProgAbort( ErrMsg )
       ELSEIF ( ErrStat /= 0 ) THEN

@@ -72,7 +72,7 @@ MODULE InflowWind_Module
 
    INTEGER(IntKi), PARAMETER            :: DataFormatID = 1     ! Update this value if the data types change (used in IfW_Pack())
 !FIXME: tie this to InitOut as well.
-   TYPE(ProgDesc), PARAMETER            :: IfW_ProgDesc = ProgDesc( 'InflowWind', 'v1.00.00', '27-Dec-2012' )
+   TYPE(ProgDesc), PARAMETER            :: IfW_ProgDesc = ProgDesc( 'InflowWind', 'v1.00.00', '24-June-2013' )
 
 
 

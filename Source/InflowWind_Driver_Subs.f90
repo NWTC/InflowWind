@@ -152,11 +152,11 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
 
             ! since there is no switch character, assume it is the filename, unless we already set one
          IF ( FileNameGiven ) THEN
-            ErrMsg   = "Multiple input filenames given: "//TRIM(Settings%InputFile)//", "//TRIM(arg)
+            ErrMsg   = "Multiple input filenames given: "//TRIM(Settings%WindFileName)//", "//TRIM(arg)
             ErrStat  = ErrID_Fatal
             RETURN
          ELSE
-            Settings%InputFile = TRIM(arg)
+            Settings%WindFileName = TRIM(arg)
             FileNameGiven = .TRUE.
          ENDIF
 
@@ -638,7 +638,7 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
          ! "points[FILE]"
       ELSEIF( ThisArg(1:Delim1) == "points["    ) THEN
          SettingsFlags%PointsFile= .TRUE.
-         Settings%PointsFile     = ThisArg(Delim1+1:Delim2-1)
+         Settings%PointsFileName = ThisArg(Delim1+1:Delim2-1)
 
       ELSE
          ErrMsg  = TRIM(ErrMsg)//NewLine//"Unrecognized option: '"//SwChar//TRIM(ThisArg)//"'. Ignoring."

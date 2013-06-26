@@ -14,8 +14,6 @@ New plan:
 
 
 Things to add/decide on sometime:
-   -  Add information in the Parameters about how many time steps there are, bounds on time
-   -  Add information in the Parameters about the bounds on the dimensions, steps and stepsize
    -  In the driver, add some help info with the -h flag.
    -  In the driver, add some additional info with the -v for verbose flag
    -  What should I do with the InflowWind_Module_Types --> specifies file types numbering scheme.
@@ -40,11 +38,6 @@ Module:
          -  Make the HHWind use the global types rather than its own.
          -  figure out how to make that work with userwind.
       -  Figure out a good way to copy things from one type to another
-      -  Get CALL HHWind_Init working correctly (passing stuff out)
-      -  Get CALL HHWind_End working correctly
-      -  Get CALL HHWind_CalcOutput working correctly
-      -  set empty values in HHWind in the Init routine for all INTENT(OUT)
-      -  Add in correct returns for unused routines (CalcConstrStateResiduals etc) -- see example.
       -  Change how newline is handled -> add to the end of the ErrMsg, not when appending
          -->   TRIM(ErrMsg)//Newline//TRIM(TmpErrMsg) becomes TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
          -->   Verify that this actually works as intended (Extra lines, or does the Newline get chopped by TRIM?)
@@ -76,7 +69,7 @@ Documentation:
       -  Explain how to use UserWnd
       -  Explain name changes???
       -  planned features
-         -  storing info about the "grid size/stepsize/time length" of the file read in
+         -  storing info about the "grid size/stepsize/time length" of the file read in --> this exists already. The driver just doesn't recognize it.
 
 
 
@@ -85,7 +78,6 @@ Documentation:
 
 IfW_FFWind.f90
    TODO:
-      -  Revisit End routine to make sure that we actually close out all the variables that we need to (reset things)
 
    COMPLETED:
       +  Convert the READ statements to the new library ones.
@@ -96,6 +88,7 @@ IfW_FFWind.f90
       +  Change all WrScr calls to ErrMsg concatenations
       +  remove the global variables
       +  FFWind test routine
+      +  Revisit End routine to make sure that we actually close out all the variables that we need to (reset things)
 
 
 IfW_HHWind.f90

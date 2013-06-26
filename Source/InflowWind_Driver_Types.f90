@@ -65,8 +65,8 @@ MODULE Ifw_Driver_Types
       REAL( ReKi )            :: ZRes                          ! resolution of z
       REAL( DbKi )            :: TRes                          ! resolution of time
       REAL( ReKi )            :: fft(1:3)                      ! Coords to do an FFT
-      CHARACTER(1024)         :: PointsFile                    ! Filename of points file
-      CHARACTER(1024)         :: InputFile                     ! Filename of file to process
+      CHARACTER(1024)         :: PointsFileName                ! Filename of points file
+      CHARACTER(1024)         :: WindFileName                  ! Filename of file to process
    END TYPE    IfW_Driver_Args
 
 

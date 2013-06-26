@@ -23,7 +23,6 @@ UsrWnd_Terminate           UserWind.f90
 CTWind.f90:66:                INTEGER, SAVE                 :: TimeIndx  = 0
 FDWind.f90:35:                REAL(ReKi), SAVE              :: PrevTime
 FDWind.f90:80:                LOGICAL, SAVE                 :: Initialized = .FALSE.
-   FFWind.f90:47:                LOGICAL, SAVE                 :: Initialized = .FALSE.
 HAWCWind.f90:40:              LOGICAL, SAVE                 :: Initialized = .FALSE.
 UserWind.f90:15:              LOGICAL, SAVE                 :: Initialized = .FALSE.
 
@@ -31,7 +30,6 @@ UserWind.f90:15:              LOGICAL, SAVE                 :: Initialized = .FA
 ##Implied SAVE uses that must be removed.
 CTWind.f90:27:                INTEGER, PARAMETER            :: NumComps  = 3
 FDWind.f90:61:                INTEGER, PARAMETER            :: Num4DtD = 2
-   FFWind.f90:48:                LOGICAL                       :: Periodic    = .FALSE.
    FFWind.f90:935:               INTEGER, PARAMETER            :: NumStrings = 6
    FFWind.f90:1508:              REAL(ReKi), PARAMETER         :: TOL = 1E-4
    FFWind.f90:1770:              REAL(ReKi), PARAMETER         :: TOL = 1E-3

@@ -582,6 +582,9 @@ FUNCTION HW_LinearInterp(Time, Position, ErrStat)
       ! The wind file is periodic so we'll translate this position to ( 0 <= ShiftedXPosition < LengthX )
 
    ShiftedXPosition = MODULO( ShiftedXPosition, LengthX )
+   ! If ShiftedXPosition is a very small negative number, modulo returns the incorrect value due to internal rounding errors.
+   ! See bug report #471
+   IF (ShiftedXPosition == LengthX) ShiftedXPosition = 0.0_ReKi
 
    XGrid            = ShiftedXPosition*deltaXInv
 
