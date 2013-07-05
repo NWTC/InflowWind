@@ -86,6 +86,9 @@ PROGRAM InflowWind_Driver
    REAL(ReKi),ALLOCATABLE                             :: VelocityFullset(:,:,:,:,:)    ! 5D array for velocity info in all timesteps
 
 
+      ! Temporary variables
+   CHARACTER(1024)                                    :: TmpChar                 ! Temporary character variable
+
       ! Local Error Handling
    INTEGER(IntKi)                                     :: ErrStat
    CHARACTER(1024)                                    :: ErrMsg
@@ -236,7 +239,18 @@ PROGRAM InflowWind_Driver
 
       ! Allocate the arrays that hold the entire dataset
    CALL AllocAry( PositionTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Position matrix at timestep', ErrStat, ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
+
    CALL AllocAry( VelocityTimeStep, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, 'Velocity matrix at timestep', ErrStat, ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
 
 
 !FIXME: remove this and not store the entire thing. Only do each timestep at a time.
@@ -244,8 +258,19 @@ PROGRAM InflowWind_Driver
       ! Xindex, Yindex
    CALL AllocAry( PositionFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Position matrix (fullset)', &
                   ErrStat, ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
+
    CALL AllocAry( VelocityFullset, 3, NumXSteps+1, NumYSteps+1, NumZSteps+1, NumTSteps+1, 'Velocity matrix (fullset)', &
                   ErrStat, ErrMsg )
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
 
 
       ! Total number of points per timestep (for allocating the passed arrays)
@@ -256,7 +281,18 @@ PROGRAM InflowWind_Driver
 
       ! Allocate the arrays that we use locally
    CALL AllocAry( Position, 3, NumTotalPoints, 'Local Position martrix', ErrStat, ErrMsg)
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
+
    CALL AllocAry( Velocity, 3, NumTotalPoints, 'Local Velocity martrix', ErrStat, ErrMsg)
+   IF ( ErrStat >= AbortErrLev ) THEN
+      CALL ProgAbort( ErrMsg )
+   ELSEIF ( ErrStat /= 0 ) THEN
+      CALL ProgWarn( ErrMsg )
+   ENDIF
 
 
 
@@ -339,7 +375,11 @@ PROGRAM InflowWind_Driver
 
       Velocity = IfW_OutputData%Velocity
          ! Check that things ran correctly
-      IF (ErrStat >= ErrID_Severe) CALL ProgAbort( ErrMsg )
+      IF ( ErrStat >= AbortErrLev ) THEN
+         CALL ProgAbort( ErrMsg )
+      ELSEIF ( ErrStat /= 0 ) THEN
+         CALL ProgWarn( ErrMsg )
+      ENDIF
 
 
          ! Unflatten the Velocity information
@@ -376,27 +416,26 @@ PROGRAM InflowWind_Driver
    !  ParaPrint         -- will create a ParaView file that can be looked at  !FIXME: add this when I get to it.
    !  Write to screen   -- if ParaPrint isn't used
 
-!FIXME: make this a formatted output
-
    CALL WrScr(NewLine//NewLine// &
-         '   Time,          x              y              z                   U              V              W     ')
+         '   Time           x           y           z               U               V               W'//NewLine// &
+         ' -------       -------     -------     -------         ---------       ---------       ---------')
    DO TStep = 0, NumTSteps
       DO ZStep = 0, NumZSteps
          DO YStep = 0, NumYSteps
             DO XStep = 0, NumXSteps
-               CALL WrScr( Num2LStr(TStep*Settings%TRes + Settings%TRange(1))//'       '//            &
-                           Num2LStr(PositionFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
-                           Num2LStr(PositionFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
-                           Num2LStr(PositionFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
-                           Num2LStr(VelocityFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
-                           Num2LStr(VelocityFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '//  &
-                           Num2LStr(VelocityFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1))//'  '    &
-                         )
+               write (TmpChar, "( f8.3,'"//"  "//"', 3(f12.2),'"//"  "//"', 3(f16.4))")    &
+                           (TStep*Settings%TRes + Settings%TRange(1)),              &
+                           PositionFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1), &
+                           PositionFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1), &
+                           PositionFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1), &
+                           VelocityFullSet( 1, XStep+1, YStep+1, ZStep+1, TStep+1), &
+                           VelocityFullSet( 2, XStep+1, YStep+1, ZStep+1, TStep+1), &
+                           VelocityFullSet( 3, XStep+1, YStep+1, ZStep+1, TStep+1)
+               CALL WrScr( TRIM(TmpChar))
             ENDDO    ! XStep
          ENDDO    ! YStep
       ENDDO    ! ZStep
    ENDDO    ! TStep
-
 
 
 
@@ -423,7 +462,7 @@ PROGRAM InflowWind_Driver
 
       ! Find out how long this actually took
    CALL CPU_TIME( Timer(2) )
-   CALL WrScr('Elapsed time: '//TRIM(Num2LStr(Timer(2)-Timer(1)))//' seconds')
+   CALL WrScr(NewLine//'Elapsed time: '//TRIM(Num2LStr(Timer(2)-Timer(1)))//' seconds')
 
 
 

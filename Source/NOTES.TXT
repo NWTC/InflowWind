@@ -48,8 +48,7 @@ Module:
 
 Driver:
    TODO:
-      -  Make sure that HHWind works correctly
-      -  Add in
+      -  Add in info on the actual grid size and resolution.
 
 
 Test Programs:

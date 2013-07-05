@@ -25,7 +25,6 @@ MODULE HAWCWind
    REAL(ReKi)                       :: deltaYInv                  ! multiplicative inverse of delta Y
    REAL(ReKi)                       :: deltaZInv                  ! multiplicative inverse of delta Z
 
-!FIXME: this invokes SAVE
    INTEGER, PARAMETER               :: NC = 3                     ! number of wind components
    INTEGER                          :: NX                         ! number of points in the X direction
    INTEGER                          :: NY                         ! number of points in the Y direction

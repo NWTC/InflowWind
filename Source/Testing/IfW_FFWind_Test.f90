@@ -50,6 +50,10 @@ PROGRAM FFWind_Test
    REAL(ReKi)                                         :: WindVelocity(3,3)
 
 
+      ! Temporary variables
+   CHARACTER(1024)                                    :: TmpChar
+   INTEGER(IntKi)                                     :: TmpInt
+
 
 
 
@@ -135,23 +139,16 @@ PROGRAM FFWind_Test
 
    !-=- Write out some info about what we just did -=-=-=-=-=-=-=-=-
 
-   CALL WrScr("   Time: "//TRIM(Num2LStr(Time)))
-   CALL WrScr("          (x, y, z)          (U, V, W)")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,1)))//", "//TRIM(Num2LStr(WindPosition(2,1)))//", " &
-                           //TRIM(Num2LStr(WindPosition(3,1)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1,1)))//", "//TRIM(Num2LStr(WindVelocity(2,1)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(3,1)))//")")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,2)))//", "//TRIM(Num2LStr(WindPosition(2,2)))//", " &
-                           //TRIM(Num2LStr(WindPosition(3,2)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1,2)))//", "//TRIM(Num2LStr(WindVelocity(2,2)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(3,2)))//")")
-
-   CALL WrScr("          ("//TRIM(Num2LStr(WindPosition(1,3)))//", "//TRIM(Num2LStr(WindPosition(2,3)))//", " &
-                           //TRIM(Num2LStr(WindPosition(3,3)))//")        (" &
-                           //TRIM(Num2LStr(WindVelocity(1,3)))//", "//TRIM(Num2LStr(WindVelocity(2,3)))//", " &
-                           //TRIM(Num2LStr(WindVelocity(3,3)))//")")
+   CALL WrScr(NewLine//NewLine// &
+         '   Time           x           y           z               U               V               W'//NewLine// &
+         ' -------       -------     -------     -------         ---------       ---------       ---------')
+   DO TmpInt=1,3
+      write (TmpChar, "( f8.3,'"//"  "//"', 3(f12.2),'"//"  "//"', 3(f16.4))")            &
+                  Time,                                                                   &
+                  WindPosition(1,TmpInt),WindPosition(2,TmpInt),WindPosition(3,TmpInt),   &
+                  WindVelocity(1,TmpInt),WindVelocity(2,TmpInt),WindVelocity(3,TmpInt)
+      CALL WrScr( TRIM(TmpChar))
+   ENDDO
 
    !-=- Close everything -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 

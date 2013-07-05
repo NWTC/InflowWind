@@ -474,7 +474,6 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
             ENDIF !INDEX for "HUB HEIGHT" or "ZHUB"
 
-!FIXME: check that the next 6 lines were commented out originally.
    !      ELSEIF ( StrNeeded(3) ) THEN
    !
    !         !-------------------------------------------------------------------------------------------
