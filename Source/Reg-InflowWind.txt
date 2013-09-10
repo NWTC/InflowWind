@@ -7,12 +7,8 @@
 # keyword <InflowWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
-#include Reg-IfW_FFWind.txt
-#include Reg-IfW_HHWind.txt
-#There is a bug in Registry that doesn't allow it to use the registry file directly at the moment
-include Reg-IfW_FFWind_listing.txt
-include Reg-IfW_HHWind_listing.txt
-
+usefrom Reg-IfW_FFWind.txt
+usefrom Reg-IfW_HHWind.txt
 
 
 #########################
@@ -25,7 +21,7 @@ typedef  ^                       ^                       IntKi    WindFileType  
 
 
 # Define any data that are not considered actual states here:
-#   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output 
+#   e.g. data used only for efficiency purposes (indices for searching in an array, copies of previous calculations of output
 #   at a given time, etc.)
 typedef  ^                       OtherStateType          IntKi    TimeIndex         -     0     -     "An Index into the TData array"                                -
 typedef  ^                       ^      IfW_FFWind_OtherStateType FFWind            -     -     -     "OtherStates from FFWind"                                      -
