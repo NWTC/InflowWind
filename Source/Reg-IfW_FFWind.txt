@@ -7,9 +7,6 @@
 # keyword <IfW_FFWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
-include Registry_NWTC_Library.txt
-
-
 
 
 
