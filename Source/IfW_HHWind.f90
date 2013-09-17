@@ -43,14 +43,12 @@ MODULE IfW_HHWind
 !----------------------------------------------------------------------------------------------------
 
    USE                                       NWTC_Library
-!   USE                                       InflowWind_Types
    USE                                       IfW_HHWind_Types
 
    IMPLICIT                                  NONE
    PRIVATE
 
-   INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_HHWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_ProgDesc = ProgDesc( 'IfW_HHWind', 'v2.00.00', '13-Mar-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_Ver = ProgDesc( 'IfW_HHWind', 'v2.00.00', '17-Sep-2013' )
 
    PUBLIC                                    :: IfW_HHWind_Init
    PUBLIC                                    :: IfW_HHWind_End
@@ -73,7 +71,7 @@ CONTAINS
 
 SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
-                           OutData,    Interval,   ErrStat,          ErrMsg)
+                           OutData,    Interval,   InitOutData,      ErrStat,          ErrMsg)
    !----------------------------------------------------------------------------------------------------
    ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
    ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
@@ -93,6 +91,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates      ! Constraint States  (unused)
    TYPE(IfW_HHWind_OtherStateType),       INTENT(  OUT)  :: OtherStates       ! Other State data   (storage for the main data)
    TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData           ! Initial output
+   TYPE(IfW_HHWind_InitOutputType),       INTENT(  OUT)  :: InitOutData       ! Initial output
 
    REAL(DbKi),                            INTENT(INOUT)  :: Interval          ! We don't change this.
 
@@ -188,7 +187,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
    ParamData%ReferenceHeight  =  InitData%ReferenceHeight
    ParamData%Width            =  InitData%Width
-   ParamData%WindFileName         =  InitData%WindFileName
+   ParamData%WindFileName     =  InitData%WindFileName
 
 
       !-------------------------------------------------------------------------------------------------
@@ -397,7 +396,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
       ! Print warnings and messages
       !-------------------------------------------------------------------------------------------------
-!   CALL WrScr ( ' Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of HH data' )
+   ErrMsg   = TRIM(ErrMsg)//' Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of HH data'//NewLine
 
 
    IF ( OtherStates%Tdata(1) > 0.0 ) THEN
@@ -419,8 +418,40 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
    OtherStates%TimeIndex = 1
 
-   OtherStates%RefHt  = ParamData%ReferenceHeight
-   OtherStates%RefWid = ParamData%Width
+   OtherStates%RefHt       = ParamData%ReferenceHeight
+   OtherStates%RefWid      = ParamData%Width
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Set the InitOutput information
+      !-------------------------------------------------------------------------------------------------
+
+   InitOutData%HubHeight   = ParamData%ReferenceHeight
+   InitOutdata%Ver         = IfW_HHWind_Ver
+
+
+      ! Allocate and populate the OutputHdr array (contains names of outputable values)
+
+   CALL AllocAry( InitOutData%WriteOutputHdr, 3, 'Empty array for names of outputable information.', TmpErrStat, TmpErrMsg )
+   ErrStat  = MAX(TmpErrStat, ErrStat)
+   ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
+   IF ( ErrStat >= AbortErrLev ) RETURN
+
+   InitOutData%WriteOutputHdr(1) = 'WindVxi'
+   InitOutData%WriteOutputHdr(2) = 'WindVyi'
+   InitOutData%WriteOutputHdr(3) = 'WindVzi'
+
+
+      ! Allocate and populate the OutputUnt array (contains units of outputable values)
+
+   CALL AllocAry( InitOutData%WriteOutputUnt, 3, 'Empty array for units of outputable information.', TmpErrStat, TmpErrMsg )
+   ErrStat  = MAX(TmpErrStat, ErrStat)
+   ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
+   IF ( ErrStat >= AbortErrLev ) RETURN
+
+   InitOutData%WriteOutputUnt(1) = 'm/s'
+   InitOutData%WriteOutputUnt(2) = 'm/s'
+   InitOutData%WriteOutputUnt(3) = 'm/s'
 
 
    RETURN

@@ -30,7 +30,7 @@ BITS:=64
 OS:=lin
 
 #compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g 
+FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g
 
 #Destination for compiled pieces
 DEST_DIR := _compiled--linux
@@ -85,14 +85,13 @@ Other_DIR	:= \
 
 #The source files for InflowWind
 InflowWind_SOURCES  :=           \
-   InflowWind_Module_Types.f90   \
    InflowWind_Types.f90          \
 	IfW_HHWind.f90                \
    IfW_HHWind_Types.f90          \
 	IfW_FFWind.f90                \
    IfW_FFWind_Types.f90          \
    InflowWind_Subs.f90           \
-	InflowWind_Module.f90         \
+	InflowWind.f90                \
    InflowWind_Driver_Types.f90   \
    InflowWind_Driver_Subs.f90    \
    InflowWind_Driver.f90

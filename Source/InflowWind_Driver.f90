@@ -24,8 +24,8 @@
 PROGRAM InflowWind_Driver
 
 !   USE NWTC_Library       !NOTE: Not sure why this doesn't need to be specified
-   USE InflowWind_Module
-   USE InflowWind_Module_Types
+   USE InflowWind
+!   USE InflowWind_Module_Types
    USE InflowWind_Types
    USE IfW_Driver_Types    ! Contains types and routines for handling the input arguments
    USE IfW_Driver_Subs     ! Contains subroutines for the driver program
@@ -45,6 +45,7 @@ PROGRAM InflowWind_Driver
    TYPE( IfW_ConstraintStateType )                    :: IfW_ConstrStateData     ! Constraint State Data (not used here)
    TYPE( IfW_OtherStateType )                         :: IfW_OtherStateData      ! Other State Data      (might use at some point)
    TYPE( IfW_OutputType )                             :: IfW_OutputData          ! Output Data -- contains the velocities at xyz
+   TYPE( IfW_InitOutputType )                         :: IfW_InitOutData         ! Output Data -- contains the names and units
 
 
       ! Local variables for this code
@@ -155,7 +156,7 @@ PROGRAM InflowWind_Driver
 
    IfW_InitInputData%ReferenceHeight   = 80.                      ! meters  -- default
    IfW_InitInputData%Width             = 100.                     ! meters
-   IfW_InitInputData%WindFileType      = DEFAULT_Wind             ! This must be preset before calling the initialization.
+   IfW_InitInputData%WindFileType      = DEFAULT_WindNumber       ! This must be preset before calling the initialization.
    TimeStepSize                        = 10                       !seconds
 
 
@@ -198,7 +199,7 @@ PROGRAM InflowWind_Driver
 
    CALL IfW_Init( IfW_InitInputData, IfW_InputData, IfW_ParamData, &
                   IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, &
-                  IfW_OutputData, TimeStepSize, ErrStat, ErrMsg )
+                  IfW_OutputData,    TimeStepSize,  IfW_InitOutData, ErrStat, ErrMsg )
 
 
       ! Make sure no errors occured that give us reason to terminate now.
@@ -364,14 +365,12 @@ PROGRAM InflowWind_Driver
                      'Position array in IfW_InputData', ErrStat, ErrMsg )
       IfW_InputData%Position = Position
 
-         ! Allocate the IfW_OutputData%Velocity array to match the Input one
-      CALL AllocAry( IfW_OutputData%Velocity, SIZE(IfW_InputData%Position, 1), SIZE(IfW_InputData%Position, 2), &
-                     'Velocity array to return from IfW_CalcOutput', ErrStat, ErrMsg )
+         ! No need to allocate the IfW_OutputData%Velocity array.  That happens in CalcOutput
 
          ! Call the Calculate routine and pass in the Position information
       CALL IfW_CalcOutput( TimeNow, IfW_InputData, IfW_ParamData, &
-                           IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, IfW_OtherStateData, & ! States -- not used
-                           IfW_OutputData, ErrStat, ErrMsg)
+                           IfW_ContStateData, IfW_DiscStateData, IfW_ConstrStateData, & ! States -- not used
+                           IfW_OtherStateData, IfW_OutputData, ErrStat, ErrMsg)
 
       Velocity = IfW_OutputData%Velocity
          ! Check that things ran correctly

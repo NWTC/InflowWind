@@ -33,10 +33,6 @@ Architectural question:
 
 Module:
    TODO:
-      -  figure out what types should be common to all the module pieces.
-         -  Copy over what is needed from the HHWind one.
-         -  Make the HHWind use the global types rather than its own.
-         -  figure out how to make that work with userwind.
       -  Figure out a good way to copy things from one type to another
       -  Change how newline is handled -> add to the end of the ErrMsg, not when appending
          -->   TRIM(ErrMsg)//Newline//TRIM(TmpErrMsg) becomes TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -107,5 +103,5 @@ IfW_HHWind.f90
 
 -=-=-=-=-=-=-=-=- NOTES -=-=-=-=-=-=-=-=-
 NOTES:
-After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code.
+After talking with Bonnie, we will not do reallocation of arrays within the IfW_CalcOutput routine. Instead, we will just do error checking there to make sure they are allocated the same size. The rest will be handled by the glue code. Revision: We decided to leave things as is (allocate the OutData within the CalcOutput routine). This might change later.
 

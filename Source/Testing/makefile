@@ -30,7 +30,7 @@ BITS:=64
 OS:=lin
 
 #compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g 
+FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g
 REGSFLAGS = -ffree-line-length-none
 
 
@@ -80,8 +80,7 @@ IfW_Driver_DIR    := $(IfW_Test_DIR)
 
 #The source files for InflowWind
 InflowWind_SOURCES   :=          \
-	InflowWind_Types.f90          \
-   InflowWind_Module_Types.f90
+	InflowWind_Types.f90
 
 HH_SOURCES           :=          \
 	IfW_HHWind.f90                \

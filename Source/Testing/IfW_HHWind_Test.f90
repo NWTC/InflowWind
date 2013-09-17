@@ -40,6 +40,7 @@ PROGRAM HHWind_Test
    TYPE(IfW_HHWind_ConstraintStateType)               :: HH_ConstrStates
    TYPE(IfW_HHWind_OtherStateType)                    :: HH_OtherStates
    TYPE(IfW_HHWind_OutputType)                        :: HH_OutData
+   TYPE(IfW_HHWind_InitOutputType)                    :: HH_InitOutData
 
    REAL(DbKi)                                         :: HH_Interval
 
@@ -96,7 +97,7 @@ PROGRAM HHWind_Test
 
    CALL IfW_HHWind_Init(HH_InitData,   HH_InData,     HH_ParamData,                       &
                         HH_ContStates, HH_DiscStates, HH_ConstrStates,  HH_OtherStates,   &
-                        HH_OutData,    HH_Interval,                                       &
+                        HH_OutData,    HH_Interval,   HH_InitOutData,                     &
                         ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)

@@ -7,7 +7,7 @@
 # keyword <IfW_FFWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
-
+include Registry_NWTC_Library.txt
 
 
 #########################
@@ -16,6 +16,12 @@ typedef  IfW_FFWind/IfW_FFWind   InitInputType   CHARACTER(1024)  WindFileName  
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 
+
+# Init Output
+typedef  ^                       InitOutputType  CHARACTER(10)    WriteOutputHdr    :     -     -     "Names of output-to-file channels"                             -
+typedef  ^                       ^               CHARACTER(10)    WriteOutputUnt    :     -     -     "Units of output-to-file channels"                             -
+typedef  ^                       ^                    ProgDesc    Ver               -     -     -     "Version information off FFWind submodule"                     -
+typedef  ^                       ^                       ReKi     HubHeight         -     -     -     "Height of the hub"                                            meters
 
 
 # Define any data that are not considered actual states here:

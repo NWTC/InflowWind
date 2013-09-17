@@ -27,7 +27,7 @@
 MODULE Ifw_Driver_Types
 
    USE NWTC_Library
-   USE InflowWind_Module_Types
+   USE InflowWind_Types
 
    IMPLICIT NONE
 
@@ -53,7 +53,7 @@ MODULE Ifw_Driver_Types
 
       ! This contains all the settings (possible passed in arguments).
    TYPE     :: IfW_Driver_Args
-      INTEGER                 :: WindFileType   = DEFAULT_WIND ! the kind of windfile     -- set default to simplify things later
+      INTEGER                 :: WindFileType   = DEFAULT_WINDNumber ! the kind of windfile     -- set default to simplify things later
       REAL( ReKi )            :: Height                        ! Reference height
       REAL( ReKi )            :: Width                         ! Reference width
       REAL( ReKi )            :: XRange(1:2)                   ! range of x

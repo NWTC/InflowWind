@@ -17,7 +17,7 @@
 ! This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty
 ! of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 !
-! You should have received a copy of the GNU General Public License along with ModuleName.
+! You should have received a copy of the GNU General Public License along with IfW_HHWind.
 ! If not, see <http://www.gnu.org/licenses/>.
 !
 !
@@ -30,11 +30,22 @@ MODULE IfW_HHWind_Types
 !---------------------------------------------------------------------------------------------------------------------------------
 USE NWTC_Library
 IMPLICIT NONE
+! =========  IfW_HHWind_InitInputType  =======
   TYPE, PUBLIC :: IfW_HHWind_InitInputType
     CHARACTER(1024)  :: WindFileName 
     REAL(ReKi)  :: ReferenceHeight 
     REAL(ReKi)  :: Width 
   END TYPE IfW_HHWind_InitInputType
+! =======================
+! =========  IfW_HHWind_InitOutputType  =======
+  TYPE, PUBLIC :: IfW_HHWind_InitOutputType
+    CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr 
+    CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt 
+    TYPE(ProgDesc)  :: Ver 
+    REAL(ReKi)  :: HubHeight 
+  END TYPE IfW_HHWind_InitOutputType
+! =======================
+! =========  IfW_HHWind_OtherStateType  =======
   TYPE, PUBLIC :: IfW_HHWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0 
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: TData 
@@ -51,6 +62,8 @@ IMPLICIT NONE
     INTEGER(IntKi)  :: NumDataLines 
     INTEGER(IntKi)  :: UnitWind 
   END TYPE IfW_HHWind_OtherStateType
+! =======================
+! =========  IfW_HHWind_ParameterType  =======
   TYPE, PUBLIC :: IfW_HHWind_ParameterType
     CHARACTER(1024)  :: WindFileName 
     LOGICAL  :: Initialized = .FALSE. 
@@ -59,36 +72,49 @@ IMPLICIT NONE
     REAL(ReKi)  :: Width 
     REAL(DbKi)  :: DT 
   END TYPE IfW_HHWind_ParameterType
+! =======================
+! =========  IfW_HHWind_InputType  =======
   TYPE, PUBLIC :: IfW_HHWind_InputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position 
   END TYPE IfW_HHWind_InputType
+! =======================
+! =========  IfW_HHWind_OutputType  =======
   TYPE, PUBLIC :: IfW_HHWind_OutputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity 
   END TYPE IfW_HHWind_OutputType
+! =======================
+! =========  IfW_HHWind_ContinuousStateType  =======
   TYPE, PUBLIC :: IfW_HHWind_ContinuousStateType
     REAL(ReKi)  :: DummyContState 
   END TYPE IfW_HHWind_ContinuousStateType
+! =======================
+! =========  IfW_HHWind_DiscreteStateType  =======
   TYPE, PUBLIC :: IfW_HHWind_DiscreteStateType
     REAL(ReKi)  :: DummyDiscState 
   END TYPE IfW_HHWind_DiscreteStateType
+! =======================
+! =========  IfW_HHWind_ConstraintStateType  =======
   TYPE, PUBLIC :: IfW_HHWind_ConstraintStateType
     REAL(ReKi)  :: DummyConstrState 
   END TYPE IfW_HHWind_ConstraintStateType
+! =======================
 CONTAINS
  SUBROUTINE IfW_HHWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
-  TYPE(IfW_HHWind_initinputtype), INTENT(INOUT) :: DstInitInputData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
+   TYPE(IfW_HHWind_initinputtype), INTENT(INOUT) :: DstInitInputData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstInitInputData%WindFileName = SrcInitInputData%WindFileName
-  DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
-  DstInitInputData%Width = SrcInitInputData%Width
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstInitInputData%WindFileName = SrcInitInputData%WindFileName
+   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
+   DstInitInputData%Width = SrcInitInputData%Width
  END SUBROUTINE IfW_HHWind_CopyInitInput
 
  SUBROUTINE IfW_HHWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -188,63 +214,311 @@ CONTAINS
   Int_Xferred  = Int_Xferred-1
  END SUBROUTINE IfW_HHWind_UnPackInitInput
 
- SUBROUTINE IfW_HHWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
-  TYPE(IfW_HHWind_otherstatetype), INTENT(INOUT) :: DstOtherStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+ SUBROUTINE IfW_HHWind_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(IfW_HHWind_initoutputtype), INTENT(INOUT) :: SrcInitOutputData
+   TYPE(IfW_HHWind_initoutputtype), INTENT(INOUT) :: DstInitOutputData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
+! 
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+IF (ALLOCATED(SrcInitOutputData%WriteOutputHdr)) THEN
+   i1_l = LBOUND(SrcInitOutputData%WriteOutputHdr,1)
+   i1_u = UBOUND(SrcInitOutputData%WriteOutputHdr,1)
+   IF (.NOT.ALLOCATED(DstInitOutputData%WriteOutputHdr)) THEN 
+      ALLOCATE(DstInitOutputData%WriteOutputHdr(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputHdr.'
+         RETURN
+      END IF
+   END IF
+   DstInitOutputData%WriteOutputHdr = SrcInitOutputData%WriteOutputHdr
+ENDIF
+IF (ALLOCATED(SrcInitOutputData%WriteOutputUnt)) THEN
+   i1_l = LBOUND(SrcInitOutputData%WriteOutputUnt,1)
+   i1_u = UBOUND(SrcInitOutputData%WriteOutputUnt,1)
+   IF (.NOT.ALLOCATED(DstInitOutputData%WriteOutputUnt)) THEN 
+      ALLOCATE(DstInitOutputData%WriteOutputUnt(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputUnt.'
+         RETURN
+      END IF
+   END IF
+   DstInitOutputData%WriteOutputUnt = SrcInitOutputData%WriteOutputUnt
+ENDIF
+      CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat, ErrMsg )
+   DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
+ END SUBROUTINE IfW_HHWind_CopyInitOutput
+
+ SUBROUTINE IfW_HHWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
+  TYPE(IfW_HHWind_initoutputtype), INTENT(INOUT) :: InitOutputData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
-! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
-IF ( ALLOCATED( SrcOtherStateData%TData ) ) THEN
-  i1 = SIZE(SrcOtherStateData%TData,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%TData)) ALLOCATE(DstOtherStateData%TData(i1))
-  DstOtherStateData%TData = SrcOtherStateData%TData
+  IF ( ALLOCATED(InitOutputData%WriteOutputHdr) ) DEALLOCATE(InitOutputData%WriteOutputHdr)
+  IF ( ALLOCATED(InitOutputData%WriteOutputUnt) ) DEALLOCATE(InitOutputData%WriteOutputUnt)
+  CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
+ END SUBROUTINE IfW_HHWind_DestroyInitOutput
+
+ SUBROUTINE IfW_HHWind_PackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_initoutputtype),  INTENT(INOUT) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+ ! buffers to store meshes, if any
+  REAL(ReKi),     ALLOCATABLE :: Re_Ver_Buf(:)
+  REAL(DbKi),     ALLOCATABLE :: Db_Ver_Buf(:)
+  INTEGER(IntKi), ALLOCATABLE :: Int_Ver_Buf(:)
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  CALL NWTC_Library_Packprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, InData%Ver, ErrStat, ErrMsg, .TRUE. ) ! Ver 
+  IF(ALLOCATED(Re_Ver_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_Ver_Buf  ) ! Ver
+  IF(ALLOCATED(Db_Ver_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_Ver_Buf  ) ! Ver
+  IF(ALLOCATED(Int_Ver_Buf))Int_BufSz = Int_BufSz + SIZE( Int_Ver_Buf ) ! Ver
+  IF(ALLOCATED(Re_Ver_Buf))  DEALLOCATE(Re_Ver_Buf)
+  IF(ALLOCATED(Db_Ver_Buf))  DEALLOCATE(Db_Ver_Buf)
+  IF(ALLOCATED(Int_Ver_Buf)) DEALLOCATE(Int_Ver_Buf)
+  Re_BufSz   = Re_BufSz   + 1  ! HubHeight
+  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
+  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
+  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  CALL NWTC_Library_Packprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, InData%Ver, ErrStat, ErrMsg, OnlySize ) ! Ver 
+  IF(ALLOCATED(Re_Ver_Buf)) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Ver_Buf)-1 ) = Re_Ver_Buf
+    Re_Xferred = Re_Xferred + SIZE(Re_Ver_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_Ver_Buf)) THEN
+    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Ver_Buf)-1 ) = Db_Ver_Buf
+    Db_Xferred = Db_Xferred + SIZE(Db_Ver_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_Ver_Buf)) THEN
+    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Ver_Buf)-1 ) = Int_Ver_Buf
+    Int_Xferred = Int_Xferred + SIZE(Int_Ver_Buf)
+  ENDIF
+  IF( ALLOCATED(Re_Ver_Buf) )  DEALLOCATE(Re_Ver_Buf)
+  IF( ALLOCATED(Db_Ver_Buf) )  DEALLOCATE(Db_Ver_Buf)
+  IF( ALLOCATED(Int_Ver_Buf) ) DEALLOCATE(Int_Ver_Buf)
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HubHeight )
+  Re_Xferred   = Re_Xferred   + 1
+ END SUBROUTINE IfW_HHWind_PackInitOutput
+
+ SUBROUTINE IfW_HHWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(IfW_HHWind_initoutputtype), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+ ! buffers to store meshes, if any
+  REAL(ReKi),    ALLOCATABLE :: Re_Ver_Buf(:)
+  REAL(DbKi),    ALLOCATABLE :: Db_Ver_Buf(:)
+  INTEGER(IntKi),    ALLOCATABLE :: Int_Ver_Buf(:)
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+ ! first call NWTC_Library_Packprogdesc to get correctly sized buffers for unpacking
+  CALL NWTC_Library_Packprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, OutData%Ver, ErrStat, ErrMsg, .TRUE. ) ! Ver 
+  IF(ALLOCATED(Re_Ver_Buf)) THEN
+    Re_Ver_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Ver_Buf)-1 )
+    Re_Xferred = Re_Xferred + SIZE(Re_Ver_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_Ver_Buf)) THEN
+    Db_Ver_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Ver_Buf)-1 )
+    Db_Xferred = Db_Xferred + SIZE(Db_Ver_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_Ver_Buf)) THEN
+    Int_Ver_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Ver_Buf)-1 )
+    Int_Xferred = Int_Xferred + SIZE(Int_Ver_Buf)
+  ENDIF
+  CALL NWTC_Library_UnPackprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, OutData%Ver, ErrStat, ErrMsg ) ! Ver 
+  OutData%HubHeight = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  Re_Xferred   = Re_Xferred-1
+  Db_Xferred   = Db_Xferred-1
+  Int_Xferred  = Int_Xferred-1
+ END SUBROUTINE IfW_HHWind_UnPackInitOutput
+
+ SUBROUTINE IfW_HHWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(IfW_HHWind_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
+   TYPE(IfW_HHWind_otherstatetype), INTENT(INOUT) :: DstOtherStateData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
+! 
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
+IF (ALLOCATED(SrcOtherStateData%TData)) THEN
+   i1_l = LBOUND(SrcOtherStateData%TData,1)
+   i1_u = UBOUND(SrcOtherStateData%TData,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%TData)) THEN 
+      ALLOCATE(DstOtherStateData%TData(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%TData.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%TData = SrcOtherStateData%TData
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%DELTA ) ) THEN
-  i1 = SIZE(SrcOtherStateData%DELTA,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%DELTA)) ALLOCATE(DstOtherStateData%DELTA(i1))
-  DstOtherStateData%DELTA = SrcOtherStateData%DELTA
+IF (ALLOCATED(SrcOtherStateData%DELTA)) THEN
+   i1_l = LBOUND(SrcOtherStateData%DELTA,1)
+   i1_u = UBOUND(SrcOtherStateData%DELTA,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%DELTA)) THEN 
+      ALLOCATE(DstOtherStateData%DELTA(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%DELTA.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%DELTA = SrcOtherStateData%DELTA
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%V ) ) THEN
-  i1 = SIZE(SrcOtherStateData%V,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%V)) ALLOCATE(DstOtherStateData%V(i1))
-  DstOtherStateData%V = SrcOtherStateData%V
+IF (ALLOCATED(SrcOtherStateData%V)) THEN
+   i1_l = LBOUND(SrcOtherStateData%V,1)
+   i1_u = UBOUND(SrcOtherStateData%V,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%V)) THEN 
+      ALLOCATE(DstOtherStateData%V(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%V.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%V = SrcOtherStateData%V
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%VZ ) ) THEN
-  i1 = SIZE(SrcOtherStateData%VZ,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%VZ)) ALLOCATE(DstOtherStateData%VZ(i1))
-  DstOtherStateData%VZ = SrcOtherStateData%VZ
+IF (ALLOCATED(SrcOtherStateData%VZ)) THEN
+   i1_l = LBOUND(SrcOtherStateData%VZ,1)
+   i1_u = UBOUND(SrcOtherStateData%VZ,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%VZ)) THEN 
+      ALLOCATE(DstOtherStateData%VZ(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%VZ.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%VZ = SrcOtherStateData%VZ
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%HSHR ) ) THEN
-  i1 = SIZE(SrcOtherStateData%HSHR,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%HSHR)) ALLOCATE(DstOtherStateData%HSHR(i1))
-  DstOtherStateData%HSHR = SrcOtherStateData%HSHR
+IF (ALLOCATED(SrcOtherStateData%HSHR)) THEN
+   i1_l = LBOUND(SrcOtherStateData%HSHR,1)
+   i1_u = UBOUND(SrcOtherStateData%HSHR,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%HSHR)) THEN 
+      ALLOCATE(DstOtherStateData%HSHR(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%HSHR.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%HSHR = SrcOtherStateData%HSHR
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%VSHR ) ) THEN
-  i1 = SIZE(SrcOtherStateData%VSHR,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%VSHR)) ALLOCATE(DstOtherStateData%VSHR(i1))
-  DstOtherStateData%VSHR = SrcOtherStateData%VSHR
+IF (ALLOCATED(SrcOtherStateData%VSHR)) THEN
+   i1_l = LBOUND(SrcOtherStateData%VSHR,1)
+   i1_u = UBOUND(SrcOtherStateData%VSHR,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%VSHR)) THEN 
+      ALLOCATE(DstOtherStateData%VSHR(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%VSHR.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%VSHR = SrcOtherStateData%VSHR
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%VLINSHR ) ) THEN
-  i1 = SIZE(SrcOtherStateData%VLINSHR,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%VLINSHR)) ALLOCATE(DstOtherStateData%VLINSHR(i1))
-  DstOtherStateData%VLINSHR = SrcOtherStateData%VLINSHR
+IF (ALLOCATED(SrcOtherStateData%VLINSHR)) THEN
+   i1_l = LBOUND(SrcOtherStateData%VLINSHR,1)
+   i1_u = UBOUND(SrcOtherStateData%VLINSHR,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%VLINSHR)) THEN 
+      ALLOCATE(DstOtherStateData%VLINSHR(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%VLINSHR.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%VLINSHR = SrcOtherStateData%VLINSHR
 ENDIF
-IF ( ALLOCATED( SrcOtherStateData%VGUST ) ) THEN
-  i1 = SIZE(SrcOtherStateData%VGUST,1)
-  IF (.NOT.ALLOCATED(DstOtherStateData%VGUST)) ALLOCATE(DstOtherStateData%VGUST(i1))
-  DstOtherStateData%VGUST = SrcOtherStateData%VGUST
+IF (ALLOCATED(SrcOtherStateData%VGUST)) THEN
+   i1_l = LBOUND(SrcOtherStateData%VGUST,1)
+   i1_u = UBOUND(SrcOtherStateData%VGUST,1)
+   IF (.NOT.ALLOCATED(DstOtherStateData%VGUST)) THEN 
+      ALLOCATE(DstOtherStateData%VGUST(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOtherState: Error allocating DstOtherStateData%VGUST.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%VGUST = SrcOtherStateData%VGUST
 ENDIF
-  DstOtherStateData%LinearizeDels = SrcOtherStateData%LinearizeDels
-  DstOtherStateData%RefHt = SrcOtherStateData%RefHt
-  DstOtherStateData%RefWid = SrcOtherStateData%RefWid
-  DstOtherStateData%NumDataLines = SrcOtherStateData%NumDataLines
-  DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
+   DstOtherStateData%LinearizeDels = SrcOtherStateData%LinearizeDels
+   DstOtherStateData%RefHt = SrcOtherStateData%RefHt
+   DstOtherStateData%RefWid = SrcOtherStateData%RefWid
+   DstOtherStateData%NumDataLines = SrcOtherStateData%NumDataLines
+   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_HHWind_CopyOtherState
 
  SUBROUTINE IfW_HHWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -463,22 +737,24 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackOtherState
 
  SUBROUTINE IfW_HHWind_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_parametertype), INTENT(INOUT) :: SrcParamData
-  TYPE(IfW_HHWind_parametertype), INTENT(INOUT) :: DstParamData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_parametertype), INTENT(INOUT) :: SrcParamData
+   TYPE(IfW_HHWind_parametertype), INTENT(INOUT) :: DstParamData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstParamData%WindFileName = SrcParamData%WindFileName
-  DstParamData%Initialized = SrcParamData%Initialized
-  DstParamData%Linearize = SrcParamData%Linearize
-  DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
-  DstParamData%Width = SrcParamData%Width
-  DstParamData%DT = SrcParamData%DT
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstParamData%WindFileName = SrcParamData%WindFileName
+   DstParamData%Initialized = SrcParamData%Initialized
+   DstParamData%Linearize = SrcParamData%Linearize
+   DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
+   DstParamData%Width = SrcParamData%Width
+   DstParamData%DT = SrcParamData%DT
  END SUBROUTINE IfW_HHWind_CopyParam
 
  SUBROUTINE IfW_HHWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -584,21 +860,32 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackParam
 
  SUBROUTINE IfW_HHWind_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_inputtype), INTENT(INOUT) :: SrcInputData
-  TYPE(IfW_HHWind_inputtype), INTENT(INOUT) :: DstInputData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_inputtype), INTENT(INOUT) :: SrcInputData
+   TYPE(IfW_HHWind_inputtype), INTENT(INOUT) :: DstInputData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-IF ( ALLOCATED( SrcInputData%Position ) ) THEN
-  i1 = SIZE(SrcInputData%Position,1)
-  i2 = SIZE(SrcInputData%Position,2)
-  IF (.NOT.ALLOCATED(DstInputData%Position)) ALLOCATE(DstInputData%Position(i1,i2))
-  DstInputData%Position = SrcInputData%Position
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+IF (ALLOCATED(SrcInputData%Position)) THEN
+   i1_l = LBOUND(SrcInputData%Position,1)
+   i1_u = UBOUND(SrcInputData%Position,1)
+   i2_l = LBOUND(SrcInputData%Position,2)
+   i2_u = UBOUND(SrcInputData%Position,2)
+   IF (.NOT.ALLOCATED(DstInputData%Position)) THEN 
+      ALLOCATE(DstInputData%Position(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyInput: Error allocating DstInputData%Position.'
+         RETURN
+      END IF
+   END IF
+   DstInputData%Position = SrcInputData%Position
 ENDIF
  END SUBROUTINE IfW_HHWind_CopyInput
 
@@ -702,21 +989,32 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackInput
 
  SUBROUTINE IfW_HHWind_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_outputtype), INTENT(INOUT) :: SrcOutputData
-  TYPE(IfW_HHWind_outputtype), INTENT(INOUT) :: DstOutputData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_outputtype), INTENT(INOUT) :: SrcOutputData
+   TYPE(IfW_HHWind_outputtype), INTENT(INOUT) :: DstOutputData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-IF ( ALLOCATED( SrcOutputData%Velocity ) ) THEN
-  i1 = SIZE(SrcOutputData%Velocity,1)
-  i2 = SIZE(SrcOutputData%Velocity,2)
-  IF (.NOT.ALLOCATED(DstOutputData%Velocity)) ALLOCATE(DstOutputData%Velocity(i1,i2))
-  DstOutputData%Velocity = SrcOutputData%Velocity
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+IF (ALLOCATED(SrcOutputData%Velocity)) THEN
+   i1_l = LBOUND(SrcOutputData%Velocity,1)
+   i1_u = UBOUND(SrcOutputData%Velocity,1)
+   i2_l = LBOUND(SrcOutputData%Velocity,2)
+   i2_u = UBOUND(SrcOutputData%Velocity,2)
+   IF (.NOT.ALLOCATED(DstOutputData%Velocity)) THEN 
+      ALLOCATE(DstOutputData%Velocity(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'IfW_HHWind_CopyOutput: Error allocating DstOutputData%Velocity.'
+         RETURN
+      END IF
+   END IF
+   DstOutputData%Velocity = SrcOutputData%Velocity
 ENDIF
  END SUBROUTINE IfW_HHWind_CopyOutput
 
@@ -820,17 +1118,19 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackOutput
 
  SUBROUTINE IfW_HHWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: SrcContStateData
-  TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: DstContStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: SrcContStateData
+   TYPE(IfW_HHWind_continuousstatetype), INTENT(INOUT) :: DstContStateData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstContStateData%DummyContState = SrcContStateData%DummyContState
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstContStateData%DummyContState = SrcContStateData%DummyContState
  END SUBROUTINE IfW_HHWind_CopyContState
 
  SUBROUTINE IfW_HHWind_DestroyContState( ContStateData, ErrStat, ErrMsg )
@@ -926,17 +1226,19 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackContState
 
  SUBROUTINE IfW_HHWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
-  TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: DstDiscStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
+   TYPE(IfW_HHWind_discretestatetype), INTENT(INOUT) :: DstDiscStateData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstDiscStateData%DummyDiscState = SrcDiscStateData%DummyDiscState
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstDiscStateData%DummyDiscState = SrcDiscStateData%DummyDiscState
  END SUBROUTINE IfW_HHWind_CopyDiscState
 
  SUBROUTINE IfW_HHWind_DestroyDiscState( DiscStateData, ErrStat, ErrMsg )
@@ -1032,17 +1334,19 @@ ENDIF
  END SUBROUTINE IfW_HHWind_UnPackDiscState
 
  SUBROUTINE IfW_HHWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
-  TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: DstConstrStateData
-  INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
-  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
-  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+   TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
+   TYPE(IfW_HHWind_constraintstatetype), INTENT(INOUT) :: DstConstrStateData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
 ! 
-  ErrStat = ErrID_None
-  ErrMsg  = ""
-  DstConstrStateData%DummyConstrState = SrcConstrStateData%DummyConstrState
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstConstrStateData%DummyConstrState = SrcConstrStateData%DummyConstrState
  END SUBROUTINE IfW_HHWind_CopyConstrState
 
  SUBROUTINE IfW_HHWind_DestroyConstrState( ConstrStateData, ErrStat, ErrMsg )
@@ -1662,24 +1966,14 @@ ENDIF
 
  TYPE(IfW_HHWind_inputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
  REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
- TYPE(IfW_HHWind_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
+ TYPE(IfW_HHWind_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
  REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
    ! local variables
  REAL(DbKi) :: t(SIZE(tin))    ! Times associated with the inputs
  REAL(DbKi) :: t_out           ! Time to which to be extrap/interpd
- TYPE(MeshType) :: tmpmesh
  INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr1       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr3       ! temporary for extrapolation/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md1       ! temporary for extrapolaton/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md2       ! temporary for extrapolation/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md3       ! temporary for extrapolation/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi1       ! temporary for extrapolaton/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi2       ! temporary for extrapolation/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi3       ! temporary for extrapolation/interpolation
  REAL(DbKi)                                 :: b0       ! temporary for extrapolation/interpolation
  REAL(DbKi)                                 :: c0       ! temporary for extrapolation/interpolation
  REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
@@ -1743,10 +2037,9 @@ ENDIF
  INTEGER                                    :: i85    ! dim5 level 8 counter variable for arrays of ddts
  INTEGER                                    :: i95    ! dim5 level 9 counter variable for arrays of ddts
     ! Initialize ErrStat
-    ! Initialize ErrStat
  ErrStat = ErrID_None
  ErrMsg  = ""
-    ! we're subtract a constant from the times to resolve some 
+    ! we'll subtract a constant from the times to resolve some 
     ! numerical issues when t gets large (and to simplify the equations)
  t = tin - tin(1)
  t_out = tin_out - tin(1)
@@ -1763,19 +2056,23 @@ ENDIF
  endif
  order = SIZE(u) - 1
  IF ( order .eq. 0 ) THEN
+IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
   u_out%Position = u(1)%Position
+END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
     ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
+IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
   ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   b2 = -(u(1)%Position - u(2)%Position)/t(2)
   u_out%Position = u(1)%Position + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -1792,6 +2089,7 @@ ENDIF
     ErrMsg  = ' Error in IfW_HHWind_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
+IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
   ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
   b2 = (t(3)**2*(u(1)%Position - u(2)%Position) + t(2)**2*(-u(1)%Position + u(3)%Position))/(t(2)*t(3)*(t(2) - t(3)))
@@ -1799,6 +2097,7 @@ ENDIF
   u_out%Position = u(1)%Position + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
  ELSE 
    ErrStat = ErrID_Fatal
    ErrMsg = ' order must be less than 3 in IfW_HHWind_Input_ExtrapInterp '
@@ -1825,24 +2124,14 @@ ENDIF
 
  TYPE(IfW_HHWind_outputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
  REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
- TYPE(IfW_HHWind_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at t1 > t2 > t3
+ TYPE(IfW_HHWind_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
  REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
    ! local variables
  REAL(DbKi) :: t(SIZE(tin))    ! Times associated with the inputs
  REAL(DbKi) :: t_out           ! Time to which to be extrap/interpd
- TYPE(MeshType) :: tmpmesh
  INTEGER(IntKi)                 :: order    ! order of polynomial fit (max 2)
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr1       ! temporary for extrapolaton/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr2       ! temporary for extrapolation/interpolation
- REAL(ReKi),ALLOCATABLE,DIMENSION(:)        :: mr3       ! temporary for extrapolation/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md1       ! temporary for extrapolaton/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md2       ! temporary for extrapolation/interpolation
- REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: md3       ! temporary for extrapolation/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi1       ! temporary for extrapolaton/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi2       ! temporary for extrapolation/interpolation
- INTEGER(IntKi),ALLOCATABLE,DIMENSION(:)    :: mi3       ! temporary for extrapolation/interpolation
  REAL(DbKi)                                 :: b0       ! temporary for extrapolation/interpolation
  REAL(DbKi)                                 :: c0       ! temporary for extrapolation/interpolation
  REAL(DbKi),ALLOCATABLE,DIMENSION(:)        :: b1       ! temporary for extrapolation/interpolation
@@ -1906,10 +2195,9 @@ ENDIF
  INTEGER                                    :: i85    ! dim5 level 8 counter variable for arrays of ddts
  INTEGER                                    :: i95    ! dim5 level 9 counter variable for arrays of ddts
     ! Initialize ErrStat
-    ! Initialize ErrStat
  ErrStat = ErrID_None
  ErrMsg  = ""
-    ! we're subtract a constant from the times to resolve some 
+    ! we'll subtract a constant from the times to resolve some 
     ! numerical issues when t gets large (and to simplify the equations)
  t = tin - tin(1)
  t_out = tin_out - tin(1)
@@ -1926,19 +2214,23 @@ ENDIF
  endif
  order = SIZE(u) - 1
  IF ( order .eq. 0 ) THEN
+IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   u_out%Velocity = u(1)%Velocity
+END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
     ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
+IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   b2 = -(u(1)%Velocity - u(2)%Velocity)/t(2)
   u_out%Velocity = u(1)%Velocity + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -1955,6 +2247,7 @@ ENDIF
     ErrMsg  = ' Error in IfW_HHWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
+IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
   b2 = (t(3)**2*(u(1)%Velocity - u(2)%Velocity) + t(2)**2*(-u(1)%Velocity + u(3)%Velocity))/(t(2)*t(3)*(t(2) - t(3)))
@@ -1962,6 +2255,7 @@ ENDIF
   u_out%Velocity = u(1)%Velocity + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
  ELSE 
    ErrStat = ErrID_Fatal
    ErrMsg = ' order must be less than 3 in IfW_HHWind_Output_ExtrapInterp '

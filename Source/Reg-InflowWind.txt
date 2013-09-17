@@ -9,15 +9,34 @@
 
 usefrom Reg-IfW_FFWind.txt
 usefrom Reg-IfW_HHWind.txt
-
+include Registry_NWTC_Library.txt
 
 #########################
+
+param    InflowWind/Ifw          -                       IntKi   DEFAULT_WindNumber -     -1    -     "Undetermined wind type; calls internal routine to guess what type it is"     -
+param    ^                       -                       IntKi    Undef_WindNumber  -     0     -     "This is the code for an undefined WindFileType"                              -
+param    ^                       -                       IntKi    HH_WindNumber     -     1     -     "Hub-Height wind file"                                                        -
+param    ^                       -                       IntKi    FF_WindNumber     -     2     -     "Binary full-field wind file"                                                 -
+param    ^                       -                       IntKi    UD_WindNumber     -     3     -     "User-defined wind"                                                           -
+param    ^                       -                       IntKi    FD_WindNumber     -     4     -     "4-dimensional wind (LES)"                                                    -
+param    ^                       -                       IntKi    CTP_WindNumber    -     5     -     "Coherent turbulence wind field (superimpose KH billow on background wind)"   -
+param    ^                       -                       IntKi    HAWC_WindNumber   -     6     -     "Binary full-field wind file in HAWC format"                                  -
+
 
 typedef  InflowWind/IfW          InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 typedef  ^                       ^                       IntKi    WindFileType      -     0     -     "Type of windfile"                                             -
 
+
+
+# Init Output
+typedef  ^                       InitOutputType  CHARACTER(10)    WriteOutputHdr    :     -     -     "Names of output-to-file channels"                             -
+typedef  ^                       ^               CHARACTER(10)    WriteOutputUnt    :     -     -     "Units of output-to-file channels"                             -
+typedef  ^                       ^                    ProgDesc         Ver          -     -     -     "Version information off InflowWind module"                    -
+typedef  ^                       ^                        ReKi    HubHeight         -     -     -     "Height of the hub"                                            meters
+typedef  ^                       ^      IfW_FFWind_InitOutputType FFWind            -     -     -     "FFWind InitOutput info"                                       -
+typedef  ^                       ^      IfW_HHWind_InitOutputType HHWind            -     -     -     "HHWind InitOutput info"                                       -
 
 
 # Define any data that are not considered actual states here:

@@ -40,6 +40,7 @@ PROGRAM FFWind_Test
    TYPE(IfW_FFWind_ConstraintStateType)               :: FF_ConstrStates
    TYPE(IfW_FFWind_OtherStateType)                    :: FF_OtherStates
    TYPE(IfW_FFWind_OutputType)                        :: FF_OutData
+   TYPE(IfW_FFWind_InitOutputType)                    :: FF_InitOutData
 
    REAL(DbKi)                                         :: FF_Interval
 
@@ -95,7 +96,7 @@ PROGRAM FFWind_Test
 
    CALL IfW_FFWind_Init(FF_InitData,   FF_InData,     FF_ParamData,                       &
                         FF_ContStates, FF_DiscStates, FF_ConstrStates,  FF_OtherStates,   &
-                        FF_OutData,    FF_Interval,                                       &
+                        FF_OutData,    FF_Interval,   FF_InitOutData,                     &
                         ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)

@@ -38,8 +38,7 @@ MODULE IfW_FFWind
    IMPLICIT                                     NONE
    PRIVATE
 
-   INTEGER(IntKi),   PARAMETER               :: DataFormatID = 1   ! Update this value if the data types change (used in IfW_FFWind_Pack)
-   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_ProgDesc = ProgDesc( 'IfW_FFWind', 'v2.00.00', '16-Mar-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_Ver = ProgDesc( 'IfW_FFWind', 'v2.00.00', '17-Sep-2013' )
 
    PUBLIC                                    :: IfW_FFWind_Init
    PUBLIC                                    :: IfW_FFWind_End
@@ -58,7 +57,7 @@ CONTAINS
 !====================================================================================================
 SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
-                           OutData,    Interval,   ErrStat,          ErrMsg)
+                           OutData,    Interval,   InitOutData,      ErrStat,       ErrMsg)
    !-------------------------------------------------------------------------------------------------
    !  This routine is used read the full-field turbulence data.
    !  09/25/1997  - Created by M. Buhl from GETFILES in ViewWind.
@@ -78,6 +77,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    TYPE(IfW_FFWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates   ! Constraint States  (unused)
    TYPE(IfW_FFWind_OtherStateType),       INTENT(  OUT)  :: OtherStates    ! Other State data   (storage for the main data)
    TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
+   TYPE(IfW_FFWind_InitOutputType),       INTENT(  OUT)  :: InitOutData    ! Initial output
 
    REAL(DbKi),                            INTENT(INOUT)  :: Interval       ! Time Interval to use (passed through here)
 
@@ -335,6 +335,39 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ENDIF
 
    ParamData%Initialized = .TRUE.
+
+
+      !-------------------------------------------------------------------------------------------------
+      ! Set the InitOutput information
+      !-------------------------------------------------------------------------------------------------
+
+   InitOutData%HubHeight   = ParamData%ReferenceHeight
+   InitOutdata%Ver         = IfW_FFWind_Ver
+
+
+      ! Allocate and populate the OutputHdr array (contains names of outputable values)
+
+   CALL AllocAry( InitOutData%WriteOutputHdr, 3, 'Empty array for names of outputable information.', TmpErrStat, TmpErrMsg )
+   ErrStat  = MAX(TmpErrStat, ErrStat)
+   ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
+   IF ( ErrStat >= AbortErrLev ) RETURN
+
+   InitOutData%WriteOutputHdr(1) = 'WindVxi'
+   InitOutData%WriteOutputHdr(2) = 'WindVyi'
+   InitOutData%WriteOutputHdr(3) = 'WindVzi'
+
+
+      ! Allocate and populate the OutputUnt array (contains units of outputable values)
+
+   CALL AllocAry( InitOutData%WriteOutputUnt, 3, 'Empty array for units of outputable information.', TmpErrStat, TmpErrMsg )
+   ErrStat  = MAX(TmpErrStat, ErrStat)
+   ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
+   IF ( ErrStat >= AbortErrLev ) RETURN
+
+   InitOutData%WriteOutputUnt(1) = 'm/s'
+   InitOutData%WriteOutputUnt(2) = 'm/s'
+   InitOutData%WriteOutputUnt(3) = 'm/s'
+
 
    RETURN
 
@@ -632,7 +665,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ! Open the file
    !-------------------------------------------------------------------------------------------------
 
-      CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), ErrStat, ErrMsg)
+      CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), TmpErrStat, TmpErrMsg)
       ErrStat  = MAX(TmpErrStat, ErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN

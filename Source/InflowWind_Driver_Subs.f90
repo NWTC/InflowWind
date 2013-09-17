@@ -214,7 +214,7 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
 
       USE NWTC_Library
       USE IfW_Driver_Types
-      USE InflowWind_Module_Types
+      USE InflowWind_Types
 
       IMPLICIT NONE
 
@@ -273,27 +273,27 @@ SUBROUTINE RetrieveArgs( Settings, SettingsFlags, ErrStat, ErrMsg )
          SELECT CASE (ThisArg(Delim1+1:Delim2-1))
             CASE ('HH')    ! hub height
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = HH_Wind
+               Settings%WindFileType      = HH_WindNumber
 
             CASE ('FF')    ! full field
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = FF_Wind
+               Settings%WindFileType      = FF_WindNumber
 
             CASE ('UD')    ! User Defined
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = UD_Wind
+               Settings%WindFileType      = UD_WindNumber
 
             CASE ('FD')    ! Four dimen
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = FD_Wind
+               Settings%WindFileType      = FD_WindNumber
 
             CASE ('CTP')   ! coherent turbulence
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = CTP_Wind
+               Settings%WindFileType      = CTP_WindNumber
 
             CASE ('HAWC')  ! HAWC compatible
                SettingsFlags%WindFileType = .TRUE.
-               Settings%WindFileType      = HAWC_Wind
+               Settings%WindFileType      = HAWC_WindNumber
 
             CASE DEFAULT
                ErrMsg   = "Invalid wind type. Ignoring option: '"//SwChar//TRIM(ThisArg)//"'."
