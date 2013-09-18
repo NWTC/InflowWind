@@ -72,7 +72,7 @@ typedef  ^                    InputType                  ReKi     Position      
 # ..... Outputs ...................................................................................................................
 # Define outputs that are contained on the mesh here:
 typedef  ^                    OutputType                 ReKi     Velocity          ::    -     -     "Array holding the U,V,W velocity for a given timestep"        meters/sec
-
+typedef  ^                    OutputType                 ReKi     WriteOutput       :     -     -     "Array with values to output to file"
 
 
 # ..... States not used by this module ...................................................................................................................

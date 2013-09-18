@@ -89,6 +89,7 @@ IMPLICIT NONE
 ! =========  Ifw_OutputType  =======
   TYPE, PUBLIC :: Ifw_OutputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity 
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WriteOutput 
   END TYPE Ifw_OutputType
 ! =======================
 ! =========  Ifw_ContinuousStateType  =======
@@ -1088,6 +1089,19 @@ IF (ALLOCATED(SrcOutputData%Velocity)) THEN
    END IF
    DstOutputData%Velocity = SrcOutputData%Velocity
 ENDIF
+IF (ALLOCATED(SrcOutputData%WriteOutput)) THEN
+   i1_l = LBOUND(SrcOutputData%WriteOutput,1)
+   i1_u = UBOUND(SrcOutputData%WriteOutput,1)
+   IF (.NOT.ALLOCATED(DstOutputData%WriteOutput)) THEN 
+      ALLOCATE(DstOutputData%WriteOutput(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'Ifw_CopyOutput: Error allocating DstOutputData%WriteOutput.'
+         RETURN
+      END IF
+   END IF
+   DstOutputData%WriteOutput = SrcOutputData%WriteOutput
+ENDIF
  END SUBROUTINE Ifw_CopyOutput
 
  SUBROUTINE Ifw_DestroyOutput( OutputData, ErrStat, ErrMsg )
@@ -1099,6 +1113,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
   IF ( ALLOCATED(OutputData%Velocity) ) DEALLOCATE(OutputData%Velocity)
+  IF ( ALLOCATED(OutputData%WriteOutput) ) DEALLOCATE(OutputData%WriteOutput)
  END SUBROUTINE Ifw_DestroyOutput
 
  SUBROUTINE Ifw_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1136,12 +1151,17 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
   Re_BufSz    = Re_BufSz    + SIZE( InData%Velocity )  ! Velocity 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WriteOutput )  ! WriteOutput 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( ALLOCATED(InData%Velocity) ) THEN
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) =  PACK(InData%Velocity ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
+  ENDIF
+  IF ( ALLOCATED(InData%WriteOutput) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WriteOutput))-1 ) =  PACK(InData%WriteOutput ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WriteOutput)
   ENDIF
  END SUBROUTINE Ifw_PackOutput
 
@@ -1183,6 +1203,12 @@ ENDIF
     OutData%Velocity = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Velocity))-1 ),mask2,OutData%Velocity)
   DEALLOCATE(mask2)
     Re_Xferred   = Re_Xferred   + SIZE(OutData%Velocity)
+  ENDIF
+  IF ( ALLOCATED(OutData%WriteOutput) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WriteOutput,1))); mask1 = .TRUE.
+    OutData%WriteOutput = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WriteOutput))-1 ),mask1,OutData%WriteOutput)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WriteOutput)
   ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
@@ -2289,6 +2315,9 @@ END IF ! check if allocated
 IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   u_out%Velocity = u(1)%Velocity
 END IF ! check if allocated
+IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
+  u_out%WriteOutput = u(1)%WriteOutput
+END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -2302,6 +2331,14 @@ IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   u_out%Velocity = u(1)%Velocity + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
+IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
+  ALLOCATE(b1(SIZE(u_out%WriteOutput,1)))
+  ALLOCATE(c1(SIZE(u_out%WriteOutput,1)))
+  b1 = -(u(1)%WriteOutput - u(2)%WriteOutput)/t(2)
+  u_out%WriteOutput = u(1)%WriteOutput + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
 END IF ! check if allocated
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
@@ -2327,6 +2364,15 @@ IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   u_out%Velocity = u(1)%Velocity + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
+END IF ! check if allocated
+IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
+  ALLOCATE(b1(SIZE(u_out%WriteOutput,1)))
+  ALLOCATE(c1(SIZE(u_out%WriteOutput,1)))
+  b1 = (t(3)**2*(u(1)%WriteOutput - u(2)%WriteOutput) + t(2)**2*(-u(1)%WriteOutput + u(3)%WriteOutput))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u(1)%WriteOutput + t(3)*u(2)%WriteOutput - t(2)*u(3)%WriteOutput ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%WriteOutput = u(1)%WriteOutput + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
 END IF ! check if allocated
  ELSE 
    ErrStat = ErrID_Fatal

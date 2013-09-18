@@ -93,7 +93,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData           ! Initial output
    TYPE(IfW_HHWind_InitOutputType),       INTENT(  OUT)  :: InitOutData       ! Initial output
 
-   REAL(DbKi),                            INTENT(INOUT)  :: Interval          ! We don't change this.
+   REAL(DbKi),                            INTENT(IN   )  :: Interval          ! We don't change this.
 
 
 

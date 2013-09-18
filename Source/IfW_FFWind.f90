@@ -79,7 +79,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
    TYPE(IfW_FFWind_InitOutputType),       INTENT(  OUT)  :: InitOutData    ! Initial output
 
-   REAL(DbKi),                            INTENT(INOUT)  :: Interval       ! Time Interval to use (passed through here)
+   REAL(DbKi),                            INTENT(IN   )  :: Interval       ! Time Interval to use (passed through here)
 
 
       ! Error Handling
@@ -364,9 +364,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    IF ( ErrStat >= AbortErrLev ) RETURN
 
-   InitOutData%WriteOutputUnt(1) = 'm/s'
-   InitOutData%WriteOutputUnt(2) = 'm/s'
-   InitOutData%WriteOutputUnt(3) = 'm/s'
+   InitOutData%WriteOutputUnt(1) = '(m/s)'
+   InitOutData%WriteOutputUnt(2) = '(m/s)'
+   InitOutData%WriteOutputUnt(3) = '(m/s)'
 
 
    RETURN
