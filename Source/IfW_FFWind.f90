@@ -162,9 +162,11 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Get a unit number to use
 
    CALL GetNewUnit(OtherStates%UnitWind, TmpErrStat, TmpErrMsg)
-   ErrStat  = MAX(TmpErrStat, ErrStat)
-   ErrMsg   = TRIM(ErrMsg)//"IfW_FFWind: "//TRIM(TmpErrMsg)//NewLine
-   IF ( ErrStat >= AbortErrLev ) RETURN
+   IF (TmpErrStat /= ErrID_None) THEN
+      ErrStat  = MAX(TmpErrStat, ErrStat)      
+      ErrMsg   = TRIM(ErrMsg)//"IfW_FFWind: "//TRIM(TmpErrMsg)//NewLine
+      IF ( ErrStat >= AbortErrLev ) RETURN
+   END IF
 
 
       !-------------------------------------------------------------------------------------------------
