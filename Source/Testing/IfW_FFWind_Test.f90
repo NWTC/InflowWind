@@ -22,7 +22,7 @@ PROGRAM FFWind_Test
 
    IMPLICIT NONE
 
-   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("Wind_Test","v1.00.00a-adp","6-Feb-2013")
+   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("FFWind_Test","v1.00.00a-adp","18-Sep-2013")
 
 
 
@@ -47,13 +47,16 @@ PROGRAM FFWind_Test
 
       ! Local variables
    REAL(DbKi)                                         :: Time
-   REAL(ReKi)                                         :: WindPosition(3,3)
-   REAL(ReKi)                                         :: WindVelocity(3,3)
+   REAL(ReKi),ALLOCATABLE                             :: WindPosition(:,:)
+   REAL(ReKi),ALLOCATABLE                             :: WindVelocity(:,:)
 
 
       ! Temporary variables
    CHARACTER(1024)                                    :: TmpChar
    INTEGER(IntKi)                                     :: TmpInt
+   CHARACTER(1024)                                    :: TmpErrMsg
+   INTEGER(IntKi)                                     :: TmpErrStat
+   INTEGER(IntKi)                                     :: NumPoints
 
 
 
@@ -67,9 +70,21 @@ PROGRAM FFWind_Test
    FF_Interval = 0.01
 
       ! setup the file info
-   FF_InitData%WindFileName   = "../../Samples/SampleCase/Sample1.wnd"
+   FF_InitData%WindFileName   = "../../../../windsvn/InflowWind/Branches/Modularization/Samples/SampleCase/Sample1.bts"
    FF_InitData%ReferenceHeight = 80.                        ! meters
    FF_InitData%Width           = 100.                       ! meters
+
+
+      ! Allocate the WindPosition array
+   CALL AllocAry( WindPosition, 3, 3, "WindPosition data", ErrStat, ErrMsg )
+   IF ( ErrStat >= ErrID_Severe ) THEN
+      CALL ProgAbort(ErrMsg)
+   ELSEIF ( ErrStat /= ErrID_None ) THEN
+      CALL ProgWarn(ErrMsg)
+      ErrStat = 0
+      ErrMsg   = ''
+   ENDIF
+
 
    WindPosition(1,1) = 0.0                                  ! longitudinal front/back of tower
    WindPosition(2,1) = 0.0                                  ! lateral position left/right of tower
@@ -106,14 +121,17 @@ PROGRAM FFWind_Test
    ErrStat  = ErrID_None
    ErrMsg   = ""
 
-   CALL AllocAry( FF_InData%Position, 3, 2, "Input position data 3x2 array", ErrStat, ErrMsg )
+   DEALLOCATE( FF_InData%Position, STAT = TmpErrStat)
+
+   CALL AllocAry( FF_InData%Position, 3, SIZE( WindPosition,2 ), "Input position data 3xN", ErrStat, ErrMsg )
    IF ( ErrStat >= ErrID_Severe ) THEN
       CALL ProgAbort(ErrMsg)
    ELSEIF ( ErrStat /= ErrID_None ) THEN
       CALL ProgWarn(ErrMsg)
+      ErrStat  = ErrID_None
+      ErrMsg   = ''
    ENDIF
-   ErrStat  = ErrID_None
-   ErrMsg   = ""
+
 
       ! Copy the WindPosition over to the InData%Position array
    FF_InData%Position   = WindPosition
@@ -125,6 +143,16 @@ PROGRAM FFWind_Test
    CALL  IfW_FFWind_CalcOutput(  Time,    FF_InData,     FF_ParamData,                          &
                            FF_ContStates, FF_DiscStates, FF_ConstrStates,     FF_OtherStates,   &
                            FF_OutData,    ErrStat,       ErrMsg)
+
+      ! Allocate the WindVelocity array
+   CALL AllocAry( WindVelocity, 3, SIZE(FF_OutData%Velocity,2), "WindVelocity data", ErrStat, ErrMsg )
+   IF ( ErrStat >= ErrID_Severe ) THEN
+      CALL ProgAbort(ErrMsg)
+   ELSEIF ( ErrStat /= ErrID_None ) THEN
+      CALL ProgWarn(ErrMsg)
+      ErrStat = 0
+      ErrMsg   = ''
+   ENDIF
 
       ! copy the Velocity data over for this timestep
    WindVelocity=FF_OutData%Velocity
@@ -143,7 +171,7 @@ PROGRAM FFWind_Test
    CALL WrScr(NewLine//NewLine// &
          '   Time           x           y           z               U               V               W'//NewLine// &
          ' -------       -------     -------     -------         ---------       ---------       ---------')
-   DO TmpInt=1,3
+   DO TmpInt=1,SIZE(WindVelocity,2)
       write (TmpChar, "( f8.3,'"//"  "//"', 3(f12.2),'"//"  "//"', 3(f16.4))")            &
                   Time,                                                                   &
                   WindPosition(1,TmpInt),WindPosition(2,TmpInt),WindPosition(3,TmpInt),   &
