@@ -13,7 +13,7 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-param    InflowWind/Ifw          -                       IntKi   DEFAULT_WindNumber -     -1    -     "Undetermined wind type; calls internal routine to guess what type it is"     -
+param    InflowWind/IfW          -                       IntKi   DEFAULT_WindNumber -     -1    -     "Undetermined wind type; calls internal routine to guess what type it is"     -
 param    ^                       -                       IntKi    Undef_WindNumber  -     0     -     "This is the code for an undefined WindFileType"                              -
 param    ^                       -                       IntKi    HH_WindNumber     -     1     -     "Hub-Height wind file"                                                        -
 param    ^                       -                       IntKi    FF_WindNumber     -     2     -     "Binary full-field wind file"                                                 -
@@ -23,7 +23,7 @@ param    ^                       -                       IntKi    CTP_WindNumber
 param    ^                       -                       IntKi    HAWC_WindNumber   -     6     -     "Binary full-field wind file in HAWC format"                                  -
 
 
-typedef  InflowWind/IfW          InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
+typedef  ^                       InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 typedef  ^                       ^                       IntKi    WindFileType      -     0     -     "Type of windfile"                                             -
