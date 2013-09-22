@@ -3,6 +3,10 @@
 # Module IfW_HHWind_Types contains all of the user-defined types needed in IfW_HHWind. It also contains copy, destroy, pack, and
 # unpack routines associated with each defined data types.
 ###################################################################################################################################
+# File last changed: $Date$
+# (File) Revision #: $Rev$
+# URL: $HeadURL$
+###################################################################################################################################
 # Entries are of the form
 # keyword <IfW_HHWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################

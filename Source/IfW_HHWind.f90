@@ -26,6 +26,10 @@ MODULE IfW_HHWind
 !     -- Note:  Jacobians are not included in this version.
 !
 !----------------------------------------------------------------------------------------------------
+! File last changed: $Date$
+! (File) Revision #: $Rev$
+! URL: $HeadURL$
+!----------------------------------------------------------------------------------------------------
 ! LICENSING
 ! Copyright (C) 2013  National Renewable Energy Laboratory
 !
