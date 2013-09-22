@@ -26,7 +26,7 @@ MODULE IfW_HHWind
 !     -- Note:  Jacobians are not included in this version.
 !
 !----------------------------------------------------------------------------------------------------
-! File last changed: $Date$
+! File last committed: $Date$
 ! (File) Revision #: $Rev$
 ! URL: $HeadURL$
 !----------------------------------------------------------------------------------------------------

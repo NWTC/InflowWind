@@ -3,7 +3,7 @@
 # Module InflowWind_Types contains all of the user-defined types needed in InflowWind. It also contains copy, destroy, pack, and
 # unpack routines associated with each defined data types.
 ###################################################################################################################################
-# File last changed: $Date$
+# File last committed: $Date$
 # (File) Revision #: $Rev$
 # URL: $HeadURL$
 ###################################################################################################################################
