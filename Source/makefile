@@ -175,11 +175,3 @@ clean:
 	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90) $(RegistryDIR)/$(IfWRegistryF90);
 	rmdir $(DEST_DIR);
 
-#doxygen bits
-document: all
-	rm $(Doxy_DIR)/tempassembled.f90;
-	cat $(foreach src, $(InflowWind_SOURCES), $(addprefix $(InflowWind_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;
-	$(MAKE) -C $(Doxy_DIR);
-
-   #This line is for putting all the NWTC_Lib bits in the documentation;
-   #	cat $(foreach src, $(LIB_SOURCES), $(addprefix $(LIB_DIR)/,$(src))) >> $(Doxy_DIR)/tempassembled.f90;

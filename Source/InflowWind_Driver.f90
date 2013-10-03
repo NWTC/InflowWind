@@ -33,7 +33,7 @@ PROGRAM InflowWind_Driver
    IMPLICIT NONE
 
       ! Info on this code
-   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("InflowWind_Driver","v1.00.00a-adp","31-Dec-2012")
+   TYPE( ProgDesc ), PARAMETER                        :: ProgInfo = ProgDesc("InflowWind_Driver","v1.00.00b-adp","03-Oct-2013")
 
 
       ! Types needed here (from InflowWind module)

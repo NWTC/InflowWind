@@ -70,7 +70,7 @@ PROGRAM FFWind_Test
    FF_Interval = 0.01
 
       ! setup the file info
-   FF_InitData%WindFileName   = "../../../../windsvn/InflowWind/Branches/Modularization/Samples/SampleCase/Sample1.bts"
+   FF_InitData%WindFileName   = "../../SampleCase/Sample1.bts"
    FF_InitData%ReferenceHeight = 80.                        ! meters
    FF_InitData%Width           = 100.                       ! meters
 
