@@ -284,8 +284,12 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(InitOutputData%WriteOutputHdr) ) DEALLOCATE(InitOutputData%WriteOutputHdr)
-  IF ( ALLOCATED(InitOutputData%WriteOutputUnt) ) DEALLOCATE(InitOutputData%WriteOutputUnt)
+IF (ALLOCATED(InitOutputData%WriteOutputHdr)) THEN
+   DEALLOCATE(InitOutputData%WriteOutputHdr)
+ENDIF
+IF (ALLOCATED(InitOutputData%WriteOutputUnt)) THEN
+   DEALLOCATE(InitOutputData%WriteOutputUnt)
+ENDIF
   CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
   CALL IfW_FFWind_DestroyInitOutput( InitOutputData%FFWind, ErrStat, ErrMsg )
   CALL IfW_HHWind_DestroyInitOutput( InitOutputData%HHWind, ErrStat, ErrMsg )
@@ -972,7 +976,9 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(InputData%Position) ) DEALLOCATE(InputData%Position)
+IF (ALLOCATED(InputData%Position)) THEN
+   DEALLOCATE(InputData%Position)
+ENDIF
  END SUBROUTINE IfW_DestroyInput
 
  SUBROUTINE IfW_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1114,8 +1120,12 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(OutputData%Velocity) ) DEALLOCATE(OutputData%Velocity)
-  IF ( ALLOCATED(OutputData%WriteOutput) ) DEALLOCATE(OutputData%WriteOutput)
+IF (ALLOCATED(OutputData%Velocity)) THEN
+   DEALLOCATE(OutputData%Velocity)
+ENDIF
+IF (ALLOCATED(OutputData%WriteOutput)) THEN
+   DEALLOCATE(OutputData%WriteOutput)
+ENDIF
  END SUBROUTINE IfW_DestroyOutput
 
  SUBROUTINE IfW_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )

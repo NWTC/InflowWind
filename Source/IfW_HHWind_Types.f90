@@ -267,8 +267,12 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(InitOutputData%WriteOutputHdr) ) DEALLOCATE(InitOutputData%WriteOutputHdr)
-  IF ( ALLOCATED(InitOutputData%WriteOutputUnt) ) DEALLOCATE(InitOutputData%WriteOutputUnt)
+IF (ALLOCATED(InitOutputData%WriteOutputHdr)) THEN
+   DEALLOCATE(InitOutputData%WriteOutputHdr)
+ENDIF
+IF (ALLOCATED(InitOutputData%WriteOutputUnt)) THEN
+   DEALLOCATE(InitOutputData%WriteOutputUnt)
+ENDIF
   CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
  END SUBROUTINE IfW_HHWind_DestroyInitOutput
 
@@ -531,14 +535,30 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(OtherStateData%TData) ) DEALLOCATE(OtherStateData%TData)
-  IF ( ALLOCATED(OtherStateData%DELTA) ) DEALLOCATE(OtherStateData%DELTA)
-  IF ( ALLOCATED(OtherStateData%V) ) DEALLOCATE(OtherStateData%V)
-  IF ( ALLOCATED(OtherStateData%VZ) ) DEALLOCATE(OtherStateData%VZ)
-  IF ( ALLOCATED(OtherStateData%HSHR) ) DEALLOCATE(OtherStateData%HSHR)
-  IF ( ALLOCATED(OtherStateData%VSHR) ) DEALLOCATE(OtherStateData%VSHR)
-  IF ( ALLOCATED(OtherStateData%VLINSHR) ) DEALLOCATE(OtherStateData%VLINSHR)
-  IF ( ALLOCATED(OtherStateData%VGUST) ) DEALLOCATE(OtherStateData%VGUST)
+IF (ALLOCATED(OtherStateData%TData)) THEN
+   DEALLOCATE(OtherStateData%TData)
+ENDIF
+IF (ALLOCATED(OtherStateData%DELTA)) THEN
+   DEALLOCATE(OtherStateData%DELTA)
+ENDIF
+IF (ALLOCATED(OtherStateData%V)) THEN
+   DEALLOCATE(OtherStateData%V)
+ENDIF
+IF (ALLOCATED(OtherStateData%VZ)) THEN
+   DEALLOCATE(OtherStateData%VZ)
+ENDIF
+IF (ALLOCATED(OtherStateData%HSHR)) THEN
+   DEALLOCATE(OtherStateData%HSHR)
+ENDIF
+IF (ALLOCATED(OtherStateData%VSHR)) THEN
+   DEALLOCATE(OtherStateData%VSHR)
+ENDIF
+IF (ALLOCATED(OtherStateData%VLINSHR)) THEN
+   DEALLOCATE(OtherStateData%VLINSHR)
+ENDIF
+IF (ALLOCATED(OtherStateData%VGUST)) THEN
+   DEALLOCATE(OtherStateData%VGUST)
+ENDIF
  END SUBROUTINE IfW_HHWind_DestroyOtherState
 
  SUBROUTINE IfW_HHWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -899,7 +919,9 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(InputData%Position) ) DEALLOCATE(InputData%Position)
+IF (ALLOCATED(InputData%Position)) THEN
+   DEALLOCATE(InputData%Position)
+ENDIF
  END SUBROUTINE IfW_HHWind_DestroyInput
 
  SUBROUTINE IfW_HHWind_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1028,7 +1050,9 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-  IF ( ALLOCATED(OutputData%Velocity) ) DEALLOCATE(OutputData%Velocity)
+IF (ALLOCATED(OutputData%Velocity)) THEN
+   DEALLOCATE(OutputData%Velocity)
+ENDIF
  END SUBROUTINE IfW_HHWind_DestroyOutput
 
  SUBROUTINE IfW_HHWind_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
