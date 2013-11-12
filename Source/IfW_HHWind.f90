@@ -456,9 +456,9 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    IF ( ErrStat >= AbortErrLev ) RETURN
 
-   InitOutData%WriteOutputUnt(1) = 'm/s'
-   InitOutData%WriteOutputUnt(2) = 'm/s'
-   InitOutData%WriteOutputUnt(3) = 'm/s'
+   InitOutData%WriteOutputUnt(1) = '(m/s)'
+   InitOutData%WriteOutputUnt(2) = '(m/s)'
+   InitOutData%WriteOutputUnt(3) = '(m/s)'
 
 
    RETURN
