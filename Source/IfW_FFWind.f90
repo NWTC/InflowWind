@@ -448,6 +448,15 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          ! Read the summary file.
          !----------------------------------------------------------------------------------------------
 
+      ! Here are the strings we're looking for, in this order:
+      ! 1) 'CLOCKWISE'
+      ! 2) 'HUB HEIGHT'
+      ! 3)     (unused; decided we didn't need to read data also stored in the binary file)
+      ! 4) 'UBAR'
+      ! 5) 'HEIGHT OFFSET' (optional)
+      ! 6) 'PERIODIC' (optional)
+         
+         
       DO WHILE ( ( ErrStat == ErrID_None ) .AND. StrNeeded(NumStrings) )
 
          LineCount = LineCount + 1
@@ -455,7 +464,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          READ ( OtherStates%UnitWind, '(A)', IOSTAT=TmpErrStat ) LINE
          IF ( TmpErrStat /= 0 ) THEN
 
-            IF ( StrNeeded(NumStrings-1) ) THEN  ! the "HEIGHT OFFSET" StrNeeded(NumStrings) parameter is not necessary.  We'll assume it's zero if we didn't find it.
+            IF ( StrNeeded(1) .OR. StrNeeded(2) .OR. StrNeeded(4)  ) THEN  ! the "HEIGHT OFFSET" and "PERIODIC" parameters are not necessary.  We'll assume they are zero/false if we didn't find it.
                CALL SetErrStat( ErrID_Fatal, ' Error reading line #'//TRIM(Num2LStr(LineCount))//' of the summary file, "'// &
                            TRIM(FileName)//'". Could not find all of the required parameters.', ErrStat, ErrMsg, 'Read_Summary_FF' )                  
                RETURN
