@@ -934,7 +934,7 @@ SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt
 
          ! Compute the first time derivatives of the continuous states here:
 
-      dxdt%DummyContState = 0
+      dxdt%DummyContState = 0.0_ReKi
 
 
 END SUBROUTINE IfW_HHWind_CalcContStateDeriv
@@ -992,7 +992,7 @@ SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState,
 
          ! Solve for the constraint states here:
 
-      z_residual%DummyConstrState = 0
+      z_residual%DummyConstrState = 0.0_ReKi
 
 END SUBROUTINE IfW_HHWind_CalcConstrStateResidual
 !----------------------------------------------------------------------------------------------------------------------------------
