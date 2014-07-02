@@ -1,177 +1,212 @@
-# 2012.12.11
-#This makefile has been tested on Ubuntu 12.10 with gfortran 4.7.2
-#It is intended to be used with
-#     NWTC Subroutine Library (v1.06.00,      ??-Dec-2012)
+#================================================================================#
+# This makefile created by B. Jonkman on 1-Jul-2014,                             #
+# adapted from FAST (M. Buhl on 25-Jan-2013).                                    #
+# (c) 2014 National Renewable Energy Laboratory                                  #
+#                                                                                #
+#                                                                                #
+#================================================================================#
+
+   # 32-bit or 64-bit?
+BITS = 32
+#BITS = 64
+
+#OS=lin
+
+   # Location of source files for InflowWind, NWTC Library, and the FAST Registry.
+   # You will probably need to change these for your system.
+
+
+
+ifeq ($(OS),Windows_NT)
+   Registry     = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/bin/Registry_win32.exe
+   NWTC_Lib_DIR = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/Source/dependencies/NWTC_Library
+   IfW_DIR      = .
+else
+   Registry     = registry.exe
+   NWTC_Lib_DIR = $(FAST_DIR)/dependencies/NWTC_Library
+   IfW_DIR      = $(FAST_DIR)/dependencies/InflowWind
+endif
+
+
+   # Name of compiler to use and flags to use.
+FC      = gfortran
+
+FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -DNO_MESHMAPPING
+#FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
+#FFLAGS = -g -O0 -v -da -Q -fbacktrace -ffree-line-length-none -x f95-cpp-input -DNO_MESHMAPPING
+
+LDFLAGS = -O2 -m$(BITS) -fbacktrace
+
+# some useful gfortran options:
+#  -DFPE_TRAP_ENABLED
+#  -Wl,--large-address-aware   # not necessary when $(BITS) is 64 (64-bit target)
+#  -Wl,--stack=999999999       # not necessary when $(BITS) is 64
+#  -Wconversion-extra -Wconversion
+#  -fdefault-real-8 -fcheck=bounds,do,mem,pointer -std=f2003 -O0 -v -Wall
+# http://gcc.gnu.org/onlinedocs/gfortran/Option-Index.html#Option-Index
 #
-#Older versions of the library and InflowWind may not work with this makefile
-#
-#
-#THIS IS BROKEN
-#  This makefile is currently a bit broken. After several changes were made in the library,
-#  it no longer compiles properly with this makefile without modifying the FFLAGS. The correct
-#  way to deal with this is to either:
-#
-#     1) change the library so that those flags are not needed (CPP directives)
-#     2) simply include the library libnwtc.a file (didn't figure out yet)
-#
-#  Either way, this makefile will need to be fixed. Right now it copies the .mod and .o files
-#  over from the library and uses them (the -a keeps the old dates, so it kind of works).
-#
+# makefile:
+# --warn-undefined-variables
+
+
+   # Precision.
+
+# Use "SingPrec" for single precision and "DoubPrec" for double precision. You may also need to change an option switch to make constants DP.
+PREC = SingPrec
 
 
 
-#compiler to use
-FC = gfortran
+   # Destination and RootName for executable
 
-#architecture
-   #32 or 64
-BITS:=64
-   #lin or win
-OS:=lin
+OUTPUT_NAME = InflowWind_Driver
+DEST_DIR    = ../
 
-#compiler flags
-FFLAGS = -O3 -fbounds-check -fbacktrace -m$(BITS) #-g
+   #==========================================================#
+   # You should not need to change anything beyond this point #
+   #==========================================================#
 
-#Destination for compiled pieces
-DEST_DIR := _compiled--linux
+   # System-specific settings.
 
-#Location of source files for the NWTC Library
-LIB_DIR := \
-   ../../../../NWTC_Library/trunk/source
-
-#	../../../../NWTC_Library/trunk/source
-
-#Name of the executable
-Executable_ROOT := InflowWind_
-Executable_NAME := $(Executable_ROOT)$(OS)$(BITS)
-
-#Where the doxygen generated documentation is stored
-Doxy_DIR = ../Doxygen--documentation
-
-#Name of the registry file
-RegistryDIR    := .
-
-HHRegistryTXT  := Reg-IfW_HHWind.txt
-HHRegistryF90	:= IfW_HHWind_Types.f90
-HHRegistryOBJ  := $(HHRegistryF90:.f90=.o)
-
-FFRegistryTXT  := Reg-IfW_FFWind.txt
-FFRegistryF90	:= IfW_FFWind_Types.f90
-FFRegistryOBJ  := $(FFRegistryF90:.f90=.o)
-
-IfWRegistryTXT := Reg-InflowWind.txt
-IfWRegistryF90	:= InflowWind_Types.f90
-IfWRegistryOBJ := $(IfWRegistryF90:.f90=.o)
+ifeq ($(OS),Windows_NT)
+      # Windows
+   DEL_CMD   = del
+   EXE_EXT   = _gwin$(BITS).exe
+   INTER_DIR = Obj_win$(BITS)
+   MD_CMD    = @mkdir
+   OBJ_EXT   = .obj
+   PATH_SEP  = \\
+   SYS_FILE  = SysGnuWin
+else
+      # Linux
+   DEL_CMD   = rm -f
+   EXE_EXT   = _glin$(BITS)
+   INTER_DIR = Obj_lin$(BITS)
+   MD_CMD    = @mkdir -p
+   OBJ_EXT   = .o
+   PATH_SEP  = /
+   SYS_FILE  = SysGnuLinux
+endif
 
 
+   # Source files (by module)
 
-##Change SingPrec.f90 to DoubPrec.f90 for double precision
-LIB_SOURCES :=                   \
-	SingPrec.f90                  \
-	SysGnuLinux.f90               \
-	NWTC_IO.f90                   \
-	NWTC_Num.f90                  \
-	ModMesh_Types.f90             \
-	ModMesh.f90                   \
+LIB_SOURCES =           \
+	$(PREC).f90          \
+	NWTC_Base.f90        \
+	$(SYS_FILE).f90      \
+	NWTC_Library_Types.f90 \
+	NWTC_IO.f90          \
+	NWTC_Num.f90         \
+	ModMesh_Types.f90    \
+	ModMesh.f90          \
 	NWTC_Library.f90
 
-#Location of the source files for WT_Perf
-InflowWind_DIR      := \
-	.
 
-#Location of the fortran driver code
-Other_DIR	:= \
-	../TestRoutines/Fortran/
+IfW_SOURCES =            \
+	IfW_FFWind_Types.f90  \
+	IfW_FFWind.f90        \
+	IfW_HHWind_Types.f90  \
+	IfW_HHWind.f90        \
+	InflowWind_Subs.f90   \
+	InflowWind_Types.f90  \
+	InflowWind.f90
 
-#The source files for InflowWind
-InflowWind_SOURCES  :=           \
-   InflowWind_Types.f90          \
-	IfW_HHWind.f90                \
-   IfW_HHWind_Types.f90          \
-	IfW_FFWind.f90                \
-   IfW_FFWind_Types.f90          \
-   InflowWind_Subs.f90           \
-	InflowWind.f90                \
-   InflowWind_Driver_Types.f90   \
-   InflowWind_Driver_Subs.f90    \
-   InflowWind_Driver.f90
-
-#	CTWind.f90                    \
-	FDWind.f90                    \
-	FFWind.f90                    \
-	HAWCWind.f90                  \
-	UserWind.f90                  \
+DRIVER_SOURCES =            \
+	InflowWind_Driver.f90        \
+	InflowWind_Driver_Types.f90  \
+	InflowWind_Driver_Subs.f90
 
 
-#Registry program
-RegistryProgram   := ../../../../modularization_registry/registry.exe
-RegistryNWTC      := ../../../../modularization_registry/Registry_NWTC_Library.txt
+
+vpath %.f90 $(NWTC_Lib_DIR) $(IfW_DIR) $(InflowWind_Driver_DIR)
+vpath %.mod $(INTER_DIR)
+vpath %.obj $(INTER_DIR)
+vpath %.txt $(IfW_DIR)
 
 
-vpath %.f90 $(LIB_DIR) $(InflowWind_DIR) $(InflowWind_Driver_DIR)
-vpath %.o $(DEST_DIR) $(LIB_DIR)
 
-###########
-#### You should not need to change anything beyond this point
-LIB_OBJS = $(LIB_SOURCES:.f90=.o)
-InflowWind_OBJS = $(InflowWind_SOURCES:.f90=.o)
-
-#rule to do everything
-all:           default
-SETUP:         $(DEST_DIR) libcopy
-InflowWind:    clean default
-default:       SETUP $(DEST_DIR)/$(Executable_NAME)
-
-#general rule for making the files
-%.o: %.f90
-	$(FC) $(FFLAGS) -c $< -o $(DEST_DIR)/$@ -I$(LIB_DIR) -J $(DEST_DIR)
+ALL_SOURCES = $(LIB_SOURCES) $(IfW_SOURCES) $(DRIVER_SOURCES)
+tmp_objs1   = $(ALL_SOURCES:.f90=.obj)
+tmp_objs2   = $(tmp_objs1:.F90=.obj)
+ALL_OBJS    = $(tmp_objs2:.f=.obj)
 
 
-#Dependency rules
-IfW_HHWind_Types.o:     $(HHRegistryF90)
-IfW_FFWind_Types.o:     $(FFRegistryF90)
-IfW_HHWind.o:           IfW_HHWind_Types.o
-IfW_FFWind.o:           IfW_FFWind_Types.o
-InflowWind_Types.o:     IfW_HHWind_Types.o IfW_FFWind_Types.o
-InflowWind_Module.o:    InflowWind_Types.o InflowWind_Subs.o IfW_HHWind.o IfW_FFWind.o
-InflowWind_Subs.o:      InflowWind_Types.o
-InflowWind_Driver.o:    InflowWind_Subs.o InflowWind_Module.o
+   # Rule to do everything.
 
-#specific rule for the HHWind registry file
-$(HHRegistryF90):   $(RegistryDIR)/$(HHRegistryTXT)
-	$(RegistryProgram) $<;
-
-#specific rule for the FFWind registry file
-$(FFRegistryF90):   $(RegistryDIR)/$(FFRegistryTXT)
-	$(RegistryProgram) $<;
-
-#specific rule for the IfW registry file
-$(IfWRegistryF90):   $(RegistryDIR)/$(IfWRegistryTXT)
-	$(RegistryProgram) $<;
-
-IfW_HHWind_Types.o:     NWTC_Library.o $(HHRegistryF90)
-IfW_FFWind_Types.o:     NWTC_Library.o $(FFRegistryF90)
-IfW_IfWWind_Types.o:    NWTC_Library.o $(IfWRegistryF90)
-
-#Make sure the destination directory exists
-$(DEST_DIR):
-	mkdir -p $(DEST_DIR)
-
-#Copy library mod and .o files over: might be able to make this a rule that checks the dates.
-libcopy:
-	@cp -a $(LIB_DIR)/*.mod $(DEST_DIR); cp -a $(LIB_DIR)/*.o   $(DEST_DIR);
-
-#For compiling InflowWind
-$(DEST_DIR)/$(Executable_NAME): $(InflowWind_OBJS) $(InflowWind_Driver_DIR)$(InflowWind_Driver) | $(DEST_DIR)
-	$(FC) $(FFLAGS) -I $(DEST_DIR) -o $(DEST_DIR)/$(Executable_NAME) \
-		$(foreach src, $(LIB_OBJS), $(addprefix $(DEST_DIR)/,$(src))) \
-		$(foreach src, $(InflowWind_OBJS), $(addprefix $(DEST_DIR)/,$(src)));
-		cp $(DEST_DIR)/$(Executable_NAME) .
+all:     default
+# use this for "all" for debugging: print variables:
+#all:     ; $(info $$IceF_SOURCES is [${IceF_SOURCES}]) echo debugging
+#
+default:  $(INTER_DIR) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
 
-#cleanup afterwards
+   # General rules for compliling the files.
+
+%.obj: %.f90
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)
+
+
+   # General rules for creating _Types.f90 files from Registry files.
+
+
+IfW_HHWind_Types.f90:
+	$(Registry) Reg-IfW_HHWind.txt -I $(NWTC_Lib_DIR) -I $(IfW_DIR)
+
+IfW_FFWind_Types.f90:
+	$(Registry) Reg-IfW_FFWind.txt -I $(NWTC_Lib_DIR) -I $(IfW_DIR)
+
+InflowWind_Types.f90:
+	$(Registry) Reg-InflowWind.txt -I $(NWTC_Lib_DIR) -I $(IfW_DIR)
+
+
+   #  Dependency rules.
+#NWTC Library dependency rules:
+NWTC_Base.obj:                $(PREC).obj
+$(SYS_FILE).obj:              NWTC_Base.obj
+NWTC_Library_Types.obj:       $(SYS_FILE).obj
+NWTC_IO.obj:                  NWTC_Library_Types.obj
+NWTC_Num.obj:                 NWTC_IO.obj
+ModMesh_Types.obj:            NWTC_Num.obj
+ModMesh.obj:                  ModMesh_Types.obj
+NWTC_Library.obj:             ModMesh.obj  ModMesh.obj
+
+
+#InflowWind dependency rules:
+IfW_HHWind_Types.obj:         NWTC_Library.obj
+IfW_HHWind.obj:               IfW_HHWind_Types.obj
+IfW_FFWind_Types.obj:         NWTC_Library.obj
+IfW_FFWind.obj:               IfW_FFWind_Types.obj
+InflowWind_Types.obj:         NWTC_Library.obj  IfW_FFWind_Types.obj  IfW_HHWind_Types.obj
+InflowWind_Subs.obj:          InflowWind_Types.obj IfW_FFWind.obj  IfW_HHWind.obj
+InflowWind.obj:               InflowWind_Subs.obj
+
+#Driver dependency rules:
+InflowWind_Driver_Types.obj:  InflowWind_Types.obj
+InflowWind_Driver_Subs.obj:   InflowWind_Driver_Types.obj
+InflowWind_Driver.obj:        InflowWind.obj  InflowWind_Driver_Types.obj  InflowWind_Driver_Subs.obj
+
+
+#$(OUTPUT_NAME)$(EXE_EXT): InflowWind_Driver.obj
+
+   # Make sure the destination directory for the intermediate files exist.
+
+$(INTER_DIR):
+	$(MD_CMD) $(INTER_DIR)
+
+
+   # For linking driver code.
+
+$(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) | $(INTER_DIR)
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
+	$(foreach src, $(ALL_OBJS), $(addprefix $(INTER_DIR)/,$(src)))
+
+   # Cleanup afterwards.
+
 clean:
-	rm -f $(DEST_DIR)/*.o $(DEST_DIR)/*.mod $(DEST_DIR)/$(Executable_ROOT)*;
-	rm -f $(RegistryDIR)/$(HHRegistryF90) $(RegistryDIR)/$(FFRegistryF90) $(RegistryDIR)/$(IfWRegistryF90);
-	rmdir $(DEST_DIR);
+	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*.mod $(INTER_DIR)$(PATH_SEP)*.obj
+	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)InflowWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_FFWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_HHWind_Types.f90
+#	rmdir $(DEST_DIR);
 
