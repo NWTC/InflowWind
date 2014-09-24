@@ -6,7 +6,7 @@ MODULE IfW_FFWind
 !  Data is shifted by half the grid width to account for turbine yaw (so that data in the X
 !  direction actually starts at -1*OtherStates%FFYHWid meters).
 !
-!  Created 25-Sept-2009 by B. Jonkman, National Renewable Energy Laboratory
+!  Created 25-Sep-2009 by B. Jonkman, National Renewable Energy Laboratory
 !     using subroutines and modules from AeroDyn v12.58
 !
 !----------------------------------------------------------------------------------------------------
