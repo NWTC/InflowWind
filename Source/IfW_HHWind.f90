@@ -25,11 +25,7 @@ MODULE IfW_HHWind
 !     -- updated to the new framework
 !     -- Note:  Jacobians are not included in this version.
 !
-!----------------------------------------------------------------------------------------------------
-! File last committed: $Date$
-! (File) Revision #: $Rev$
-! URL: $HeadURL$
-!----------------------------------------------------------------------------------------------------
+!**********************************************************************************************************************************
 ! LICENSING
 ! Copyright (C) 2013  National Renewable Energy Laboratory
 !
@@ -47,7 +43,11 @@ MODULE IfW_HHWind
 ! See the License for the specific language governing permissions and
 ! limitations under the License.
 !
-!----------------------------------------------------------------------------------------------------
+!**********************************************************************************************************************************
+! File last committed: $Date$
+! (File) Revision #: $Rev$
+! URL: $HeadURL$
+!**********************************************************************************************************************************
 
    USE                                       NWTC_Library
    USE                                       IfW_HHWind_Types

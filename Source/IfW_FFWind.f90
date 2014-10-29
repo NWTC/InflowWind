@@ -15,13 +15,9 @@ MODULE IfW_FFWind
 !     -- Modified to use NWTC_Library v. 2.0
 !     -- Note:  Jacobians are not included in this version.
 !
-!----------------------------------------------------------------------------------------------------
-! File last committed: $Date$
-! (File) Revision #: $Rev$
-! URL: $HeadURL$
-!----------------------------------------------------------------------------------------------------
+!**********************************************************************************************************************************
 ! LICENSING
-! Copyright (C) 2012  National Renewable Energy Laboratory
+! Copyright (C) 2013  National Renewable Energy Laboratory
 !
 !    This file is part of InflowWind.
 !
@@ -37,7 +33,11 @@ MODULE IfW_FFWind
 ! See the License for the specific language governing permissions and
 ! limitations under the License.
 !
-!----------------------------------------------------------------------------------------------------
+!**********************************************************************************************************************************
+! File last committed: $Date$
+! (File) Revision #: $Rev$
+! URL: $HeadURL$
+!**********************************************************************************************************************************
 
    USE                                          NWTC_Library
    USE                                          IfW_FFWind_Types
@@ -859,7 +859,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                     ' grid ('//TRIM( Num2LStr(OtherStates%FFYHWid*2) )//' m wide, '// &
                     TRIM( Num2LStr(OtherStates%GridBase) )//' m to '// &
                     TRIM( Num2LStr(OtherStates%GridBase+OtherStates%FFZHWid*2) )//&
-                    ' m above ground) with a characterstic wind speed of '// &
+                    ' m above ground) with a characteristic wind speed of '// &
                     TRIM( Num2LStr(OtherStates%MeanFFWS) )//' m/s. '//TRIM(DescStr) )
 
 
@@ -1573,7 +1573,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                   ' grid ('//TRIM( Num2LStr(OtherStates%FFYHWid*2) )//' m wide, '// &
                   TRIM( Num2LStr(OtherStates%GridBase) )//' m to '// &
                   TRIM( Num2LStr(OtherStates%GridBase+OtherStates%FFZHWid*2) )//&
-                  ' m above ground) with a characterstic wind speed of '//TRIM( Num2LStr(OtherStates%MeanFFWS) )//' m/s. ' )
+                  ' m above ground) with a characteristic wind speed of '//TRIM( Num2LStr(OtherStates%MeanFFWS) )//' m/s. ' )
       ErrMsg   = ""
       ErrStat  =  ErrID_None
 

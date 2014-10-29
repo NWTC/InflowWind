@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.03.02, 17-Sep-2014)
+! FAST Registry (v2.03.01, 18-June-2014)
 !*********************************************************************************************************************************
 ! InflowWind_Types
 !.................................................................................................................................
@@ -33,6 +33,7 @@ MODULE InflowWind_Types
 !---------------------------------------------------------------------------------------------------------------------------------
 USE IfW_FFWind_Types
 USE IfW_HHWind_Types
+USE IfW_HAWCWind_Types
 USE NWTC_Library
 IMPLICIT NONE
     INTEGER(IntKi), PUBLIC, PARAMETER  :: DEFAULT_WindNumber = -1      ! Undetermined wind type; calls internal routine to guess what type it is [-]
@@ -43,77 +44,143 @@ IMPLICIT NONE
     INTEGER(IntKi), PUBLIC, PARAMETER  :: FD_WindNumber = 4      ! 4-dimensional wind (LES) [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: CTP_WindNumber = 5      ! Coherent turbulence wind field (superimpose KH billow on background wind) [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: HAWC_WindNumber = 6      ! Binary full-field wind file in HAWC format [-]
-! =========  IfW_InitInputType  =======
-  TYPE, PUBLIC :: IfW_InitInputType
+! =========  IfW_InputFile  =======
+  TYPE, PUBLIC :: IfW_InputFile
+    LOGICAL  :: EchoFlag      ! Echo the input file [-]
+    INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile [-]
+    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation (meteorological direction) [-]
+    INTEGER(IntKi)  :: NWindVel      ! Number of points to output the wind velocity (0 to 9) [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [meters]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [meters]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVziList      ! List of Z coordinates for wind velocity measurements [meters]
+    REAL(ReKi)  :: Steady_HWindSpeed      ! Steady wind -- horizontal windspeed [meters/s]
+    REAL(ReKi)  :: Steady_RefHt      ! Steady wind -- reference height [meters]
+    REAL(ReKi)  :: Steady_PLexp      ! Steady wind -- power law exponent [-]
+    CHARACTER(1024)  :: Uniform_FileName      ! Uniform wind -- filename [-]
+    REAL(ReKi)  :: Uniform_RefHt      ! Uniform wind -- reference height [meters]
+    CHARACTER(1024)  :: TSFF_FileName      ! TurbSim Full-Field -- filename [-]
+    CHARACTER(1024)  :: Bladed_FileName      ! Bladed-style Full-Field -- filename [-]
+    LOGICAL  :: Bladed_TowerFile      ! Bladed-style Full-Field -- tower file exists [-]
+    LOGICAL  :: CTTS_CoherentTurb      ! Coherent turbulence data exists [-]
+    CHARACTER(1024)  :: CTTS_FileName      ! Name of coherent turbulence file [-]
+    CHARACTER(1024)  :: CTTS_Path      ! Path to coherent turbulence binary data files [-]
+    CHARACTER(1024)  :: HAWC_FileName_u      ! HAWC -- u component binary data file name [-]
+    CHARACTER(1024)  :: HAWC_FileName_v      ! HAWC -- v component binary data file name [-]
+    CHARACTER(1024)  :: HAWC_FileName_w      ! HAWC -- w component binary data file name [-]
+    INTEGER(IntKi)  :: HAWC_nx      ! HAWC -- number of grids in x direction [-]
+    INTEGER(IntKi)  :: HAWC_ny      ! HAWC -- number of grids in y direction [-]
+    INTEGER(IntKi)  :: HAWC_nz      ! HAWC -- number of grids in z direction [-]
+    REAL(ReKi)  :: HAWC_dx      ! HAWC -- distance between points in x direction [meters]
+    REAL(ReKi)  :: HAWC_dy      ! HAWC -- distance between points in y direction [meters]
+    REAL(ReKi)  :: HAWC_dz      ! HAWC -- distance between points in z direction [meters]
+    REAL(ReKi)  :: HAWC_RefHt      ! HAWC -- reference height [meters]
+    INTEGER(IntKi)  :: HAWC_ScaleMethod      ! HAWC -- scale method [-]
+    REAL(ReKi)  :: HAWC_SFx      ! HAWC -- turbulence scaling factor x direction [-]
+    REAL(ReKi)  :: HAWC_SFy      ! HAWC -- turbulence scaling factor y direction [-]
+    REAL(ReKi)  :: HAWC_SFz      ! HAWC -- turbulence scaling factor z direction [-]
+    REAL(ReKi)  :: HAWC_SigmaFx      ! HAWC -- turbulence standard deviation x direction [-]
+    REAL(ReKi)  :: HAWC_SigmaFy      ! HAWC -- turbulence standard deviation y direction [-]
+    REAL(ReKi)  :: HAWC_SigmaFz      ! HAWC -- turbulence standard deviation z direction [-]
+    REAL(ReKi)  :: HAWC_TStart      ! HAWC -- start time for turbulence scaling [seconds]
+    REAL(ReKi)  :: HAWC_TEnd      ! HAWC -- end time for turbulence scaling [seconds]
+    REAL(ReKi)  :: HAWC_URef      ! HAWC -- Mean u-component wind speed at the reference height [meters]
+    CHARACTER(1024)  :: HAWC_ProfileType      ! HAWC -- Wind profile type ('LOG'=logarithmic, 'PL'=power law, or 'UD'=user defined) [-]
+    REAL(ReKi)  :: HAWC_PLExp      ! HAWC -- Power law exponent (used for PL wind profile type only) [-]
+    REAL(ReKi)  :: HAWC_Z0      ! HAWC -- Surface roughness length (used for LOG wind profile type only) [-]
+    LOGICAL  :: SumPrint      ! Print summary info [-]
+    INTEGER(IntKi)  :: NumOuts      ! Number of parameters in the output list (number of outputs requested) [-]
+    CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: OutList      ! List of user-requested output channels [-]
+  END TYPE IfW_InputFile
+! =======================
+! =========  InflowWind_InitInputType  =======
+  TYPE, PUBLIC :: InflowWind_InitInputType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
+    CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input file to use [-]
+    REAL(DbKi)  :: DT      ! Time step.  Supplied by driver [seconds]
+    LOGICAL  :: Echo      ! Echo the input to a file [-]
     REAL(ReKi)  :: ReferenceHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind field to use [meters]
     INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile [-]
-  END TYPE IfW_InitInputType
+    LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
+  END TYPE InflowWind_InitInputType
 ! =======================
-! =========  IfW_InitOutputType  =======
-  TYPE, PUBLIC :: IfW_InitOutputType
+! =========  InflowWind_InitOutputType  =======
+  TYPE, PUBLIC :: InflowWind_InitOutputType
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr      ! Names of output-to-file channels [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      ! Units of output-to-file channels [-]
-    TYPE(ProgDesc)  :: Ver      ! Version information off InflowWind module [-]
+    TYPE(ProgDesc)  :: Ver      ! Version information of InflowWind module [-]
     REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
     TYPE(IfW_FFWind_InitOutputType)  :: FFWind      ! FFWind InitOutput info [-]
     TYPE(IfW_HHWind_InitOutputType)  :: HHWind      ! HHWind InitOutput info [-]
-  END TYPE IfW_InitOutputType
+  END TYPE InflowWind_InitOutputType
 ! =======================
-! =========  IfW_OtherStateType  =======
-  TYPE, PUBLIC :: IfW_OtherStateType
+! =========  InflowWind_OtherStateType  =======
+  TYPE, PUBLIC :: InflowWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
     TYPE(IfW_FFWind_OtherStateType)  :: FFWind      ! OtherStates from FFWind [-]
     TYPE(IfW_HHWind_OtherStateType)  :: HHWind      ! OtherStates from HHWind [-]
-  END TYPE IfW_OtherStateType
+  END TYPE InflowWind_OtherStateType
 ! =======================
-! =========  IfW_ParameterType  =======
-  TYPE, PUBLIC :: IfW_ParameterType
+! =========  InflowWind_ParameterType  =======
+  TYPE, PUBLIC :: InflowWind_ParameterType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     CHARACTER(1024)  :: WindFileNameRoot      ! Root name of the wind file to use [-]
     CHARACTER(3)  :: WindFileExt      ! Extention of the name of the wind file [-]
+    CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input   file to use [-]
+    CHARACTER(1024)  :: RootName      ! Root of the InflowWind input   filename [-]
+    CHARACTER(1024)  :: EchoName      ! Name of the InflowWind echo    file to use [-]
+    CHARACTER(1024)  :: SumFileName      ! Name of the InflowWind summary file to use [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
     LOGICAL  :: CT_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
+    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation [degrees]
     INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile -- set to Undef_Wind initially [-]
+    INTEGER(IntKi)  :: WindType = 0      ! Type of wind -- set to Undef_Wind initially [-]
     REAL(ReKi)  :: ReferenceHeight      ! Height of the wind turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind array [meters]
     REAL(ReKi)  :: HalfWidth      ! Half the Width of the wind array [meters]
+    INTEGER(IntKi)  :: NWindVel      ! Number of points in the wind velocity list [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVziList      ! List of Z coordinates for wind velocity measurements [-]
+    REAL(ReKi)  :: HWindSpeed      ! Horizontal windspeed for steady wind conditions [-]
+    REAL(ReKi)  :: RefHt      ! Reference height for horizontal wind speed for steady wind [-]
+    REAL(ReKi)  :: PLexp      ! Power law exponent [-]
     TYPE(IfW_FFWind_ParameterType)  :: FFWind      ! Parameters from FFWind [-]
     TYPE(IfW_HHWind_ParameterType)  :: HHWind      ! Parameters from HHWind [-]
-  END TYPE IfW_ParameterType
+    TYPE(IfW_HAWCWind_ParameterType)  :: HAWCWind      ! Parameters from HAWCWind [-]
+  END TYPE InflowWind_ParameterType
 ! =======================
-! =========  IfW_InputType  =======
-  TYPE, PUBLIC :: IfW_InputType
+! =========  InflowWind_InputType  =======
+  TYPE, PUBLIC :: InflowWind_InputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position      ! Array holding the input positions at a given timestep [meters]
-  END TYPE IfW_InputType
+  END TYPE InflowWind_InputType
 ! =======================
-! =========  IfW_OutputType  =======
-  TYPE, PUBLIC :: IfW_OutputType
+! =========  InflowWind_OutputType  =======
+  TYPE, PUBLIC :: InflowWind_OutputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity      ! Array holding the U,V,W velocity for a given timestep [meters/sec]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WriteOutput      ! Array with values to output to file [-]
-  END TYPE IfW_OutputType
+  END TYPE InflowWind_OutputType
 ! =======================
-! =========  IfW_ContinuousStateType  =======
-  TYPE, PUBLIC :: IfW_ContinuousStateType
+! =========  InflowWind_ContinuousStateType  =======
+  TYPE, PUBLIC :: InflowWind_ContinuousStateType
     REAL(ReKi)  :: DummyContState      ! Remove this variable if you have continuous states [-]
-  END TYPE IfW_ContinuousStateType
+  END TYPE InflowWind_ContinuousStateType
 ! =======================
-! =========  IfW_DiscreteStateType  =======
-  TYPE, PUBLIC :: IfW_DiscreteStateType
+! =========  InflowWind_DiscreteStateType  =======
+  TYPE, PUBLIC :: InflowWind_DiscreteStateType
     REAL(ReKi)  :: DummyDiscState      ! Remove this variable if you have discrete states [-]
-  END TYPE IfW_DiscreteStateType
+  END TYPE InflowWind_DiscreteStateType
 ! =======================
-! =========  IfW_ConstraintStateType  =======
-  TYPE, PUBLIC :: IfW_ConstraintStateType
+! =========  InflowWind_ConstraintStateType  =======
+  TYPE, PUBLIC :: InflowWind_ConstraintStateType
     REAL(ReKi)  :: DummyConstrState      ! Remove this variable if you have constraint states [-]
-  END TYPE IfW_ConstraintStateType
+  END TYPE InflowWind_ConstraintStateType
 ! =======================
 CONTAINS
- SUBROUTINE IfW_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_initinputtype), INTENT(INOUT) :: SrcInitInputData
-   TYPE(IfW_initinputtype), INTENT(INOUT) :: DstInitInputData
+ SUBROUTINE InflowWind_Copyifw_inputfile( Srcifw_inputfileData, Dstifw_inputfileData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(ifw_inputfile), INTENT(INOUT) :: Srcifw_inputfileData
+   TYPE(ifw_inputfile), INTENT(INOUT) :: Dstifw_inputfileData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -124,27 +191,127 @@ CONTAINS
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-   DstInitInputData%WindFileName = SrcInitInputData%WindFileName
-   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
-   DstInitInputData%Width = SrcInitInputData%Width
-   DstInitInputData%WindFileType = SrcInitInputData%WindFileType
- END SUBROUTINE IfW_CopyInitInput
+   Dstifw_inputfileData%EchoFlag = Srcifw_inputfileData%EchoFlag
+   Dstifw_inputfileData%WindFileType = Srcifw_inputfileData%WindFileType
+   Dstifw_inputfileData%PropogationDir = Srcifw_inputfileData%PropogationDir
+   Dstifw_inputfileData%NWindVel = Srcifw_inputfileData%NWindVel
+IF (ALLOCATED(Srcifw_inputfileData%WindVxiList)) THEN
+   i1_l = LBOUND(Srcifw_inputfileData%WindVxiList,1)
+   i1_u = UBOUND(Srcifw_inputfileData%WindVxiList,1)
+   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVxiList)) THEN 
+      ALLOCATE(Dstifw_inputfileData%WindVxiList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVxiList.'
+         RETURN
+      END IF
+   END IF
+   Dstifw_inputfileData%WindVxiList = Srcifw_inputfileData%WindVxiList
+ENDIF
+IF (ALLOCATED(Srcifw_inputfileData%WindVyiList)) THEN
+   i1_l = LBOUND(Srcifw_inputfileData%WindVyiList,1)
+   i1_u = UBOUND(Srcifw_inputfileData%WindVyiList,1)
+   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVyiList)) THEN 
+      ALLOCATE(Dstifw_inputfileData%WindVyiList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVyiList.'
+         RETURN
+      END IF
+   END IF
+   Dstifw_inputfileData%WindVyiList = Srcifw_inputfileData%WindVyiList
+ENDIF
+IF (ALLOCATED(Srcifw_inputfileData%WindVziList)) THEN
+   i1_l = LBOUND(Srcifw_inputfileData%WindVziList,1)
+   i1_u = UBOUND(Srcifw_inputfileData%WindVziList,1)
+   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVziList)) THEN 
+      ALLOCATE(Dstifw_inputfileData%WindVziList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVziList.'
+         RETURN
+      END IF
+   END IF
+   Dstifw_inputfileData%WindVziList = Srcifw_inputfileData%WindVziList
+ENDIF
+   Dstifw_inputfileData%Steady_HWindSpeed = Srcifw_inputfileData%Steady_HWindSpeed
+   Dstifw_inputfileData%Steady_RefHt = Srcifw_inputfileData%Steady_RefHt
+   Dstifw_inputfileData%Steady_PLexp = Srcifw_inputfileData%Steady_PLexp
+   Dstifw_inputfileData%Uniform_FileName = Srcifw_inputfileData%Uniform_FileName
+   Dstifw_inputfileData%Uniform_RefHt = Srcifw_inputfileData%Uniform_RefHt
+   Dstifw_inputfileData%TSFF_FileName = Srcifw_inputfileData%TSFF_FileName
+   Dstifw_inputfileData%Bladed_FileName = Srcifw_inputfileData%Bladed_FileName
+   Dstifw_inputfileData%Bladed_TowerFile = Srcifw_inputfileData%Bladed_TowerFile
+   Dstifw_inputfileData%CTTS_CoherentTurb = Srcifw_inputfileData%CTTS_CoherentTurb
+   Dstifw_inputfileData%CTTS_FileName = Srcifw_inputfileData%CTTS_FileName
+   Dstifw_inputfileData%CTTS_Path = Srcifw_inputfileData%CTTS_Path
+   Dstifw_inputfileData%HAWC_FileName_u = Srcifw_inputfileData%HAWC_FileName_u
+   Dstifw_inputfileData%HAWC_FileName_v = Srcifw_inputfileData%HAWC_FileName_v
+   Dstifw_inputfileData%HAWC_FileName_w = Srcifw_inputfileData%HAWC_FileName_w
+   Dstifw_inputfileData%HAWC_nx = Srcifw_inputfileData%HAWC_nx
+   Dstifw_inputfileData%HAWC_ny = Srcifw_inputfileData%HAWC_ny
+   Dstifw_inputfileData%HAWC_nz = Srcifw_inputfileData%HAWC_nz
+   Dstifw_inputfileData%HAWC_dx = Srcifw_inputfileData%HAWC_dx
+   Dstifw_inputfileData%HAWC_dy = Srcifw_inputfileData%HAWC_dy
+   Dstifw_inputfileData%HAWC_dz = Srcifw_inputfileData%HAWC_dz
+   Dstifw_inputfileData%HAWC_RefHt = Srcifw_inputfileData%HAWC_RefHt
+   Dstifw_inputfileData%HAWC_ScaleMethod = Srcifw_inputfileData%HAWC_ScaleMethod
+   Dstifw_inputfileData%HAWC_SFx = Srcifw_inputfileData%HAWC_SFx
+   Dstifw_inputfileData%HAWC_SFy = Srcifw_inputfileData%HAWC_SFy
+   Dstifw_inputfileData%HAWC_SFz = Srcifw_inputfileData%HAWC_SFz
+   Dstifw_inputfileData%HAWC_SigmaFx = Srcifw_inputfileData%HAWC_SigmaFx
+   Dstifw_inputfileData%HAWC_SigmaFy = Srcifw_inputfileData%HAWC_SigmaFy
+   Dstifw_inputfileData%HAWC_SigmaFz = Srcifw_inputfileData%HAWC_SigmaFz
+   Dstifw_inputfileData%HAWC_TStart = Srcifw_inputfileData%HAWC_TStart
+   Dstifw_inputfileData%HAWC_TEnd = Srcifw_inputfileData%HAWC_TEnd
+   Dstifw_inputfileData%HAWC_URef = Srcifw_inputfileData%HAWC_URef
+   Dstifw_inputfileData%HAWC_ProfileType = Srcifw_inputfileData%HAWC_ProfileType
+   Dstifw_inputfileData%HAWC_PLExp = Srcifw_inputfileData%HAWC_PLExp
+   Dstifw_inputfileData%HAWC_Z0 = Srcifw_inputfileData%HAWC_Z0
+   Dstifw_inputfileData%SumPrint = Srcifw_inputfileData%SumPrint
+   Dstifw_inputfileData%NumOuts = Srcifw_inputfileData%NumOuts
+IF (ALLOCATED(Srcifw_inputfileData%OutList)) THEN
+   i1_l = LBOUND(Srcifw_inputfileData%OutList,1)
+   i1_u = UBOUND(Srcifw_inputfileData%OutList,1)
+   IF (.NOT. ALLOCATED(Dstifw_inputfileData%OutList)) THEN 
+      ALLOCATE(Dstifw_inputfileData%OutList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%OutList.'
+         RETURN
+      END IF
+   END IF
+   Dstifw_inputfileData%OutList = Srcifw_inputfileData%OutList
+ENDIF
+ END SUBROUTINE InflowWind_Copyifw_inputfile
 
- SUBROUTINE IfW_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
-  TYPE(IfW_initinputtype), INTENT(INOUT) :: InitInputData
+ SUBROUTINE InflowWind_Destroyifw_inputfile( ifw_inputfileData, ErrStat, ErrMsg )
+  TYPE(ifw_inputfile), INTENT(INOUT) :: ifw_inputfileData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
- END SUBROUTINE IfW_DestroyInitInput
+IF (ALLOCATED(ifw_inputfileData%WindVxiList)) THEN
+   DEALLOCATE(ifw_inputfileData%WindVxiList)
+ENDIF
+IF (ALLOCATED(ifw_inputfileData%WindVyiList)) THEN
+   DEALLOCATE(ifw_inputfileData%WindVyiList)
+ENDIF
+IF (ALLOCATED(ifw_inputfileData%WindVziList)) THEN
+   DEALLOCATE(ifw_inputfileData%WindVziList)
+ENDIF
+IF (ALLOCATED(ifw_inputfileData%OutList)) THEN
+   DEALLOCATE(ifw_inputfileData%OutList)
+ENDIF
+ END SUBROUTINE InflowWind_Destroyifw_inputfile
 
- SUBROUTINE IfW_PackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_Packifw_inputfile( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_initinputtype),  INTENT(INOUT) :: InData
+  TYPE(ifw_inputfile),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -174,25 +341,112 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
-  Re_BufSz   = Re_BufSz   + 1  ! Width
   Int_BufSz  = Int_BufSz  + 1  ! WindFileType
+  Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
+  Int_BufSz  = Int_BufSz  + 1  ! NWindVel
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVxiList )  ! WindVxiList 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVyiList )  ! WindVyiList 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVziList )  ! WindVziList 
+  Re_BufSz   = Re_BufSz   + 1  ! Steady_HWindSpeed
+  Re_BufSz   = Re_BufSz   + 1  ! Steady_RefHt
+  Re_BufSz   = Re_BufSz   + 1  ! Steady_PLexp
+  Re_BufSz   = Re_BufSz   + 1  ! Uniform_RefHt
+  Int_BufSz  = Int_BufSz  + 1  ! HAWC_nx
+  Int_BufSz  = Int_BufSz  + 1  ! HAWC_ny
+  Int_BufSz  = Int_BufSz  + 1  ! HAWC_nz
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_dx
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_dy
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_dz
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_RefHt
+  Int_BufSz  = Int_BufSz  + 1  ! HAWC_ScaleMethod
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SFx
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SFy
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SFz
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SigmaFx
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SigmaFy
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_SigmaFz
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_TStart
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_TEnd
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_URef
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_PLExp
+  Re_BufSz   = Re_BufSz   + 1  ! HAWC_Z0
+  Int_BufSz  = Int_BufSz  + 1  ! NumOuts
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
-  Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
-  Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
   Int_Xferred   = Int_Xferred   + 1
- END SUBROUTINE IfW_PackInitInput
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NWindVel )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(InData%WindVxiList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVxiList))-1 ) =  PACK(InData%WindVxiList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVxiList)
+  ENDIF
+  IF ( ALLOCATED(InData%WindVyiList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVyiList))-1 ) =  PACK(InData%WindVyiList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVyiList)
+  ENDIF
+  IF ( ALLOCATED(InData%WindVziList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVziList))-1 ) =  PACK(InData%WindVziList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVziList)
+  ENDIF
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Steady_HWindSpeed )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Steady_RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Steady_PLexp )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Uniform_RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%HAWC_nx )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%HAWC_ny )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%HAWC_nz )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_dx )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_dy )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_dz )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%HAWC_ScaleMethod )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SFx )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SFy )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SFz )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SigmaFx )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SigmaFy )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_SigmaFz )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_TStart )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_TEnd )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_URef )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_PLExp )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HAWC_Z0 )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumOuts )
+  Int_Xferred   = Int_Xferred   + 1
+ END SUBROUTINE InflowWind_Packifw_inputfile
 
- SUBROUTINE IfW_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackifw_inputfile( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_initinputtype), INTENT(INOUT) :: OutData
+  TYPE(ifw_inputfile), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -221,6 +475,202 @@ CONTAINS
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
+  OutData%WindFileType = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%PropogationDir = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%NWindVel = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(OutData%WindVxiList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVxiList,1))); mask1 = .TRUE.
+    OutData%WindVxiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVxiList))-1 ),mask1,OutData%WindVxiList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVxiList)
+  ENDIF
+  IF ( ALLOCATED(OutData%WindVyiList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVyiList,1))); mask1 = .TRUE.
+    OutData%WindVyiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVyiList))-1 ),mask1,OutData%WindVyiList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVyiList)
+  ENDIF
+  IF ( ALLOCATED(OutData%WindVziList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVziList,1))); mask1 = .TRUE.
+    OutData%WindVziList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVziList))-1 ),mask1,OutData%WindVziList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVziList)
+  ENDIF
+  OutData%Steady_HWindSpeed = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%Steady_RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%Steady_PLexp = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%Uniform_RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_nx = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%HAWC_ny = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%HAWC_nz = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%HAWC_dx = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_dy = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_dz = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_ScaleMethod = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%HAWC_SFx = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_SFy = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_SFz = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_SigmaFx = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_SigmaFy = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_SigmaFz = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_TStart = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_TEnd = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_URef = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_PLExp = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%HAWC_Z0 = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%NumOuts = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  Re_Xferred   = Re_Xferred-1
+  Db_Xferred   = Db_Xferred-1
+  Int_Xferred  = Int_Xferred-1
+ END SUBROUTINE InflowWind_UnPackifw_inputfile
+
+ SUBROUTINE InflowWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
+   TYPE(InflowWind_initinputtype), INTENT(INOUT) :: DstInitInputData
+   INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
+   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+! Local 
+   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5,j,k
+   INTEGER(IntKi)                 :: i1_l,i2_l,i3_l,i4_l,i5_l  ! lower bounds for an array dimension
+   INTEGER(IntKi)                 :: i1_u,i2_u,i3_u,i4_u,i5_u  ! upper bounds for an array dimension
+! 
+   ErrStat = ErrID_None
+   ErrMsg  = ""
+   DstInitInputData%WindFileName = SrcInitInputData%WindFileName
+   DstInitInputData%InputFileName = SrcInitInputData%InputFileName
+   DstInitInputData%DT = SrcInitInputData%DT
+   DstInitInputData%Echo = SrcInitInputData%Echo
+   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
+   DstInitInputData%Width = SrcInitInputData%Width
+   DstInitInputData%WindFileType = SrcInitInputData%WindFileType
+   DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
+ END SUBROUTINE InflowWind_CopyInitInput
+
+ SUBROUTINE InflowWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
+  TYPE(InflowWind_initinputtype), INTENT(INOUT) :: InitInputData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
+! 
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+ END SUBROUTINE InflowWind_DestroyInitInput
+
+ SUBROUTINE InflowWind_PackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+  REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
+  REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
+  INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
+  TYPE(InflowWind_initinputtype),  INTENT(INOUT) :: InData
+  INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
+  CHARACTER(*),     INTENT(  OUT) :: ErrMsg
+  LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
+ ! buffers to store meshes, if any
+  OnlySize = .FALSE.
+  IF ( PRESENT(SizeOnly) ) THEN
+    OnlySize = SizeOnly
+  ENDIF
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  Db_BufSz   = Db_BufSz   + 1  ! DT
+  Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
+  Re_BufSz   = Re_BufSz   + 1  ! Width
+  Int_BufSz  = Int_BufSz  + 1  ! WindFileType
+  IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
+  IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
+  IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
+  Db_Xferred   = Db_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
+  Int_Xferred   = Int_Xferred   + 1
+ END SUBROUTINE InflowWind_PackInitInput
+
+ SUBROUTINE InflowWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+  REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
+  REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
+  INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
+  TYPE(InflowWind_initinputtype), INTENT(INOUT) :: OutData
+  INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
+  CHARACTER(*),    INTENT(  OUT) :: ErrMsg
+    ! Local variables
+  INTEGER(IntKi)                 :: Re_BufSz
+  INTEGER(IntKi)                 :: Re_Xferred
+  INTEGER(IntKi)                 :: Re_CurrSz
+  INTEGER(IntKi)                 :: Db_BufSz
+  INTEGER(IntKi)                 :: Db_Xferred
+  INTEGER(IntKi)                 :: Db_CurrSz
+  INTEGER(IntKi)                 :: Int_BufSz
+  INTEGER(IntKi)                 :: Int_Xferred
+  INTEGER(IntKi)                 :: Int_CurrSz
+  INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5
+  LOGICAL, ALLOCATABLE           :: mask1(:)
+  LOGICAL, ALLOCATABLE           :: mask2(:,:)
+  LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
+  LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+ ! buffers to store meshes, if any
+    !
+  ErrStat = ErrID_None
+  ErrMsg  = ""
+  Re_Xferred  = 1
+  Db_Xferred  = 1
+  Int_Xferred  = 1
+  Re_BufSz  = 0
+  Db_BufSz  = 0
+  Int_BufSz  = 0
+  OutData%DT = DbKiBuf ( Db_Xferred )
+  Db_Xferred   = Db_Xferred   + 1
   OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
@@ -230,11 +680,11 @@ CONTAINS
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackInitInput
+ END SUBROUTINE InflowWind_UnPackInitInput
 
- SUBROUTINE IfW_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_initoutputtype), INTENT(INOUT) :: SrcInitOutputData
-   TYPE(IfW_initoutputtype), INTENT(INOUT) :: DstInitOutputData
+ SUBROUTINE InflowWind_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_initoutputtype), INTENT(INOUT) :: SrcInitOutputData
+   TYPE(InflowWind_initoutputtype), INTENT(INOUT) :: DstInitOutputData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -252,7 +702,7 @@ IF (ALLOCATED(SrcInitOutputData%WriteOutputHdr)) THEN
       ALLOCATE(DstInitOutputData%WriteOutputHdr(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'IfW_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputHdr.'
+         ErrMsg = 'InflowWind_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputHdr.'
          RETURN
       END IF
    END IF
@@ -265,7 +715,7 @@ IF (ALLOCATED(SrcInitOutputData%WriteOutputUnt)) THEN
       ALLOCATE(DstInitOutputData%WriteOutputUnt(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'IfW_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputUnt.'
+         ErrMsg = 'InflowWind_CopyInitOutput: Error allocating DstInitOutputData%WriteOutputUnt.'
          RETURN
       END IF
    END IF
@@ -275,10 +725,10 @@ ENDIF
    DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
       CALL IfW_FFWind_CopyInitOutput( SrcInitOutputData%FFWind, DstInitOutputData%FFWind, CtrlCode, ErrStat, ErrMsg )
       CALL IfW_HHWind_CopyInitOutput( SrcInitOutputData%HHWind, DstInitOutputData%HHWind, CtrlCode, ErrStat, ErrMsg )
- END SUBROUTINE IfW_CopyInitOutput
+ END SUBROUTINE InflowWind_CopyInitOutput
 
- SUBROUTINE IfW_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
-  TYPE(IfW_initoutputtype), INTENT(INOUT) :: InitOutputData
+ SUBROUTINE InflowWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
+  TYPE(InflowWind_initoutputtype), INTENT(INOUT) :: InitOutputData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
@@ -294,13 +744,13 @@ ENDIF
   CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
   CALL IfW_FFWind_DestroyInitOutput( InitOutputData%FFWind, ErrStat, ErrMsg )
   CALL IfW_HHWind_DestroyInitOutput( InitOutputData%HHWind, ErrStat, ErrMsg )
- END SUBROUTINE IfW_DestroyInitOutput
+ END SUBROUTINE InflowWind_DestroyInitOutput
 
- SUBROUTINE IfW_PackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_initoutputtype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_initoutputtype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -414,13 +864,13 @@ ENDIF
   IF( ALLOCATED(Re_HHWind_Buf) )  DEALLOCATE(Re_HHWind_Buf)
   IF( ALLOCATED(Db_HHWind_Buf) )  DEALLOCATE(Db_HHWind_Buf)
   IF( ALLOCATED(Int_HHWind_Buf) ) DEALLOCATE(Int_HHWind_Buf)
- END SUBROUTINE IfW_PackInitOutput
+ END SUBROUTINE InflowWind_PackInitOutput
 
- SUBROUTINE IfW_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_initoutputtype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_initoutputtype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -508,11 +958,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackInitOutput
+ END SUBROUTINE InflowWind_UnPackInitOutput
 
- SUBROUTINE IfW_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
-   TYPE(IfW_otherstatetype), INTENT(INOUT) :: DstOtherStateData
+ SUBROUTINE InflowWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_otherstatetype), INTENT(INOUT) :: SrcOtherStateData
+   TYPE(InflowWind_otherstatetype), INTENT(INOUT) :: DstOtherStateData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -526,10 +976,10 @@ ENDIF
    DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
       CALL IfW_FFWind_CopyOtherState( SrcOtherStateData%FFWind, DstOtherStateData%FFWind, CtrlCode, ErrStat, ErrMsg )
       CALL IfW_HHWind_CopyOtherState( SrcOtherStateData%HHWind, DstOtherStateData%HHWind, CtrlCode, ErrStat, ErrMsg )
- END SUBROUTINE IfW_CopyOtherState
+ END SUBROUTINE InflowWind_CopyOtherState
 
- SUBROUTINE IfW_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
-  TYPE(IfW_otherstatetype), INTENT(INOUT) :: OtherStateData
+ SUBROUTINE InflowWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
+  TYPE(InflowWind_otherstatetype), INTENT(INOUT) :: OtherStateData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
@@ -538,13 +988,13 @@ ENDIF
   ErrMsg  = ""
   CALL IfW_FFWind_DestroyOtherState( OtherStateData%FFWind, ErrStat, ErrMsg )
   CALL IfW_HHWind_DestroyOtherState( OtherStateData%HHWind, ErrStat, ErrMsg )
- END SUBROUTINE IfW_DestroyOtherState
+ END SUBROUTINE InflowWind_DestroyOtherState
 
- SUBROUTINE IfW_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_otherstatetype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_otherstatetype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -632,13 +1082,13 @@ ENDIF
   IF( ALLOCATED(Re_HHWind_Buf) )  DEALLOCATE(Re_HHWind_Buf)
   IF( ALLOCATED(Db_HHWind_Buf) )  DEALLOCATE(Db_HHWind_Buf)
   IF( ALLOCATED(Int_HHWind_Buf) ) DEALLOCATE(Int_HHWind_Buf)
- END SUBROUTINE IfW_PackOtherState
+ END SUBROUTINE InflowWind_PackOtherState
 
- SUBROUTINE IfW_UnPackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_otherstatetype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_otherstatetype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -708,11 +1158,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackOtherState
+ END SUBROUTINE InflowWind_UnPackOtherState
 
- SUBROUTINE IfW_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_parametertype), INTENT(INOUT) :: SrcParamData
-   TYPE(IfW_parametertype), INTENT(INOUT) :: DstParamData
+ SUBROUTINE InflowWind_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_parametertype), INTENT(INOUT) :: SrcParamData
+   TYPE(InflowWind_parametertype), INTENT(INOUT) :: DstParamData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -726,34 +1176,94 @@ ENDIF
    DstParamData%WindFileName = SrcParamData%WindFileName
    DstParamData%WindFileNameRoot = SrcParamData%WindFileNameRoot
    DstParamData%WindFileExt = SrcParamData%WindFileExt
+   DstParamData%InputFileName = SrcParamData%InputFileName
+   DstParamData%RootName = SrcParamData%RootName
+   DstParamData%EchoName = SrcParamData%EchoName
+   DstParamData%SumFileName = SrcParamData%SumFileName
    DstParamData%Initialized = SrcParamData%Initialized
    DstParamData%CT_Flag = SrcParamData%CT_Flag
    DstParamData%DT = SrcParamData%DT
+   DstParamData%PropogationDir = SrcParamData%PropogationDir
    DstParamData%WindFileType = SrcParamData%WindFileType
+   DstParamData%WindType = SrcParamData%WindType
    DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
    DstParamData%Width = SrcParamData%Width
    DstParamData%HalfWidth = SrcParamData%HalfWidth
+   DstParamData%NWindVel = SrcParamData%NWindVel
+IF (ALLOCATED(SrcParamData%WindVxiList)) THEN
+   i1_l = LBOUND(SrcParamData%WindVxiList,1)
+   i1_u = UBOUND(SrcParamData%WindVxiList,1)
+   IF (.NOT. ALLOCATED(DstParamData%WindVxiList)) THEN 
+      ALLOCATE(DstParamData%WindVxiList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVxiList.'
+         RETURN
+      END IF
+   END IF
+   DstParamData%WindVxiList = SrcParamData%WindVxiList
+ENDIF
+IF (ALLOCATED(SrcParamData%WindVyiList)) THEN
+   i1_l = LBOUND(SrcParamData%WindVyiList,1)
+   i1_u = UBOUND(SrcParamData%WindVyiList,1)
+   IF (.NOT. ALLOCATED(DstParamData%WindVyiList)) THEN 
+      ALLOCATE(DstParamData%WindVyiList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVyiList.'
+         RETURN
+      END IF
+   END IF
+   DstParamData%WindVyiList = SrcParamData%WindVyiList
+ENDIF
+IF (ALLOCATED(SrcParamData%WindVziList)) THEN
+   i1_l = LBOUND(SrcParamData%WindVziList,1)
+   i1_u = UBOUND(SrcParamData%WindVziList,1)
+   IF (.NOT. ALLOCATED(DstParamData%WindVziList)) THEN 
+      ALLOCATE(DstParamData%WindVziList(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVziList.'
+         RETURN
+      END IF
+   END IF
+   DstParamData%WindVziList = SrcParamData%WindVziList
+ENDIF
+   DstParamData%HWindSpeed = SrcParamData%HWindSpeed
+   DstParamData%RefHt = SrcParamData%RefHt
+   DstParamData%PLexp = SrcParamData%PLexp
       CALL IfW_FFWind_CopyParam( SrcParamData%FFWind, DstParamData%FFWind, CtrlCode, ErrStat, ErrMsg )
       CALL IfW_HHWind_CopyParam( SrcParamData%HHWind, DstParamData%HHWind, CtrlCode, ErrStat, ErrMsg )
- END SUBROUTINE IfW_CopyParam
+      CALL IfW_HAWCWind_CopyParam( SrcParamData%HAWCWind, DstParamData%HAWCWind, CtrlCode, ErrStat, ErrMsg )
+ END SUBROUTINE InflowWind_CopyParam
 
- SUBROUTINE IfW_DestroyParam( ParamData, ErrStat, ErrMsg )
-  TYPE(IfW_parametertype), INTENT(INOUT) :: ParamData
+ SUBROUTINE InflowWind_DestroyParam( ParamData, ErrStat, ErrMsg )
+  TYPE(InflowWind_parametertype), INTENT(INOUT) :: ParamData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+IF (ALLOCATED(ParamData%WindVxiList)) THEN
+   DEALLOCATE(ParamData%WindVxiList)
+ENDIF
+IF (ALLOCATED(ParamData%WindVyiList)) THEN
+   DEALLOCATE(ParamData%WindVyiList)
+ENDIF
+IF (ALLOCATED(ParamData%WindVziList)) THEN
+   DEALLOCATE(ParamData%WindVziList)
+ENDIF
   CALL IfW_FFWind_DestroyParam( ParamData%FFWind, ErrStat, ErrMsg )
   CALL IfW_HHWind_DestroyParam( ParamData%HHWind, ErrStat, ErrMsg )
- END SUBROUTINE IfW_DestroyParam
+  CALL IfW_HAWCWind_DestroyParam( ParamData%HAWCWind, ErrStat, ErrMsg )
+ END SUBROUTINE InflowWind_DestroyParam
 
- SUBROUTINE IfW_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_parametertype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_parametertype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -776,6 +1286,9 @@ ENDIF
   REAL(ReKi),     ALLOCATABLE :: Re_HHWind_Buf(:)
   REAL(DbKi),     ALLOCATABLE :: Db_HHWind_Buf(:)
   INTEGER(IntKi), ALLOCATABLE :: Int_HHWind_Buf(:)
+  REAL(ReKi),     ALLOCATABLE :: Re_HAWCWind_Buf(:)
+  REAL(DbKi),     ALLOCATABLE :: Db_HAWCWind_Buf(:)
+  INTEGER(IntKi), ALLOCATABLE :: Int_HAWCWind_Buf(:)
   OnlySize = .FALSE.
   IF ( PRESENT(SizeOnly) ) THEN
     OnlySize = SizeOnly
@@ -790,10 +1303,19 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
   Db_BufSz   = Db_BufSz   + 1  ! DT
+  Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
   Int_BufSz  = Int_BufSz  + 1  ! WindFileType
+  Int_BufSz  = Int_BufSz  + 1  ! WindType
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
   Re_BufSz   = Re_BufSz   + 1  ! HalfWidth
+  Int_BufSz  = Int_BufSz  + 1  ! NWindVel
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVxiList )  ! WindVxiList 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVyiList )  ! WindVyiList 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVziList )  ! WindVziList 
+  Re_BufSz   = Re_BufSz   + 1  ! HWindSpeed
+  Re_BufSz   = Re_BufSz   + 1  ! RefHt
+  Re_BufSz   = Re_BufSz   + 1  ! PLexp
   CALL IfW_FFWind_PackParam( Re_FFWind_Buf, Db_FFWind_Buf, Int_FFWind_Buf, InData%FFWind, ErrStat, ErrMsg, .TRUE. ) ! FFWind 
   IF(ALLOCATED(Re_FFWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_FFWind_Buf  ) ! FFWind
   IF(ALLOCATED(Db_FFWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_FFWind_Buf  ) ! FFWind
@@ -808,18 +1330,49 @@ ENDIF
   IF(ALLOCATED(Re_HHWind_Buf))  DEALLOCATE(Re_HHWind_Buf)
   IF(ALLOCATED(Db_HHWind_Buf))  DEALLOCATE(Db_HHWind_Buf)
   IF(ALLOCATED(Int_HHWind_Buf)) DEALLOCATE(Int_HHWind_Buf)
+  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, InData%HAWCWind, ErrStat, ErrMsg, .TRUE. ) ! HAWCWind 
+  IF(ALLOCATED(Re_HAWCWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_HAWCWind_Buf  ) ! HAWCWind
+  IF(ALLOCATED(Db_HAWCWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_HAWCWind_Buf  ) ! HAWCWind
+  IF(ALLOCATED(Int_HAWCWind_Buf))Int_BufSz = Int_BufSz + SIZE( Int_HAWCWind_Buf ) ! HAWCWind
+  IF(ALLOCATED(Re_HAWCWind_Buf))  DEALLOCATE(Re_HAWCWind_Buf)
+  IF(ALLOCATED(Db_HAWCWind_Buf))  DEALLOCATE(Db_HAWCWind_Buf)
+  IF(ALLOCATED(Int_HAWCWind_Buf)) DEALLOCATE(Int_HAWCWind_Buf)
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
   Db_Xferred   = Db_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
+  Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindType )
   Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HalfWidth )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NWindVel )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(InData%WindVxiList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVxiList))-1 ) =  PACK(InData%WindVxiList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVxiList)
+  ENDIF
+  IF ( ALLOCATED(InData%WindVyiList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVyiList))-1 ) =  PACK(InData%WindVyiList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVyiList)
+  ENDIF
+  IF ( ALLOCATED(InData%WindVziList) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVziList))-1 ) =  PACK(InData%WindVziList ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVziList)
+  ENDIF
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HWindSpeed )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PLexp )
   Re_Xferred   = Re_Xferred   + 1
   CALL IfW_FFWind_PackParam( Re_FFWind_Buf, Db_FFWind_Buf, Int_FFWind_Buf, InData%FFWind, ErrStat, ErrMsg, OnlySize ) ! FFWind 
   IF(ALLOCATED(Re_FFWind_Buf)) THEN
@@ -853,13 +1406,29 @@ ENDIF
   IF( ALLOCATED(Re_HHWind_Buf) )  DEALLOCATE(Re_HHWind_Buf)
   IF( ALLOCATED(Db_HHWind_Buf) )  DEALLOCATE(Db_HHWind_Buf)
   IF( ALLOCATED(Int_HHWind_Buf) ) DEALLOCATE(Int_HHWind_Buf)
- END SUBROUTINE IfW_PackParam
+  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, InData%HAWCWind, ErrStat, ErrMsg, OnlySize ) ! HAWCWind 
+  IF(ALLOCATED(Re_HAWCWind_Buf)) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_HAWCWind_Buf)-1 ) = Re_HAWCWind_Buf
+    Re_Xferred = Re_Xferred + SIZE(Re_HAWCWind_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_HAWCWind_Buf)) THEN
+    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_HAWCWind_Buf)-1 ) = Db_HAWCWind_Buf
+    Db_Xferred = Db_Xferred + SIZE(Db_HAWCWind_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_HAWCWind_Buf)) THEN
+    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_HAWCWind_Buf)-1 ) = Int_HAWCWind_Buf
+    Int_Xferred = Int_Xferred + SIZE(Int_HAWCWind_Buf)
+  ENDIF
+  IF( ALLOCATED(Re_HAWCWind_Buf) )  DEALLOCATE(Re_HAWCWind_Buf)
+  IF( ALLOCATED(Db_HAWCWind_Buf) )  DEALLOCATE(Db_HAWCWind_Buf)
+  IF( ALLOCATED(Int_HAWCWind_Buf) ) DEALLOCATE(Int_HAWCWind_Buf)
+ END SUBROUTINE InflowWind_PackParam
 
- SUBROUTINE IfW_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_parametertype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_parametertype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -885,6 +1454,9 @@ ENDIF
   REAL(ReKi),    ALLOCATABLE :: Re_HHWind_Buf(:)
   REAL(DbKi),    ALLOCATABLE :: Db_HHWind_Buf(:)
   INTEGER(IntKi),    ALLOCATABLE :: Int_HHWind_Buf(:)
+  REAL(ReKi),    ALLOCATABLE :: Re_HAWCWind_Buf(:)
+  REAL(DbKi),    ALLOCATABLE :: Db_HAWCWind_Buf(:)
+  INTEGER(IntKi),    ALLOCATABLE :: Int_HAWCWind_Buf(:)
     !
   ErrStat = ErrID_None
   ErrMsg  = ""
@@ -896,13 +1468,43 @@ ENDIF
   Int_BufSz  = 0
   OutData%DT = DbKiBuf ( Db_Xferred )
   Db_Xferred   = Db_Xferred   + 1
+  OutData%PropogationDir = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
   OutData%WindFileType = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  OutData%WindType = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%HalfWidth = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%NWindVel = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+  IF ( ALLOCATED(OutData%WindVxiList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVxiList,1))); mask1 = .TRUE.
+    OutData%WindVxiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVxiList))-1 ),mask1,OutData%WindVxiList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVxiList)
+  ENDIF
+  IF ( ALLOCATED(OutData%WindVyiList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVyiList,1))); mask1 = .TRUE.
+    OutData%WindVyiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVyiList))-1 ),mask1,OutData%WindVyiList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVyiList)
+  ENDIF
+  IF ( ALLOCATED(OutData%WindVziList) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%WindVziList,1))); mask1 = .TRUE.
+    OutData%WindVziList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVziList))-1 ),mask1,OutData%WindVziList)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVziList)
+  ENDIF
+  OutData%HWindSpeed = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%RefHt = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
+  OutData%PLexp = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
  ! first call IfW_FFWind_PackParam to get correctly sized buffers for unpacking
   CALL IfW_FFWind_PackParam( Re_FFWind_Buf, Db_FFWind_Buf, Int_FFWind_Buf, OutData%FFWind, ErrStat, ErrMsg, .TRUE. ) ! FFWind 
@@ -934,14 +1536,29 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_HHWind_Buf)
   ENDIF
   CALL IfW_HHWind_UnPackParam( Re_HHWind_Buf, Db_HHWind_Buf, Int_HHWind_Buf, OutData%HHWind, ErrStat, ErrMsg ) ! HHWind 
+ ! first call IfW_HAWCWind_PackParam to get correctly sized buffers for unpacking
+  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, OutData%HAWCWind, ErrStat, ErrMsg, .TRUE. ) ! HAWCWind 
+  IF(ALLOCATED(Re_HAWCWind_Buf)) THEN
+    Re_HAWCWind_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_HAWCWind_Buf)-1 )
+    Re_Xferred = Re_Xferred + SIZE(Re_HAWCWind_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_HAWCWind_Buf)) THEN
+    Db_HAWCWind_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_HAWCWind_Buf)-1 )
+    Db_Xferred = Db_Xferred + SIZE(Db_HAWCWind_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_HAWCWind_Buf)) THEN
+    Int_HAWCWind_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_HAWCWind_Buf)-1 )
+    Int_Xferred = Int_Xferred + SIZE(Int_HAWCWind_Buf)
+  ENDIF
+  CALL IfW_HAWCWind_UnPackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, OutData%HAWCWind, ErrStat, ErrMsg ) ! HAWCWind 
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackParam
+ END SUBROUTINE InflowWind_UnPackParam
 
- SUBROUTINE IfW_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_inputtype), INTENT(INOUT) :: SrcInputData
-   TYPE(IfW_inputtype), INTENT(INOUT) :: DstInputData
+ SUBROUTINE InflowWind_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_inputtype), INTENT(INOUT) :: SrcInputData
+   TYPE(InflowWind_inputtype), INTENT(INOUT) :: DstInputData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -961,16 +1578,16 @@ IF (ALLOCATED(SrcInputData%Position)) THEN
       ALLOCATE(DstInputData%Position(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'IfW_CopyInput: Error allocating DstInputData%Position.'
+         ErrMsg = 'InflowWind_CopyInput: Error allocating DstInputData%Position.'
          RETURN
       END IF
    END IF
    DstInputData%Position = SrcInputData%Position
 ENDIF
- END SUBROUTINE IfW_CopyInput
+ END SUBROUTINE InflowWind_CopyInput
 
- SUBROUTINE IfW_DestroyInput( InputData, ErrStat, ErrMsg )
-  TYPE(IfW_inputtype), INTENT(INOUT) :: InputData
+ SUBROUTINE InflowWind_DestroyInput( InputData, ErrStat, ErrMsg )
+  TYPE(InflowWind_inputtype), INTENT(INOUT) :: InputData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
@@ -980,13 +1597,13 @@ ENDIF
 IF (ALLOCATED(InputData%Position)) THEN
    DEALLOCATE(InputData%Position)
 ENDIF
- END SUBROUTINE IfW_DestroyInput
+ END SUBROUTINE InflowWind_DestroyInput
 
- SUBROUTINE IfW_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_inputtype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_inputtype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -1024,13 +1641,13 @@ ENDIF
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Position))-1 ) =  PACK(InData%Position ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%Position)
   ENDIF
- END SUBROUTINE IfW_PackInput
+ END SUBROUTINE InflowWind_PackInput
 
- SUBROUTINE IfW_UnPackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_inputtype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_inputtype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -1068,11 +1685,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackInput
+ END SUBROUTINE InflowWind_UnPackInput
 
- SUBROUTINE IfW_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_outputtype), INTENT(INOUT) :: SrcOutputData
-   TYPE(IfW_outputtype), INTENT(INOUT) :: DstOutputData
+ SUBROUTINE InflowWind_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_outputtype), INTENT(INOUT) :: SrcOutputData
+   TYPE(InflowWind_outputtype), INTENT(INOUT) :: DstOutputData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -1092,7 +1709,7 @@ IF (ALLOCATED(SrcOutputData%Velocity)) THEN
       ALLOCATE(DstOutputData%Velocity(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'IfW_CopyOutput: Error allocating DstOutputData%Velocity.'
+         ErrMsg = 'InflowWind_CopyOutput: Error allocating DstOutputData%Velocity.'
          RETURN
       END IF
    END IF
@@ -1105,16 +1722,16 @@ IF (ALLOCATED(SrcOutputData%WriteOutput)) THEN
       ALLOCATE(DstOutputData%WriteOutput(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'IfW_CopyOutput: Error allocating DstOutputData%WriteOutput.'
+         ErrMsg = 'InflowWind_CopyOutput: Error allocating DstOutputData%WriteOutput.'
          RETURN
       END IF
    END IF
    DstOutputData%WriteOutput = SrcOutputData%WriteOutput
 ENDIF
- END SUBROUTINE IfW_CopyOutput
+ END SUBROUTINE InflowWind_CopyOutput
 
- SUBROUTINE IfW_DestroyOutput( OutputData, ErrStat, ErrMsg )
-  TYPE(IfW_outputtype), INTENT(INOUT) :: OutputData
+ SUBROUTINE InflowWind_DestroyOutput( OutputData, ErrStat, ErrMsg )
+  TYPE(InflowWind_outputtype), INTENT(INOUT) :: OutputData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
@@ -1127,13 +1744,13 @@ ENDIF
 IF (ALLOCATED(OutputData%WriteOutput)) THEN
    DEALLOCATE(OutputData%WriteOutput)
 ENDIF
- END SUBROUTINE IfW_DestroyOutput
+ END SUBROUTINE InflowWind_DestroyOutput
 
- SUBROUTINE IfW_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_outputtype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_outputtype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -1176,13 +1793,13 @@ ENDIF
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WriteOutput))-1 ) =  PACK(InData%WriteOutput ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%WriteOutput)
   ENDIF
- END SUBROUTINE IfW_PackOutput
+ END SUBROUTINE InflowWind_PackOutput
 
- SUBROUTINE IfW_UnPackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_outputtype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_outputtype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -1226,11 +1843,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackOutput
+ END SUBROUTINE InflowWind_UnPackOutput
 
- SUBROUTINE IfW_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_continuousstatetype), INTENT(INOUT) :: SrcContStateData
-   TYPE(IfW_continuousstatetype), INTENT(INOUT) :: DstContStateData
+ SUBROUTINE InflowWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_continuousstatetype), INTENT(INOUT) :: SrcContStateData
+   TYPE(InflowWind_continuousstatetype), INTENT(INOUT) :: DstContStateData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -1242,23 +1859,23 @@ ENDIF
    ErrStat = ErrID_None
    ErrMsg  = ""
    DstContStateData%DummyContState = SrcContStateData%DummyContState
- END SUBROUTINE IfW_CopyContState
+ END SUBROUTINE InflowWind_CopyContState
 
- SUBROUTINE IfW_DestroyContState( ContStateData, ErrStat, ErrMsg )
-  TYPE(IfW_continuousstatetype), INTENT(INOUT) :: ContStateData
+ SUBROUTINE InflowWind_DestroyContState( ContStateData, ErrStat, ErrMsg )
+  TYPE(InflowWind_continuousstatetype), INTENT(INOUT) :: ContStateData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
- END SUBROUTINE IfW_DestroyContState
+ END SUBROUTINE InflowWind_DestroyContState
 
- SUBROUTINE IfW_PackContState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackContState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_continuousstatetype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_continuousstatetype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -1294,13 +1911,13 @@ ENDIF
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyContState )
   Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_PackContState
+ END SUBROUTINE InflowWind_PackContState
 
- SUBROUTINE IfW_UnPackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackContState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_continuousstatetype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_continuousstatetype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -1334,11 +1951,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackContState
+ END SUBROUTINE InflowWind_UnPackContState
 
- SUBROUTINE IfW_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
-   TYPE(IfW_discretestatetype), INTENT(INOUT) :: DstDiscStateData
+ SUBROUTINE InflowWind_CopyDiscState( SrcDiscStateData, DstDiscStateData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_discretestatetype), INTENT(INOUT) :: SrcDiscStateData
+   TYPE(InflowWind_discretestatetype), INTENT(INOUT) :: DstDiscStateData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -1350,23 +1967,23 @@ ENDIF
    ErrStat = ErrID_None
    ErrMsg  = ""
    DstDiscStateData%DummyDiscState = SrcDiscStateData%DummyDiscState
- END SUBROUTINE IfW_CopyDiscState
+ END SUBROUTINE InflowWind_CopyDiscState
 
- SUBROUTINE IfW_DestroyDiscState( DiscStateData, ErrStat, ErrMsg )
-  TYPE(IfW_discretestatetype), INTENT(INOUT) :: DiscStateData
+ SUBROUTINE InflowWind_DestroyDiscState( DiscStateData, ErrStat, ErrMsg )
+  TYPE(InflowWind_discretestatetype), INTENT(INOUT) :: DiscStateData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
- END SUBROUTINE IfW_DestroyDiscState
+ END SUBROUTINE InflowWind_DestroyDiscState
 
- SUBROUTINE IfW_PackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_discretestatetype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_discretestatetype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -1402,13 +2019,13 @@ ENDIF
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyDiscState )
   Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_PackDiscState
+ END SUBROUTINE InflowWind_PackDiscState
 
- SUBROUTINE IfW_UnPackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackDiscState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_discretestatetype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_discretestatetype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -1442,11 +2059,11 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackDiscState
+ END SUBROUTINE InflowWind_UnPackDiscState
 
- SUBROUTINE IfW_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(IfW_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
-   TYPE(IfW_constraintstatetype), INTENT(INOUT) :: DstConstrStateData
+ SUBROUTINE InflowWind_CopyConstrState( SrcConstrStateData, DstConstrStateData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(InflowWind_constraintstatetype), INTENT(INOUT) :: SrcConstrStateData
+   TYPE(InflowWind_constraintstatetype), INTENT(INOUT) :: DstConstrStateData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -1458,23 +2075,23 @@ ENDIF
    ErrStat = ErrID_None
    ErrMsg  = ""
    DstConstrStateData%DummyConstrState = SrcConstrStateData%DummyConstrState
- END SUBROUTINE IfW_CopyConstrState
+ END SUBROUTINE InflowWind_CopyConstrState
 
- SUBROUTINE IfW_DestroyConstrState( ConstrStateData, ErrStat, ErrMsg )
-  TYPE(IfW_constraintstatetype), INTENT(INOUT) :: ConstrStateData
+ SUBROUTINE InflowWind_DestroyConstrState( ConstrStateData, ErrStat, ErrMsg )
+  TYPE(InflowWind_constraintstatetype), INTENT(INOUT) :: ConstrStateData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
- END SUBROUTINE IfW_DestroyConstrState
+ END SUBROUTINE InflowWind_DestroyConstrState
 
- SUBROUTINE IfW_PackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_PackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(IfW_constraintstatetype),  INTENT(INOUT) :: InData
+  TYPE(InflowWind_constraintstatetype),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -1510,13 +2127,13 @@ ENDIF
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%DummyConstrState )
   Re_Xferred   = Re_Xferred   + 1
- END SUBROUTINE IfW_PackConstrState
+ END SUBROUTINE InflowWind_PackConstrState
 
- SUBROUTINE IfW_UnPackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackConstrState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(IfW_constraintstatetype), INTENT(INOUT) :: OutData
+  TYPE(InflowWind_constraintstatetype), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -1550,10 +2167,10 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE IfW_UnPackConstrState
+ END SUBROUTINE InflowWind_UnPackConstrState
 
 
- SUBROUTINE IfW_Input_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_Input_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
 !
 ! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
 ! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
@@ -1569,9 +2186,9 @@ ENDIF
 !
 !..................................................................................................................................
 
- TYPE(IfW_inputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
+ TYPE(InflowWind_inputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
  REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
- TYPE(IfW_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
+ TYPE(InflowWind_inputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
  REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
@@ -1651,12 +2268,12 @@ ENDIF
 
  if ( size(t) .ne. size(u)) then
     ErrStat = ErrID_Fatal
-    ErrMsg = ' Error in IfW_Input_ExtrapInterp: size(t) must equal size(u) '
+    ErrMsg = ' Error in InflowWind_Input_ExtrapInterp: size(t) must equal size(u) '
     RETURN
  endif
  if (size(u) .gt. 3) then
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Input_ExtrapInterp: size(u) must be less than 4 '
+    ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: size(u) must be less than 4 '
     RETURN
  endif
  order = SIZE(u) - 1
@@ -1667,7 +2284,7 @@ END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
 IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
@@ -1681,17 +2298,17 @@ END IF ! check if allocated
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
   IF ( EqualRealNos( t(2), t(3) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Input_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
   IF ( EqualRealNos( t(1), t(3) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
 IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
@@ -1705,13 +2322,13 @@ IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
 END IF ! check if allocated
  ELSE 
    ErrStat = ErrID_Fatal
-   ErrMsg = ' order must be less than 3 in IfW_Input_ExtrapInterp '
+   ErrMsg = ' order must be less than 3 in InflowWind_Input_ExtrapInterp '
    RETURN
  ENDIF 
- END SUBROUTINE IfW_Input_ExtrapInterp
+ END SUBROUTINE InflowWind_Input_ExtrapInterp
 
 
- SUBROUTINE IfW_Output_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_Output_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
 !
 ! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
 ! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
@@ -1727,9 +2344,9 @@ END IF ! check if allocated
 !
 !..................................................................................................................................
 
- TYPE(IfW_outputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
+ TYPE(InflowWind_outputtype), INTENT(INOUT)  :: u(:)      ! Inputs at t1 > t2 > t3
  REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the inputs
- TYPE(IfW_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
+ TYPE(InflowWind_outputtype), INTENT(INOUT)  :: u_out     ! Inputs at tin_out
  REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
@@ -1809,12 +2426,12 @@ END IF ! check if allocated
 
  if ( size(t) .ne. size(u)) then
     ErrStat = ErrID_Fatal
-    ErrMsg = ' Error in IfW_Output_ExtrapInterp: size(t) must equal size(u) '
+    ErrMsg = ' Error in InflowWind_Output_ExtrapInterp: size(t) must equal size(u) '
     RETURN
  endif
  if (size(u) .gt. 3) then
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Output_ExtrapInterp: size(u) must be less than 4 '
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: size(u) must be less than 4 '
     RETURN
  endif
  order = SIZE(u) - 1
@@ -1828,7 +2445,7 @@ END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
 IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
@@ -1850,17 +2467,17 @@ END IF ! check if allocated
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
   IF ( EqualRealNos( t(2), t(3) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Output_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(2) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
   IF ( EqualRealNos( t(1), t(3) ) ) THEN
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in IfW_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
 IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
@@ -1883,10 +2500,10 @@ IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
 END IF ! check if allocated
  ELSE 
    ErrStat = ErrID_Fatal
-   ErrMsg = ' order must be less than 3 in IfW_Output_ExtrapInterp '
+   ErrMsg = ' order must be less than 3 in InflowWind_Output_ExtrapInterp '
    RETURN
  ENDIF 
- END SUBROUTINE IfW_Output_ExtrapInterp
+ END SUBROUTINE InflowWind_Output_ExtrapInterp
 
 END MODULE InflowWind_Types
 !ENDOFREGISTRYGENERATEDFILE

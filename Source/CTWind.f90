@@ -14,7 +14,29 @@ MODULE CTWind
 !  Modified Jan-2013 by A. Platt, National Renewable Energy Laboratory
 !     to fit the modularization framework used by FAST
 !
-!----------------------------------------------------------------------------------------------------
+!**********************************************************************************************************************************
+! LICENSING
+! Copyright (C) 2013  National Renewable Energy Laboratory
+!
+!    This file is part of InflowWind.
+!
+! Licensed under the Apache License, Version 2.0 (the "License");
+! you may not use this file except in compliance with the License.
+! You may obtain a copy of the License at
+!
+!     http://www.apache.org/licenses/LICENSE-2.0
+!
+! Unless required by applicable law or agreed to in writing, software
+! distributed under the License is distributed on an "AS IS" BASIS,
+! WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+! See the License for the specific language governing permissions and
+! limitations under the License.
+!
+!**********************************************************************************************************************************
+! File last committed: $Date: 2014-07-29 13:30:04 -0600 (Tue, 29 Jul 2014) $
+! (File) Revision #: $Rev$
+! URL: $HeadURL$
+!**********************************************************************************************************************************
 
    USE                     NWTC_Library
    USE                     SharedInflowDefs
@@ -122,7 +144,7 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat, ErrMsg)
       ! Temporary error handling Variables
 
    INTEGER                          :: TmpErrStat                    ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                     ! Temporary error message returned
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                     ! Temporary error message returned
 
 
 
@@ -382,7 +404,7 @@ FUNCTION CT_GetWindSpeed(Time, InputPosition, ErrStat, ErrMsg)
 
       ! Temporary error handling
    INTEGER                       :: TmpErrStat
-   CHARACTER(1024)               :: TmpErrMsg
+   CHARACTER(LEN(ErrMsg))        :: TmpErrMsg
 
 
    !-------------------------------------------------------------------------------------------------
@@ -654,7 +676,7 @@ SUBROUTINE ReadCTData ( UnWind, CTFileNo, Itime, ErrStat, ErrMsg )
       ! Temporary error handling Variables
 
    INTEGER                          :: TmpErrStat                             ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                              ! Temporary error message returned
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                              ! Temporary error message returned
 
 
       !------------------------------------------------------------------------
@@ -735,7 +757,7 @@ SUBROUTINE LoadCTData( UnWind, FileName, ITime, IComp, Vel, ErrStat, ErrMsg )
 
       ! Temporary error handling
    INTEGER                       :: TmpErrStat
-   CHARACTER(1024)               :: TmpErrMsg
+   CHARACTER(LEN(ErrMsg))        :: TmpErrMsg
 
 
    !-------------------------------------------------------------------------------------------------
@@ -823,7 +845,7 @@ SUBROUTINE ReadCTP( UnWind, FileName, CTPscaling, ErrStat, ErrMsg )
       ! Temporary error handling Variables
 
    INTEGER                          :: TmpErrStat                             ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                              ! Temporary error message returned
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                              ! Temporary error message returned
 
    !-------------------------------------------------------------------------------------------------
    ! Set temporary Error info
@@ -978,7 +1000,7 @@ SUBROUTINE ReadCTTS ( UnWind, FileName, CT_SC_ext, EmptyFileStat, ErrStat, ErrMs
       ! Temporary error handling variables
 
    INTEGER                          :: TmpErrStat                             ! temporary ErrStat
-   CHARACTER(1024)                  :: TmpErrMsg                              ! temporary returned error message
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                              ! temporary returned error message
 
    !-------------------------------------------------------------------------------------------------
    ! Initialize variables
@@ -1187,7 +1209,7 @@ SUBROUTINE ReadCTScales ( UnWind, FileName, ErrStat, ErrMsg )
       ! Temporary error handling Variables
 
    INTEGER                          :: TmpErrStat                             ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                              ! Temporary error message returned
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                              ! Temporary error message returned
 
    !-------------------------------------------------------------------------------------------------
    ! Open the file with the scales (les or dns)
@@ -1274,7 +1296,7 @@ SUBROUTINE CT_Terminate( ErrStat, ErrMsg )
       ! Temporary error handling Variables
 
    INTEGER                          :: TmpErrStat                             ! Temporary Error Status
-   CHARACTER(1024)                  :: TmpErrMsg                              ! Temporary Error Message
+   CHARACTER(LEN(ErrMsg))           :: TmpErrMsg                              ! Temporary Error Message
 
 
       ! Initialize variables
