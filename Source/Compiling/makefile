@@ -29,7 +29,7 @@ else
       SoftwareDir       = /Users/aplatt/software-development/windsvn
       RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry_Mac.exe      #registry_Mac.exe
       NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
-      IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization/Source
+      IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
 #      RegistryDIR       = $(IfW_DIR)/Registry
 		RegistryDIR			= ../Registry
       Driver_DIR        = $(IfW_DIR)/Driver
@@ -144,10 +144,12 @@ IfW_SOURCES =              \
 	IfW_HHWind_Types.f90    \
 	IfW_HHWind.f90          \
 	IfW_HAWCWind_Types.f90  \
-	InflowWind_Subs.f90     \
 	InflowWind_Types.f90    \
 	InflowWind_Input.f90    \
 	InflowWind.f90
+
+#	InflowWind_Subs.f90     \
+
 
 Driver_SOURCES =                 \
 	InflowWind_Driver.f90         \
@@ -232,9 +234,10 @@ IfW_FFWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ
 IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT) IfW_HHWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT) IfW_FFWind$(OBJ_EXT)  IfW_HHWind$(OBJ_EXT) #IfW_HAWCWind$(OBJ_EXT)
+#InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT) IfW_FFWind$(OBJ_EXT)  IfW_HHWind$(OBJ_EXT) #IfW_HAWCWind$(OBJ_EXT)
 InflowWind_Input$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT)
-InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) InflowWind_Subs$(OBJ_EXT) InflowWind_Input$(OBJ_EXT)
+InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) InflowWind_Input$(OBJ_EXT)  
+#InflowWind_Subs$(OBJ_EXT)
 
 #Driver dependency rules:
 InflowWind_Driver_Types$(OBJ_EXT):  InflowWind_Types$(OBJ_EXT)
