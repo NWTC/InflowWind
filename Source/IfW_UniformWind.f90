@@ -1,4 +1,4 @@
-MODULE IfW_HHWind
+MODULE IfW_UniformWind
 ! This module contains all the data and procedures that define hub-height wind files. This could
 ! more accurately be called a point wind file since the wind speed at any point is calculated by
 ! shear applied to the point where wind is defined.  It is basically uniform wind over the rotor disk.
@@ -50,37 +50,37 @@ MODULE IfW_HHWind
 !**********************************************************************************************************************************
 
    USE                                       NWTC_Library
-   USE                                       IfW_HHWind_Types
+   USE                                       IfW_UniformWind_Types
 
    IMPLICIT                                  NONE
    PRIVATE
 
-   TYPE(ProgDesc),   PARAMETER               :: IfW_HHWind_Ver = ProgDesc( 'IfW_HHWind', 'v2.00.00', '17-Sep-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_UniformWind_Ver = ProgDesc( 'IfW_UniformWind', 'v2.00.00', '17-Sep-2013' )
 
-   PUBLIC                                    :: IfW_HHWind_Init
-   PUBLIC                                    :: IfW_HHWind_End
-   PUBLIC                                    :: IfW_HHWind_CalcOutput
+   PUBLIC                                    :: IfW_UniformWind_Init
+   PUBLIC                                    :: IfW_UniformWind_End
+   PUBLIC                                    :: IfW_UniformWind_CalcOutput
 
 
       ! The following do not contain anything since there are no states.
-   PUBLIC                                    :: IfW_HHWind_UpdateStates
-   PUBLIC                                    :: IfW_HHWind_CalcContStateDeriv
-   PUBLIC                                    :: IfW_HHWind_UpdateDiscState
-   PUBLIC                                    :: IfW_HHWind_CalcConstrStateResidual
+   PUBLIC                                    :: IfW_UniformWind_UpdateStates
+   PUBLIC                                    :: IfW_UniformWind_CalcContStateDeriv
+   PUBLIC                                    :: IfW_UniformWind_UpdateDiscState
+   PUBLIC                                    :: IfW_UniformWind_CalcConstrStateResidual
 
 
       !The following were removed during conversion to the framework:
-   !PUBLIC                                   :: IfW_HHWind_SetLinearizeDels                ! If necessary, move this into the UpdateStates routine.
+   !PUBLIC                                   :: IfW_UniformWind_SetLinearizeDels                ! If necessary, move this into the UpdateStates routine.
 
 CONTAINS
 
 !====================================================================================================
 
-SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                       &
+SUBROUTINE IfW_UniformWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
                            OutData,    Interval,   InitOutData,      ErrStat,          ErrMsg)
    !----------------------------------------------------------------------------------------------------
-   ! A subroutine to initialize the HHWind module.  It reads the HH file and stores the data in an
+   ! A subroutine to initialize the UniformWind module.  It reads the uniform wind file and stores the data in an
    ! array to use later.  It requires an initial reference height (hub height) and width (rotor diameter),
    ! both in meters, which are used to define the volume where wind velocities will be calculated.  This
    ! information is necessary because of the way the shears are defined.
@@ -90,15 +90,15 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
 
       ! Passed Variables
-   TYPE(IfW_HHWind_InitInputType),        INTENT(IN   )  :: InitData          ! Input data for initialization
-   TYPE(IfW_HHWind_InputType),            INTENT(  OUT)  :: InputGuess        ! Initialized input data variable
-   TYPE(IfW_HHWind_ParameterType),        INTENT(  OUT)  :: ParamData         ! Parameters
-   TYPE(IfW_HHWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates        ! Continuous States  (unused)
-   TYPE(IfW_HHWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates        ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates      ! Constraint States  (unused)
-   TYPE(IfW_HHWind_OtherStateType),       INTENT(  OUT)  :: OtherStates       ! Other State data   (storage for the main data)
-   TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData           ! Initial output
-   TYPE(IfW_HHWind_InitOutputType),       INTENT(  OUT)  :: InitOutData       ! Initial output
+   TYPE(IfW_UniformWind_InitInputType),        INTENT(IN   )  :: InitData          ! Input data for initialization
+   TYPE(IfW_UniformWind_InputType),            INTENT(  OUT)  :: InputGuess        ! Initialized input data variable
+   TYPE(IfW_UniformWind_ParameterType),        INTENT(  OUT)  :: ParamData         ! Parameters
+   TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates        ! Continuous States  (unused)
+   TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates        ! Discrete States    (unused)
+   TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates      ! Constraint States  (unused)
+   TYPE(IfW_UniformWind_OtherStateType),       INTENT(  OUT)  :: OtherStates       ! Other State data   (storage for the main data)
+   TYPE(IfW_UniformWind_OutputType),           INTENT(  OUT)  :: OutData           ! Initial output
+   TYPE(IfW_UniformWind_InitOutputType),       INTENT(  OUT)  :: InitOutData       ! Initial output
 
    REAL(DbKi),                            INTENT(IN   )  :: Interval          ! We don't change this.
 
@@ -110,7 +110,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
       ! local variables
 
-   INTEGER(IntKi),            PARAMETER                  :: NumCols = 8       ! Number of columns in the HH file
+   INTEGER(IntKi),            PARAMETER                  :: NumCols = 8       ! Number of columns in the Uniform file
    REAL(ReKi)                                            :: TmpData(NumCols)  ! Temp variable for reading all columns from a line
    REAL(ReKi)                                            :: DelDiff           ! Temp variable for storing the direction difference
 
@@ -167,7 +167,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
 
    IF ( OtherStates%TimeIndex /= 0 ) THEN
-      ErrMsg   = ' HHWind has already been initialized.'
+      ErrMsg   = ' UniformWind has already been initialized.'
       ErrStat  = ErrId_Warn
       RETURN
    ELSE
@@ -222,7 +222,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       READ(OtherStates%UnitWind,'( A )',IOSTAT=TmpErrStat) LINE
 
       IF ( TmpErrStat /=0 ) THEN
-         ErrMsg   = TRIM(ErrMsg)//' Error reading from HH wind file on line '//TRIM(Num2LStr(NumComments))//'.'//NewLine
+         ErrMsg   = TRIM(ErrMsg)//' Error reading from uniform wind file on line '//TRIM(Num2LStr(NumComments))//'.'//NewLine
          ErrStat  = ErrID_Fatal
          RETURN
       END IF
@@ -247,18 +247,18 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
 
    IF (OtherStates%NumDataLines < 1) THEN
-      ErrMsg   = TRIM(ErrMsg)//' Error reading data from HH wind file on line '// &
+      ErrMsg   = TRIM(ErrMsg)//' Error reading data from Uniform wind file on line '// &
                   TRIM(Num2LStr(OtherStates%NumDataLines+NumComments))//'.'//NewLine
       ErrStat  = ErrID_Fatal
       RETURN
    ELSE
       ErrMsg   =  TRIM(ErrMsg)//' Reading '//TRIM(Num2LStr(OtherStates%NumDataLines))// &
-                     ' lines of data from the HH wind file "'//TRIM(InitData%WindFileName)//'"'//NewLine
+                     ' lines of data from the uniform wind file "'//TRIM(InitData%WindFileName)//'"'//NewLine
    END IF
 
 
       !-------------------------------------------------------------------------------------------------
-      ! Allocate arrays for the HH data
+      ! Allocate arrays for the uniform wind data
       !-------------------------------------------------------------------------------------------------
       ! BJJ note: If the subroutine AllocAry() is called, the CVF compiler with A2AD does not work
       !   properly.  The arrays are not properly read even though they've been allocated.
@@ -266,56 +266,56 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
 
    IF (.NOT. ALLOCATED(OtherStates%Tdata) ) THEN
-      CALL AllocAry( OtherStates%Tdata, OtherStates%NumDataLines, 'HH time', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%Tdata, OtherStates%NumDataLines, 'Uniform wind time', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%V) ) THEN
-      CALL AllocAry( OtherStates%V, OtherStates%NumDataLines, 'HH horizontal wind speed', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%V, OtherStates%NumDataLines, 'Uniform wind horizontal wind speed', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%Delta) ) THEN
-      CALL AllocAry( OtherStates%Delta, OtherStates%NumDataLines, 'HH wind direction', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%Delta, OtherStates%NumDataLines, 'Uniform wind direction', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VZ) ) THEN
-      CALL AllocAry( OtherStates%VZ, OtherStates%NumDataLines, 'HH vertical wind speed', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%VZ, OtherStates%NumDataLines, 'Uniform vertical wind speed', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%HShr) ) THEN
-      CALL AllocAry( OtherStates%HShr, OtherStates%NumDataLines, 'HH horizontal linear shear', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%HShr, OtherStates%NumDataLines, 'Uniform horizontal linear shear', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VShr) ) THEN
-      CALL AllocAry( OtherStates%VShr, OtherStates%NumDataLines, 'HH vertical power-law shear exponent', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%VShr, OtherStates%NumDataLines, 'Uniform vertical power-law shear exponent', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VLinShr) ) THEN
-      CALL AllocAry( OtherStates%VLinShr, OtherStates%NumDataLines, 'HH vertical linear shear', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%VLinShr, OtherStates%NumDataLines, 'Uniform vertical linear shear', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
    IF (.NOT. ALLOCATED(OtherStates%VGust) ) THEN
-      CALL AllocAry( OtherStates%VGust, OtherStates%NumDataLines, 'HH gust velocity', TmpErrStat, TmpErrMsg )
+      CALL AllocAry( OtherStates%VGust, OtherStates%NumDataLines, 'Uniform gust velocity', TmpErrStat, TmpErrMsg )
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
@@ -343,10 +343,10 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    DO I=1,OtherStates%NumDataLines
 
       CALL ReadAry( OtherStates%UnitWind, TRIM(InitData%WindFileName), TmpData(1:NumCols), NumCols, 'TmpData', &
-                'Data from HH line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat, TmpErrMsg)
+                'Data from uniform wind file line '//TRIM(Num2LStr(NumComments+I)), TmpErrStat, TmpErrMsg)
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)// &
-         'Error retrieving data from the HH line'//TRIM(Num2LStr(NumComments+I))//NewLine
+         'Error retrieving data from the uniform wind file line'//TRIM(Num2LStr(NumComments+I))//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
 
       OtherStates%Tdata(  I) = TmpData(1)
@@ -383,7 +383,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       END DO
 
       IF ( ILine >= MaxTries ) THEN
-         ErrMsg   = TRIM(ErrMsg)//' Error calculating wind direction from HH file. OtherStates%Delta(' &
+         ErrMsg   = TRIM(ErrMsg)//' Error calculating wind direction from uniform wind file. OtherStates%Delta(' &
                // TRIM(Num2LStr(I  )) // ') = ' // TRIM(Num2LStr(OtherStates%Delta(I))) // '; OtherStates%Delta(' &
                // TRIM(Num2LStr(I+1)) // ') = ' // TRIM(Num2LStr(OtherStates%Delta(I+1)))//NewLine
          ErrStat  = MAX(ErrStat, ErrID_Fatal)
@@ -403,8 +403,8 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
       ! Print warnings and messages
       !-------------------------------------------------------------------------------------------------
-   CALL WrScr( '   Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of HH data' )
-   !ErrMsg   = TRIM(ErrMsg)//'  Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of HH data' )//NewLine
+   CALL WrScr( '   Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of uniform wind data' )
+   !ErrMsg   = TRIM(ErrMsg)//'  Processed '//TRIM( Num2LStr( OtherStates%NumDataLines ) )//' records of uniform data' )//NewLine
 
 
    IF ( OtherStates%Tdata(1) > 0.0 ) THEN
@@ -414,7 +414,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
    ENDIF
 
    IF ( OtherStates%NumDataLines == 1 ) THEN
-      ErrMsg   = TRIM(ErrMsg)//' Only 1 line in HH wind file. Steady, hub-height horizontal wind speed = '// &
+      ErrMsg   = TRIM(ErrMsg)//' Only 1 line in uniform wind file. Steady, hub-height horizontal wind speed = '// &
                   TRIM(Num2LStr(OtherStates%V(1)))//' m/s.'//NewLine
       ErrStat  = MAX(ErrStat, ErrID_Info)
    END IF
@@ -435,7 +435,7 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
 
    InitOutData%HubHeight   = ParamData%ReferenceHeight
-   InitOutdata%Ver         = IfW_HHWind_Ver
+   InitOutdata%Ver         = IfW_UniformWind_Ver
 
 
       ! Allocate and populate the OutputHdr array (contains names of outputable values)
@@ -464,11 +464,11 @@ SUBROUTINE IfW_HHWind_Init(InitData,   InputGuess, ParamData,                   
 
    RETURN
 
-END SUBROUTINE IfW_HHWind_Init
+END SUBROUTINE IfW_UniformWind_Init
 
 !====================================================================================================
 
-SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,                       &
+SUBROUTINE IfW_UniformWind_CalcOutput(Time,    InData,        ParamData,                       &
                            ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
                            OutData,       ErrStat,       ErrMsg)
    !-------------------------------------------------------------------------------------------------
@@ -481,13 +481,13 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
 
       ! Passed Variables
    REAL(DbKi),                            INTENT(IN   )  :: Time           ! time from the start of the simulation
-   TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
-   TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
-   TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
-   TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
-   TYPE(IfW_HHWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
+   TYPE(IfW_UniformWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
+   TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
+   TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_UniformWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
 
       ! Error handling
    INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat        ! error status
@@ -521,7 +521,7 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
       ! Allocate Velocity output array
    CALL AllocAry( OutData%Velocity, 3, NumPoints, "Velocity matrix at timestep", TmpErrStat, TmpErrMsg )
    IF ( TmpErrStat >= AbortErrLev ) THEN
-      ErrMsg   = TRIM(ErrMsg)//"IfW_HHWind:CalcOutput -- Could not allocate the output velocity array."//NewLine
+      ErrMsg   = TRIM(ErrMsg)//"IfW_UniformWind:CalcOutput -- Could not allocate the output velocity array."//NewLine
       RETURN
    ENDIF
 
@@ -536,7 +536,7 @@ SUBROUTINE IfW_HHWind_CalcOutput(Time,    InData,        ParamData,             
       ErrStat  = MAX(TmpErrStat, ErrStat)
       IF ( TmpErrStat /=0 ) ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
       IF (ErrStat >= AbortErrLev) THEN
-         ErrMsg   = TRIM(ErrMsg)//"IfW_HHWind:CalcOutput -- Error calculating the wind speed at position ("//   &
+         ErrMsg   = TRIM(ErrMsg)//"IfW_UniformWind:CalcOutput -- Error calculating the wind speed at position ("//   &
                      TRIM(Num2LStr(InData%Position(1,PointNum)))//", "// &
                      TRIM(Num2LStr(InData%Position(2,PointNum)))//", "// &
                      TRIM(Num2LStr(InData%Position(3,PointNum)))//")"//NewLine
@@ -552,7 +552,7 @@ CONTAINS
    !+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-
    FUNCTION GetWindSpeed(Time,   InputPosition,   ParamData,     OtherStates,   ErrStat, ErrMsg)
    !----------------------------------------------------------------------------------------------------
-   ! This subroutine linearly interpolates the columns in the HH input file to get the values for
+   ! This subroutine linearly interpolates the columns in the uniform input file to get the values for
    ! the requested time, then uses the interpolated values to calclate the wind speed at a point
    ! in space represented by InputPosition.
    !
@@ -562,8 +562,8 @@ CONTAINS
          ! Passed Variables
       REAL(DbKi),                            INTENT(IN   )  :: Time              ! time from the start of the simulation
       REAL(ReKi),                            INTENT(IN   )  :: InputPosition(3)  ! input information: positions X,Y,Z
-      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: ParamData         ! Parameters
-      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates       ! Other State data   (storage for the main data)
+      TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: ParamData         ! Parameters
+      TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherStates       ! Other State data   (storage for the main data)
 
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat           ! error status
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg            ! The error message
@@ -591,7 +591,7 @@ CONTAINS
       !-------------------------------------------------------------------------------------------------
 
       IF ( OtherStates%TimeIndex == 0 ) THEN
-         ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+         ErrMsg   = ' Error: Call UniformWind_Init() before getting wind speed.'
          ErrStat  = MAX(ErrStat, ErrID_Fatal)         ! Fatal since no data returned
          RETURN
       ELSE
@@ -697,28 +697,28 @@ CONTAINS
 
    END FUNCTION GetWindSpeed
 
-END SUBROUTINE IfW_HHWind_CalcOutput
+END SUBROUTINE IfW_UniformWind_CalcOutput
 
 !====================================================================================================
 
-SUBROUTINE IfW_HHWind_End( InData,     ParamData,                                &
+SUBROUTINE IfW_UniformWind_End( InData,     ParamData,                                &
                            ContStates, DiscStates, ConstrStates,  OtherStates,   &
                            OutData,                                              &
                            ErrStat,    ErrMsg)
    !----------------------------------------------------------------------------------------------------
-   !  This routine closes any open files and clears all data stored in HHWind derived Types
+   !  This routine closes any open files and clears all data stored in UniformWind derived Types
    !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
 
 
       ! Passed Variables
-   TYPE(IfW_HHWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
-   TYPE(IfW_HHWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
-   TYPE(IfW_HHWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
-   TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
-   TYPE(IfW_HHWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
+   TYPE(IfW_UniformWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
+   TYPE(IfW_UniformWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
+   TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_UniformWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
 
 
       ! Error Handling
@@ -739,7 +739,7 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
       ! Destroy the input data
 
-   CALL IfW_HHWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -748,7 +748,7 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
       ! Destroy parameter data
 
-   CALL IfW_HHWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -757,25 +757,25 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
       ! Destroy the state data
 
-   CALL IfW_HHWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_HHWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_HHWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_HHWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -784,7 +784,7 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
 
       ! Destroy the output data
 
-   CALL IfW_HHWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
+   CALL IfW_UniformWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -796,7 +796,7 @@ SUBROUTINE IfW_HHWind_End( InData,     ParamData,                               
    OtherStates%TimeIndex   = 0
    ParamData%Initialized   = .FALSE.
 
-END SUBROUTINE IfW_HHWind_End
+END SUBROUTINE IfW_UniformWind_End
 !====================================================================================================
 
 
@@ -808,28 +808,28 @@ END SUBROUTINE IfW_HHWind_End
 !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
 !====================================================================================================
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+SUBROUTINE IfW_UniformWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
 ! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
 ! Constraint states are solved for input Time; Continuous and discrete states are updated for Time + Interval
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
+      TYPE(IfW_UniformWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
                                                                            ! Output: Continuous states at Time + Interval
-      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+      TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
                                                                            ! Output: Discrete states at Time  + Interval
-      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
+      TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
                                                                            ! Output: Constraint states at Time
-      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
          ! Local variables
 
-      TYPE(IfW_HHWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
-      TYPE(IfW_HHWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
+      TYPE(IfW_UniformWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_UniformWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
 
       INTEGER(IntKi)                                        :: ErrStat2    ! Error status of the operation (occurs after initial error)
       CHARACTER(LEN(ErrMsg))                                :: ErrMsg2     ! Error message if ErrStat2 /= ErrID_None
@@ -846,9 +846,9 @@ SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
          ! Check if the z guess is correct and update z with a new guess.
          ! Iterate until the value is within a given tolerance.
 
-      CALL IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      CALL IfW_UniformWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+         CALL IfW_UniformWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)//NewLine
          RETURN
       END IF
@@ -857,9 +857,9 @@ SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
       !
       !  z =
       !
-      !  CALL IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      !  CALL IfW_UniformWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
       !  IF ( ErrStat >= AbortErrLev ) THEN
-      !     CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+      !     CALL IfW_UniformWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
       !     ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
       !     RETURN
       !  END IF
@@ -869,28 +869,28 @@ SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
 
          ! Destroy z_Residual because it is not necessary for the rest of the subroutine:
 
-      CALL IfW_HHWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
+      CALL IfW_UniformWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
 
 
 
          ! Get first time derivatives of continuous states (dxdt):
 
-      CALL IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+      CALL IfW_UniformWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_HHWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         CALL IfW_UniformWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)//NewLine
          RETURN
       END IF
 
 
          ! Update discrete states:
-         !   Note that xd [discrete state] is changed in IfW_HHWind_UpdateDiscState(), so IfW_HHWind_CalcOutput(),
-         !   IfW_HHWind_CalcContStateDeriv(), and IfW_HHWind_CalcConstrStates() must be called first (see above).
+         !   Note that xd [discrete state] is changed in IfW_UniformWind_UpdateDiscState(), so IfW_UniformWind_CalcOutput(),
+         !   IfW_UniformWind_CalcContStateDeriv(), and IfW_UniformWind_CalcConstrStates() must be called first (see above).
 
-      CALL IfW_HHWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+      CALL IfW_UniformWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_HHWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         CALL IfW_UniformWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)//NewLine
          RETURN
       END IF
@@ -903,25 +903,25 @@ SUBROUTINE IfW_HHWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
 
          ! Destroy dxdt because it is not necessary for the rest of the subroutine
 
-      CALL IfW_HHWind_DestroyContState( dxdt, ErrStat, ErrMsg)
+      CALL IfW_UniformWind_DestroyContState( dxdt, ErrStat, ErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
 
 
 
-END SUBROUTINE IfW_HHWind_UpdateStates
+END SUBROUTINE IfW_UniformWind_UpdateStates
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+SUBROUTINE IfW_UniformWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
 ! Tight coupling routine for computing derivatives of continuous states
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
-      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
-      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
-      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_UniformWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -937,20 +937,20 @@ SUBROUTINE IfW_HHWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt
       dxdt%DummyContState = 0.0_ReKi
 
 
-END SUBROUTINE IfW_HHWind_CalcContStateDeriv
+END SUBROUTINE IfW_UniformWind_CalcContStateDeriv
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+SUBROUTINE IfW_UniformWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
 ! Tight coupling routine for updating discrete states
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+      TYPE(IfW_UniformWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
                                                                            !   Output: Discrete states at Time + Interval
-      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
-      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -965,20 +965,20 @@ SUBROUTINE IfW_HHWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat
 
       ! StateData%DiscState =
 
-END SUBROUTINE IfW_HHWind_UpdateDiscState
+END SUBROUTINE IfW_UniformWind_UpdateDiscState
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
+SUBROUTINE IfW_UniformWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
 ! Tight coupling routine for solving for the residual of the constraint state equations
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_HHWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_HHWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_HHWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_HHWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
-      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
-      TYPE(IfW_HHWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
-      TYPE(IfW_HHWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
+      TYPE(IfW_UniformWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_UniformWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_UniformWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_UniformWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
+      TYPE(IfW_UniformWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_UniformWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
                                                                            ! the input values described above
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -994,9 +994,9 @@ SUBROUTINE IfW_HHWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState,
 
       z_residual%DummyConstrState = 0.0_ReKi
 
-END SUBROUTINE IfW_HHWind_CalcConstrStateResidual
+END SUBROUTINE IfW_UniformWind_CalcConstrStateResidual
 !----------------------------------------------------------------------------------------------------------------------------------
-END MODULE IfW_HHWind
+END MODULE IfW_UniformWind
 
 
 !====================================================================================================
@@ -1006,7 +1006,7 @@ END MODULE IfW_HHWind
 !!MOVED FROM ABOVE:  This was removed during the conversion to the modular framework. It may be necessary
 !!                   to put this into OtherStates if it is needed later.
 !!----------------------------------------------------------------------------------------------------
-!SUBROUTINE IfW_HHWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
+!SUBROUTINE IfW_UniformWind_SetLinearizeDels( Perturbations, ErrStat, ErrMsg )
 !! This subroutine sets the perturbation values for the linearization scheme.
 !
 !   REAL(ReKi),                        INTENT(IN   )  :: Perturbations(7)     ! purturbations for each of the 7 input parameters
@@ -1018,7 +1018,7 @@ END MODULE IfW_HHWind
 !   !-------------------------------------------------------------------------------------------------
 !
 !   IF ( TimeIndex == 0 ) THEN
-!      ErrMsg   = ' Error: Call HH_Init() before getting wind speed.'
+!      ErrMsg   = ' Error: Call UniformWind_Init() before getting wind speed.'
 !      ErrStat  = ErrID_Fatal        ! Fatal since no data returned
 !      RETURN
 !   ELSE
@@ -1030,5 +1030,5 @@ END MODULE IfW_HHWind
 !
 !   RETURN
 !
-!END SUBROUTINE IfW_HHWind_SetLinearizeDels
+!END SUBROUTINE IfW_UniformWind_SetLinearizeDels
 !!====================================================================================================

@@ -1,6 +1,6 @@
 ###################################################################################################################################
-# Registry for IfW_HHWind, creates MODULE IfW_HHWind_Types
-# Module IfW_HHWind_Types contains all of the user-defined types needed in IfW_HHWind. It also contains copy, destroy, pack, and
+# Registry for IfW_UniformWind, creates MODULE IfW_UniformWind_Types
+# Module IfW_UniformWind_Types contains all of the user-defined types needed in IfW_UniformWind. It also contains copy, destroy, pack, and
 # unpack routines associated with each defined data types.
 ###################################################################################################################################
 # File last committed: $Date$
@@ -8,7 +8,7 @@
 # URL: $HeadURL$
 ###################################################################################################################################
 # Entries are of the form
-# keyword <IfW_HHWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
+# keyword <IfW_UniformWind[/ModuleAbvr]> <TypeName>   <FieldType>    <FieldName>  <Dims>  <Ctrl> <DNAME> <DESCRIP> <UNITS>
 ###################################################################################################################################
 
 include Registry_NWTC_Library.txt
@@ -16,7 +16,7 @@ include Registry_NWTC_Library.txt
 
 #########################
 
-typedef  IfW_HHWind/IfW_HHWind   InitInputType   CHARACTER(1024)  WindFileName      -     -     -     "Name of the wind file to use"                                 -
+typedef IfW_UniformWind/IfW_UniformWind InitInputType CHARACTER(1024) WindFileName  -     -     -     "Name of the wind file to use"                                 -
 typedef  ^                       ^                       ReKi     ReferenceHeight   -     -     -     "Hub height of the turbine"                                    meters
 typedef  ^                       ^                       ReKi     Width             -     -     -     "Width of the wind field to use"                               meters
 

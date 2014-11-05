@@ -141,8 +141,8 @@ NETLIB_SOURCES :=          \
 IfW_SOURCES =              \
 	IfW_FFWind_Types.f90    \
 	IfW_FFWind.f90          \
-	IfW_HHWind_Types.f90    \
-	IfW_HHWind.f90          \
+	IfW_UniformWind_Types.f90  \
+	IfW_UniformWind.f90     \
 	IfW_HAWCWind_Types.f90  \
 	InflowWind_Types.f90    \
 	InflowWind.f90
@@ -227,14 +227,14 @@ NWTC_NetLib$(OBJ_EXT):              NWTC_LAPACK$(OBJ_EXT) NWTC_ScaLAPACK$(OBJ_EX
 NWTC_FFTPACK$(OBJ_EXT):					NWTC_Library$(OBJ_EXT) fftpack4.1$(OBJ_EXT)
 
 #InflowWind dependency rules:
-IfW_HHWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)
-IfW_HHWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) IfW_HHWind_Types$(OBJ_EXT)
+IfW_UniformWind_Types$(OBJ_EXT):    NWTC_Library$(OBJ_EXT)
+IfW_IniformWind$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) IfW_UniformWind_Types$(OBJ_EXT)
 IfW_FFWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)
 IfW_FFWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT)
 IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT) IfW_HHWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-#InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT) IfW_FFWind$(OBJ_EXT)  IfW_HHWind$(OBJ_EXT) #IfW_HAWCWind$(OBJ_EXT)
+InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT) IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
+#InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT) IfW_FFWind$(OBJ_EXT)  IfW_UniformWind$(OBJ_EXT) #IfW_HAWCWind$(OBJ_EXT)
 #InflowWind_Input$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT)
 InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT)
 #InflowWind_Input$(OBJ_EXT)  
@@ -266,5 +266,5 @@ clean:
 	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)InflowWind_Types.f90
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_FFWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_HHWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_UniformWind_Types.f90
 # DO NOT DELETE
