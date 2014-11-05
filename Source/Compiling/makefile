@@ -145,10 +145,10 @@ IfW_SOURCES =              \
 	IfW_HHWind.f90          \
 	IfW_HAWCWind_Types.f90  \
 	InflowWind_Types.f90    \
-	InflowWind_Input.f90    \
 	InflowWind.f90
 
 #	InflowWind_Subs.f90     \
+#	InflowWind_Input.f90    \
 
 
 Driver_SOURCES =                 \
@@ -235,8 +235,9 @@ IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT) IfW_HHWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 #InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT) IfW_FFWind$(OBJ_EXT)  IfW_HHWind$(OBJ_EXT) #IfW_HAWCWind$(OBJ_EXT)
-InflowWind_Input$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT)
-InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) InflowWind_Input$(OBJ_EXT)  
+#InflowWind_Input$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) InflowWind_Types$(OBJ_EXT)
+InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT)
+#InflowWind_Input$(OBJ_EXT)  
 #InflowWind_Subs$(OBJ_EXT)
 
 #Driver dependency rules:

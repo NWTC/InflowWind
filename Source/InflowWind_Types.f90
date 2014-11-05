@@ -36,16 +36,20 @@ USE IfW_HHWind_Types
 USE IfW_HAWCWind_Types
 USE NWTC_Library
 IMPLICIT NONE
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: DEFAULT_WindNumber = -1      ! Undetermined wind type; calls internal routine to guess what type it is [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: HH_WindNumber = -1      ! Hub-Height wind file [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: FF_WindNumber = -2      ! Binary full-field wind file [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: UD_WindNumber = -3      ! User-defined wind [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: FD_WindNumber = -4      ! 4-dimensional wind (LES) [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: CTP_WindNumber = -5      ! Coherent turbulence wind field (superimpose KH billow on background wind) [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: Undef_WindNumber = 0      ! This is the code for an undefined WindFileType [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: HH_WindNumber = 1      ! Hub-Height wind file [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: FF_WindNumber = 2      ! Binary full-field wind file [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: UD_WindNumber = 3      ! User-defined wind [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: FD_WindNumber = 4      ! 4-dimensional wind (LES) [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: CTP_WindNumber = 5      ! Coherent turbulence wind field (superimpose KH billow on background wind) [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: HAWC_WindNumber = 6      ! Binary full-field wind file in HAWC format [-]
-! =========  IfW_InputFile  =======
-  TYPE, PUBLIC :: IfW_InputFile
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: Steady_WindNumber = 1      ! Steady wind.  Calculated internally. [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: Uniform_WindNumber = 2      ! Uniform wind.  Formally known as a Hub-Height wind file. [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: TSFF_WindNumber = 3      ! TurbSim full-field binary file. [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: BladedFF_WindNumber = 4      ! Bladed style binary full-field file.  Includes native bladed format [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: HAWC_WindNumber = 5      ! HAWC wind file. [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: User_WindNumber = 6      ! User defined wind. [-]
+! =========  InflowWind_InputFile  =======
+  TYPE, PUBLIC :: InflowWind_InputFile
     LOGICAL  :: EchoFlag      ! Echo the input file [-]
     INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile [-]
     REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation (meteorological direction) [-]
@@ -90,17 +94,14 @@ IMPLICIT NONE
     LOGICAL  :: SumPrint      ! Print summary info [-]
     INTEGER(IntKi)  :: NumOuts      ! Number of parameters in the output list (number of outputs requested) [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: OutList      ! List of user-requested output channels [-]
-  END TYPE IfW_InputFile
+  END TYPE InflowWind_InputFile
 ! =======================
 ! =========  InflowWind_InitInputType  =======
   TYPE, PUBLIC :: InflowWind_InitInputType
-    CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input file to use [-]
     REAL(DbKi)  :: DT      ! Time step.  Supplied by driver [seconds]
-    LOGICAL  :: Echo      ! Echo the input to a file [-]
     REAL(ReKi)  :: ReferenceHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind field to use [meters]
-    INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile [-]
     LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
   END TYPE InflowWind_InitInputType
 ! =======================
@@ -127,9 +128,11 @@ IMPLICIT NONE
     CHARACTER(1024)  :: WindFileNameRoot      ! Root name of the wind file to use [-]
     CHARACTER(3)  :: WindFileExt      ! Extention of the name of the wind file [-]
     CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input   file to use [-]
-    CHARACTER(1024)  :: RootName      ! Root of the InflowWind input   filename [-]
-    CHARACTER(1024)  :: EchoName      ! Name of the InflowWind echo    file to use [-]
+    CHARACTER(1024)  :: RootFileName      ! Root of the InflowWind input   filename [-]
+    CHARACTER(1024)  :: EchoFileName      ! Name of the InflowWind echo    file to use [-]
     CHARACTER(1024)  :: SumFileName      ! Name of the InflowWind summary file to use [-]
+    LOGICAL  :: WriteSumFile      ! Write a summary file [-]
+    INTEGER(IntKi)  :: UnitSumFile      ! Unit number for the summary file [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
     LOGICAL  :: CT_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
@@ -178,9 +181,9 @@ IMPLICIT NONE
   END TYPE InflowWind_ConstraintStateType
 ! =======================
 CONTAINS
- SUBROUTINE InflowWind_Copyifw_inputfile( Srcifw_inputfileData, Dstifw_inputfileData, CtrlCode, ErrStat, ErrMsg )
-   TYPE(ifw_inputfile), INTENT(INOUT) :: Srcifw_inputfileData
-   TYPE(ifw_inputfile), INTENT(INOUT) :: Dstifw_inputfileData
+ SUBROUTINE InflowWind_Copyinputfile( SrcinputfileData, DstinputfileData, CtrlCode, ErrStat, ErrMsg )
+   TYPE(inflowwind_inputfile), INTENT(INOUT) :: SrcinputfileData
+   TYPE(inflowwind_inputfile), INTENT(INOUT) :: DstinputfileData
    INTEGER(IntKi),  INTENT(IN   ) :: CtrlCode
    INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
@@ -191,127 +194,127 @@ CONTAINS
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-   Dstifw_inputfileData%EchoFlag = Srcifw_inputfileData%EchoFlag
-   Dstifw_inputfileData%WindFileType = Srcifw_inputfileData%WindFileType
-   Dstifw_inputfileData%PropogationDir = Srcifw_inputfileData%PropogationDir
-   Dstifw_inputfileData%NWindVel = Srcifw_inputfileData%NWindVel
-IF (ALLOCATED(Srcifw_inputfileData%WindVxiList)) THEN
-   i1_l = LBOUND(Srcifw_inputfileData%WindVxiList,1)
-   i1_u = UBOUND(Srcifw_inputfileData%WindVxiList,1)
-   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVxiList)) THEN 
-      ALLOCATE(Dstifw_inputfileData%WindVxiList(i1_l:i1_u),STAT=ErrStat)
+   DstinputfileData%EchoFlag = SrcinputfileData%EchoFlag
+   DstinputfileData%WindFileType = SrcinputfileData%WindFileType
+   DstinputfileData%PropogationDir = SrcinputfileData%PropogationDir
+   DstinputfileData%NWindVel = SrcinputfileData%NWindVel
+IF (ALLOCATED(SrcinputfileData%WindVxiList)) THEN
+   i1_l = LBOUND(SrcinputfileData%WindVxiList,1)
+   i1_u = UBOUND(SrcinputfileData%WindVxiList,1)
+   IF (.NOT. ALLOCATED(DstinputfileData%WindVxiList)) THEN 
+      ALLOCATE(DstinputfileData%WindVxiList(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVxiList.'
+         ErrMsg = 'InflowWind_Copyinputfile: Error allocating DstinputfileData%WindVxiList.'
          RETURN
       END IF
    END IF
-   Dstifw_inputfileData%WindVxiList = Srcifw_inputfileData%WindVxiList
+   DstinputfileData%WindVxiList = SrcinputfileData%WindVxiList
 ENDIF
-IF (ALLOCATED(Srcifw_inputfileData%WindVyiList)) THEN
-   i1_l = LBOUND(Srcifw_inputfileData%WindVyiList,1)
-   i1_u = UBOUND(Srcifw_inputfileData%WindVyiList,1)
-   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVyiList)) THEN 
-      ALLOCATE(Dstifw_inputfileData%WindVyiList(i1_l:i1_u),STAT=ErrStat)
+IF (ALLOCATED(SrcinputfileData%WindVyiList)) THEN
+   i1_l = LBOUND(SrcinputfileData%WindVyiList,1)
+   i1_u = UBOUND(SrcinputfileData%WindVyiList,1)
+   IF (.NOT. ALLOCATED(DstinputfileData%WindVyiList)) THEN 
+      ALLOCATE(DstinputfileData%WindVyiList(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVyiList.'
+         ErrMsg = 'InflowWind_Copyinputfile: Error allocating DstinputfileData%WindVyiList.'
          RETURN
       END IF
    END IF
-   Dstifw_inputfileData%WindVyiList = Srcifw_inputfileData%WindVyiList
+   DstinputfileData%WindVyiList = SrcinputfileData%WindVyiList
 ENDIF
-IF (ALLOCATED(Srcifw_inputfileData%WindVziList)) THEN
-   i1_l = LBOUND(Srcifw_inputfileData%WindVziList,1)
-   i1_u = UBOUND(Srcifw_inputfileData%WindVziList,1)
-   IF (.NOT. ALLOCATED(Dstifw_inputfileData%WindVziList)) THEN 
-      ALLOCATE(Dstifw_inputfileData%WindVziList(i1_l:i1_u),STAT=ErrStat)
+IF (ALLOCATED(SrcinputfileData%WindVziList)) THEN
+   i1_l = LBOUND(SrcinputfileData%WindVziList,1)
+   i1_u = UBOUND(SrcinputfileData%WindVziList,1)
+   IF (.NOT. ALLOCATED(DstinputfileData%WindVziList)) THEN 
+      ALLOCATE(DstinputfileData%WindVziList(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%WindVziList.'
+         ErrMsg = 'InflowWind_Copyinputfile: Error allocating DstinputfileData%WindVziList.'
          RETURN
       END IF
    END IF
-   Dstifw_inputfileData%WindVziList = Srcifw_inputfileData%WindVziList
+   DstinputfileData%WindVziList = SrcinputfileData%WindVziList
 ENDIF
-   Dstifw_inputfileData%Steady_HWindSpeed = Srcifw_inputfileData%Steady_HWindSpeed
-   Dstifw_inputfileData%Steady_RefHt = Srcifw_inputfileData%Steady_RefHt
-   Dstifw_inputfileData%Steady_PLexp = Srcifw_inputfileData%Steady_PLexp
-   Dstifw_inputfileData%Uniform_FileName = Srcifw_inputfileData%Uniform_FileName
-   Dstifw_inputfileData%Uniform_RefHt = Srcifw_inputfileData%Uniform_RefHt
-   Dstifw_inputfileData%TSFF_FileName = Srcifw_inputfileData%TSFF_FileName
-   Dstifw_inputfileData%Bladed_FileName = Srcifw_inputfileData%Bladed_FileName
-   Dstifw_inputfileData%Bladed_TowerFile = Srcifw_inputfileData%Bladed_TowerFile
-   Dstifw_inputfileData%CTTS_CoherentTurb = Srcifw_inputfileData%CTTS_CoherentTurb
-   Dstifw_inputfileData%CTTS_FileName = Srcifw_inputfileData%CTTS_FileName
-   Dstifw_inputfileData%CTTS_Path = Srcifw_inputfileData%CTTS_Path
-   Dstifw_inputfileData%HAWC_FileName_u = Srcifw_inputfileData%HAWC_FileName_u
-   Dstifw_inputfileData%HAWC_FileName_v = Srcifw_inputfileData%HAWC_FileName_v
-   Dstifw_inputfileData%HAWC_FileName_w = Srcifw_inputfileData%HAWC_FileName_w
-   Dstifw_inputfileData%HAWC_nx = Srcifw_inputfileData%HAWC_nx
-   Dstifw_inputfileData%HAWC_ny = Srcifw_inputfileData%HAWC_ny
-   Dstifw_inputfileData%HAWC_nz = Srcifw_inputfileData%HAWC_nz
-   Dstifw_inputfileData%HAWC_dx = Srcifw_inputfileData%HAWC_dx
-   Dstifw_inputfileData%HAWC_dy = Srcifw_inputfileData%HAWC_dy
-   Dstifw_inputfileData%HAWC_dz = Srcifw_inputfileData%HAWC_dz
-   Dstifw_inputfileData%HAWC_RefHt = Srcifw_inputfileData%HAWC_RefHt
-   Dstifw_inputfileData%HAWC_ScaleMethod = Srcifw_inputfileData%HAWC_ScaleMethod
-   Dstifw_inputfileData%HAWC_SFx = Srcifw_inputfileData%HAWC_SFx
-   Dstifw_inputfileData%HAWC_SFy = Srcifw_inputfileData%HAWC_SFy
-   Dstifw_inputfileData%HAWC_SFz = Srcifw_inputfileData%HAWC_SFz
-   Dstifw_inputfileData%HAWC_SigmaFx = Srcifw_inputfileData%HAWC_SigmaFx
-   Dstifw_inputfileData%HAWC_SigmaFy = Srcifw_inputfileData%HAWC_SigmaFy
-   Dstifw_inputfileData%HAWC_SigmaFz = Srcifw_inputfileData%HAWC_SigmaFz
-   Dstifw_inputfileData%HAWC_TStart = Srcifw_inputfileData%HAWC_TStart
-   Dstifw_inputfileData%HAWC_TEnd = Srcifw_inputfileData%HAWC_TEnd
-   Dstifw_inputfileData%HAWC_URef = Srcifw_inputfileData%HAWC_URef
-   Dstifw_inputfileData%HAWC_ProfileType = Srcifw_inputfileData%HAWC_ProfileType
-   Dstifw_inputfileData%HAWC_PLExp = Srcifw_inputfileData%HAWC_PLExp
-   Dstifw_inputfileData%HAWC_Z0 = Srcifw_inputfileData%HAWC_Z0
-   Dstifw_inputfileData%SumPrint = Srcifw_inputfileData%SumPrint
-   Dstifw_inputfileData%NumOuts = Srcifw_inputfileData%NumOuts
-IF (ALLOCATED(Srcifw_inputfileData%OutList)) THEN
-   i1_l = LBOUND(Srcifw_inputfileData%OutList,1)
-   i1_u = UBOUND(Srcifw_inputfileData%OutList,1)
-   IF (.NOT. ALLOCATED(Dstifw_inputfileData%OutList)) THEN 
-      ALLOCATE(Dstifw_inputfileData%OutList(i1_l:i1_u),STAT=ErrStat)
+   DstinputfileData%Steady_HWindSpeed = SrcinputfileData%Steady_HWindSpeed
+   DstinputfileData%Steady_RefHt = SrcinputfileData%Steady_RefHt
+   DstinputfileData%Steady_PLexp = SrcinputfileData%Steady_PLexp
+   DstinputfileData%Uniform_FileName = SrcinputfileData%Uniform_FileName
+   DstinputfileData%Uniform_RefHt = SrcinputfileData%Uniform_RefHt
+   DstinputfileData%TSFF_FileName = SrcinputfileData%TSFF_FileName
+   DstinputfileData%Bladed_FileName = SrcinputfileData%Bladed_FileName
+   DstinputfileData%Bladed_TowerFile = SrcinputfileData%Bladed_TowerFile
+   DstinputfileData%CTTS_CoherentTurb = SrcinputfileData%CTTS_CoherentTurb
+   DstinputfileData%CTTS_FileName = SrcinputfileData%CTTS_FileName
+   DstinputfileData%CTTS_Path = SrcinputfileData%CTTS_Path
+   DstinputfileData%HAWC_FileName_u = SrcinputfileData%HAWC_FileName_u
+   DstinputfileData%HAWC_FileName_v = SrcinputfileData%HAWC_FileName_v
+   DstinputfileData%HAWC_FileName_w = SrcinputfileData%HAWC_FileName_w
+   DstinputfileData%HAWC_nx = SrcinputfileData%HAWC_nx
+   DstinputfileData%HAWC_ny = SrcinputfileData%HAWC_ny
+   DstinputfileData%HAWC_nz = SrcinputfileData%HAWC_nz
+   DstinputfileData%HAWC_dx = SrcinputfileData%HAWC_dx
+   DstinputfileData%HAWC_dy = SrcinputfileData%HAWC_dy
+   DstinputfileData%HAWC_dz = SrcinputfileData%HAWC_dz
+   DstinputfileData%HAWC_RefHt = SrcinputfileData%HAWC_RefHt
+   DstinputfileData%HAWC_ScaleMethod = SrcinputfileData%HAWC_ScaleMethod
+   DstinputfileData%HAWC_SFx = SrcinputfileData%HAWC_SFx
+   DstinputfileData%HAWC_SFy = SrcinputfileData%HAWC_SFy
+   DstinputfileData%HAWC_SFz = SrcinputfileData%HAWC_SFz
+   DstinputfileData%HAWC_SigmaFx = SrcinputfileData%HAWC_SigmaFx
+   DstinputfileData%HAWC_SigmaFy = SrcinputfileData%HAWC_SigmaFy
+   DstinputfileData%HAWC_SigmaFz = SrcinputfileData%HAWC_SigmaFz
+   DstinputfileData%HAWC_TStart = SrcinputfileData%HAWC_TStart
+   DstinputfileData%HAWC_TEnd = SrcinputfileData%HAWC_TEnd
+   DstinputfileData%HAWC_URef = SrcinputfileData%HAWC_URef
+   DstinputfileData%HAWC_ProfileType = SrcinputfileData%HAWC_ProfileType
+   DstinputfileData%HAWC_PLExp = SrcinputfileData%HAWC_PLExp
+   DstinputfileData%HAWC_Z0 = SrcinputfileData%HAWC_Z0
+   DstinputfileData%SumPrint = SrcinputfileData%SumPrint
+   DstinputfileData%NumOuts = SrcinputfileData%NumOuts
+IF (ALLOCATED(SrcinputfileData%OutList)) THEN
+   i1_l = LBOUND(SrcinputfileData%OutList,1)
+   i1_u = UBOUND(SrcinputfileData%OutList,1)
+   IF (.NOT. ALLOCATED(DstinputfileData%OutList)) THEN 
+      ALLOCATE(DstinputfileData%OutList(i1_l:i1_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_Copyifw_inputfile: Error allocating Dstifw_inputfileData%OutList.'
+         ErrMsg = 'InflowWind_Copyinputfile: Error allocating DstinputfileData%OutList.'
          RETURN
       END IF
    END IF
-   Dstifw_inputfileData%OutList = Srcifw_inputfileData%OutList
+   DstinputfileData%OutList = SrcinputfileData%OutList
 ENDIF
- END SUBROUTINE InflowWind_Copyifw_inputfile
+ END SUBROUTINE InflowWind_Copyinputfile
 
- SUBROUTINE InflowWind_Destroyifw_inputfile( ifw_inputfileData, ErrStat, ErrMsg )
-  TYPE(ifw_inputfile), INTENT(INOUT) :: ifw_inputfileData
+ SUBROUTINE InflowWind_Destroyinputfile( inputfileData, ErrStat, ErrMsg )
+  TYPE(inflowwind_inputfile), INTENT(INOUT) :: inputfileData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
   INTEGER(IntKi)                 :: i, i1, i2, i3, i4, i5 
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ALLOCATED(ifw_inputfileData%WindVxiList)) THEN
-   DEALLOCATE(ifw_inputfileData%WindVxiList)
+IF (ALLOCATED(inputfileData%WindVxiList)) THEN
+   DEALLOCATE(inputfileData%WindVxiList)
 ENDIF
-IF (ALLOCATED(ifw_inputfileData%WindVyiList)) THEN
-   DEALLOCATE(ifw_inputfileData%WindVyiList)
+IF (ALLOCATED(inputfileData%WindVyiList)) THEN
+   DEALLOCATE(inputfileData%WindVyiList)
 ENDIF
-IF (ALLOCATED(ifw_inputfileData%WindVziList)) THEN
-   DEALLOCATE(ifw_inputfileData%WindVziList)
+IF (ALLOCATED(inputfileData%WindVziList)) THEN
+   DEALLOCATE(inputfileData%WindVziList)
 ENDIF
-IF (ALLOCATED(ifw_inputfileData%OutList)) THEN
-   DEALLOCATE(ifw_inputfileData%OutList)
+IF (ALLOCATED(inputfileData%OutList)) THEN
+   DEALLOCATE(inputfileData%OutList)
 ENDIF
- END SUBROUTINE InflowWind_Destroyifw_inputfile
+ END SUBROUTINE InflowWind_Destroyinputfile
 
- SUBROUTINE InflowWind_Packifw_inputfile( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
+ SUBROUTINE InflowWind_Packinputfile( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
   REAL(ReKi),       ALLOCATABLE, INTENT(  OUT) :: ReKiBuf(:)
   REAL(DbKi),       ALLOCATABLE, INTENT(  OUT) :: DbKiBuf(:)
   INTEGER(IntKi),   ALLOCATABLE, INTENT(  OUT) :: IntKiBuf(:)
-  TYPE(ifw_inputfile),  INTENT(INOUT) :: InData
+  TYPE(inflowwind_inputfile),  INTENT(INOUT) :: InData
   INTEGER(IntKi),   INTENT(  OUT) :: ErrStat
   CHARACTER(*),     INTENT(  OUT) :: ErrMsg
   LOGICAL,OPTIONAL, INTENT(IN   ) :: SizeOnly
@@ -440,13 +443,13 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumOuts )
   Int_Xferred   = Int_Xferred   + 1
- END SUBROUTINE InflowWind_Packifw_inputfile
+ END SUBROUTINE InflowWind_Packinputfile
 
- SUBROUTINE InflowWind_UnPackifw_inputfile( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_UnPackinputfile( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
   REAL(ReKi),      ALLOCATABLE, INTENT(IN   ) :: ReKiBuf(:)
   REAL(DbKi),      ALLOCATABLE, INTENT(IN   ) :: DbKiBuf(:)
   INTEGER(IntKi),  ALLOCATABLE, INTENT(IN   ) :: IntKiBuf(:)
-  TYPE(ifw_inputfile), INTENT(INOUT) :: OutData
+  TYPE(inflowwind_inputfile), INTENT(INOUT) :: OutData
   INTEGER(IntKi),  INTENT(  OUT) :: ErrStat
   CHARACTER(*),    INTENT(  OUT) :: ErrMsg
     ! Local variables
@@ -550,7 +553,7 @@ ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
- END SUBROUTINE InflowWind_UnPackifw_inputfile
+ END SUBROUTINE InflowWind_UnPackinputfile
 
  SUBROUTINE InflowWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
    TYPE(InflowWind_initinputtype), INTENT(INOUT) :: SrcInitInputData
@@ -565,13 +568,10 @@ ENDIF
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-   DstInitInputData%WindFileName = SrcInitInputData%WindFileName
    DstInitInputData%InputFileName = SrcInitInputData%InputFileName
    DstInitInputData%DT = SrcInitInputData%DT
-   DstInitInputData%Echo = SrcInitInputData%Echo
    DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
    DstInitInputData%Width = SrcInitInputData%Width
-   DstInitInputData%WindFileType = SrcInitInputData%WindFileType
    DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
  END SUBROUTINE InflowWind_CopyInitInput
 
@@ -622,7 +622,6 @@ ENDIF
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
-  Int_BufSz  = Int_BufSz  + 1  ! WindFileType
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -632,8 +631,6 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
-  Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackInitInput
 
  SUBROUTINE InflowWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -675,8 +672,6 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
-  OutData%WindFileType = IntKiBuf ( Int_Xferred )
-  Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1177,9 +1172,11 @@ ENDIF
    DstParamData%WindFileNameRoot = SrcParamData%WindFileNameRoot
    DstParamData%WindFileExt = SrcParamData%WindFileExt
    DstParamData%InputFileName = SrcParamData%InputFileName
-   DstParamData%RootName = SrcParamData%RootName
-   DstParamData%EchoName = SrcParamData%EchoName
+   DstParamData%RootFileName = SrcParamData%RootFileName
+   DstParamData%EchoFileName = SrcParamData%EchoFileName
    DstParamData%SumFileName = SrcParamData%SumFileName
+   DstParamData%WriteSumFile = SrcParamData%WriteSumFile
+   DstParamData%UnitSumFile = SrcParamData%UnitSumFile
    DstParamData%Initialized = SrcParamData%Initialized
    DstParamData%CT_Flag = SrcParamData%CT_Flag
    DstParamData%DT = SrcParamData%DT
@@ -1302,6 +1299,7 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
+  Int_BufSz  = Int_BufSz  + 1  ! UnitSumFile
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
   Int_BufSz  = Int_BufSz  + 1  ! WindFileType
@@ -1340,6 +1338,8 @@ ENDIF
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%UnitSumFile )
+  Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
   Db_Xferred   = Db_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
@@ -1466,6 +1466,8 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
+  OutData%UnitSumFile = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
   OutData%DT = DbKiBuf ( Db_Xferred )
   Db_Xferred   = Db_Xferred   + 1
   OutData%PropogationDir = ReKiBuf ( Re_Xferred )
