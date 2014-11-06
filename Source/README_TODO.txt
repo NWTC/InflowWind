@@ -1,8 +1,11 @@
 2014.08.31  started
-2014.10.03  updated
+2014.10.06  updated
 
 Stuff working on right now:
--- Input file checking/storing
+-- ValidateInput routines
+-- ProcessInput routines
+-- Calls to modules Init routines
+
 -- OutList setup and functionality (including the mapping of the points to some pointlist appended to the end of the list handed in)
 -- Output of OutList to glue code
 -- Summary file (Init only?)
@@ -12,6 +15,7 @@ List of items to tackle:
 
 IfW control level
 -- change all the windtype numbers to the new numbers (figure out exactly what this will be first, then update everything)
+   -- still need to split FFWind.  Others done.
 -- input file parsing / sanity checking of the sections
    -- new type to handle the input file contents
    -- verification subroutine to handle the input file checking --> do this by module level using the windtype numbers
@@ -33,14 +37,23 @@ IfW control level
 
 
 Submodules
--- interpolator --> change this for all submodules.
--- Steady wind (calls to UniformWind)
+-- Uniform wind (also steady wind)
+   -- summary file writing
+   -- new interpolator
 -- FFWind -> split to TurbSimFF and BladedStyleFF.  Change the WindNumbers for this.
--- CTWind -> major revamp of how this is implimented (talk to Bonnie when we get there)
+   -- summary file writing
+   -- new interpolator
 -- HAWCWind -> Major revamp with the scaling.
+   -- summary file writing
+   -- new interpolator
    -- Scaling parameters --> must output info on this to the summary file.
 -- BladedWind -> includes native Bladed and TurbSim bladed files.
+   -- summary file writing
+   -- new interpolator
    -- Scaling parameters --> must output info on this to the summary file.
+-- CTWind -> major revamp of how this is implimented (talk to Bonnie when we get there)
+   -- new interpolator (not sure if this applies here or not)
+   -- summary file writing
 
 
 
@@ -56,6 +69,7 @@ Additional items
 -- CertTests and examples for each type of file.
 -- change all documentation to refer to uniform wind instead of hub-height
 -- change documentation so that it refers to the "reference-height" (RefHt) instead of "hub-height"
+-- TestRoutines directory --> need to update all of that or get rid of it if it is replaced by the driver
 
 
 
@@ -90,4 +104,3 @@ Coding philosophy
    call / do the appropriate stuff based on that (the idea is that this will make it easier to strip out a submodule or add one later, or
    reorder their numbering).  For some of the routines, we may want group things into subroutines so as to simplify the calling structures
    and make things more readable.
-p

@@ -99,7 +99,7 @@ MODULE CTWind
 
 !FIXME: move this to types -- parameters!
    TYPE :: CTWindFiles
-      CHARACTER(1024)           :: CTTSfile                                   ! The name of the file containing the time-step history of the wind files.
+      CHARACTER(1024)           :: CTfile                                   ! The name of the file containing the time-step history of the wind files.
       CHARACTER(1024)           :: CTbackgr                                   ! The name of the background wind data
    END TYPE CTWindFiles
 
@@ -139,7 +139,7 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat, ErrMsg)
 
    TYPE(CTWindFiles)                :: CTP_files
    CHARACTER(3)                     :: CT_SC_ext                     ! extension of the scaling file
-   LOGICAL                          :: EmptyFileStat                 ! temporary variable indicating the CTTS file was empty / non-existent
+   LOGICAL                          :: EmptyFileStat                 ! temporary variable indicating the CT file was empty / non-existent
 
       ! Temporary error handling Variables
 
@@ -186,10 +186,10 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat, ErrMsg)
 
 
    !-------------------------------------------------------------------------------------------------
-   ! Read the CTTS file to get the time step and file number arrays
+   ! Read the CT file to get the time step and file number arrays
    !-------------------------------------------------------------------------------------------------
 
-   CALL ReadCTTS( UnWind, CTP_files%CTTSfile, CT_SC_ext, EmptyFileStat, TmpErrStat, TmpErrMsg )
+   CALL ReadCT( UnWind, CTP_files%CTfile, CT_SC_ext, EmptyFileStat, TmpErrStat, TmpErrMsg )
 
       ! Errors check
    ErrMsg   = TRIM(ErrMsg)//' '//TRIM(TmpErrMsg)
@@ -197,7 +197,7 @@ SUBROUTINE CT_Init(UnWind, WindFile, BackGrndValues, ErrStat, ErrMsg)
    IF ( ErrStat >= AbortErrLev ) RETURN
 
 
-         ! If the CTP_files%CTTSfile was empty or non-existent, we continue on without it.
+         ! If the CTP_files%CTfile was empty or non-existent, we continue on without it.
 
    IF ( EmptyFileStat ) THEN
 
@@ -906,7 +906,7 @@ SUBROUTINE ReadCTP( UnWind, FileName, CTPscaling, ErrStat, ErrMsg )
    ENDIF
 
 
-   CALL ReadVar( UnWind, TRIM( FileName ), CTPscaling%CTTSfile, 'CTTSfile', &
+   CALL ReadVar( UnWind, TRIM( FileName ), CTPscaling%CTfile, 'CTfile', &
                   'File containing the time steps for the coherent turbulence events (.cts)', TmpErrStat )  ! add ErrMsg
 
       ! Errors occured?
@@ -919,9 +919,9 @@ SUBROUTINE ReadCTP( UnWind, FileName, CTPscaling, ErrStat, ErrMsg )
    ENDIF
 
 
-   IF ( PathIsRelative( CTPscaling%CTTSfile ) ) THEN
+   IF ( PathIsRelative( CTPscaling%CTfile ) ) THEN
       CALL GetPath( FileName, TmpPath )
-      CTPscaling%CTTSfile = TRIM(TmpPath)//TRIM(CTPscaling%CTTSfile)
+      CTPscaling%CTfile = TRIM(TmpPath)//TRIM(CTPscaling%CTfile)
    END IF
 
 
@@ -974,12 +974,12 @@ SUBROUTINE ReadCTP( UnWind, FileName, CTPscaling, ErrStat, ErrMsg )
 
 END SUBROUTINE ReadCTP
 !====================================================================================================
-SUBROUTINE ReadCTTS ( UnWind, FileName, CT_SC_ext, EmptyFileStat, ErrStat, ErrMsg )
+SUBROUTINE ReadCT ( UnWind, FileName, CT_SC_ext, EmptyFileStat, ErrStat, ErrMsg )
 !  This subroutine is used to read the input parameters calculated in TurbSim for the scaling of
 !  coherent turbulence events.  It reads the .cts file and saves the time step and file number arrays.
 !----------------------------------------------------------------------------------------------------
 
-! EmptyFileStat:   The CTTS file may not be exist or may be empty. TurbSim will do this in certain conditions.
+! EmptyFileStat:   The CT file may not be exist or may be empty. TurbSim will do this in certain conditions.
 !                 This is not a problem for program execution and used to be handled by Errstat<0. Set a
 !                 warning in this case.
 
@@ -1186,7 +1186,7 @@ SUBROUTINE ReadCTTS ( UnWind, FileName, CT_SC_ext, EmptyFileStat, ErrStat, ErrMs
 
    RETURN
 
-END SUBROUTINE ReadCTTS
+END SUBROUTINE ReadCT
 !====================================================================================================
 SUBROUTINE ReadCTScales ( UnWind, FileName, ErrStat, ErrMsg )
 !  This subroutine is used to read the input parameters for the coherent turbulence events, based

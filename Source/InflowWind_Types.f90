@@ -35,8 +35,6 @@ USE IfW_UniformWind_Types
 USE IfW_HAWCWind_Types
 USE NWTC_Library
 IMPLICIT NONE
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: FF_WindNumber = -2      ! Binary full-field wind file [-]
-    INTEGER(IntKi), PUBLIC, PARAMETER  :: CTP_WindNumber = -5      ! Coherent turbulence wind field (superimpose KH billow on background wind) [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: Undef_WindNumber = 0      ! This is the code for an undefined WindFileType [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: Steady_WindNumber = 1      ! Steady wind.  Calculated internally. [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: Uniform_WindNumber = 2      ! Uniform wind.  Formally known as a Hub-Height wind file. [-]
@@ -47,7 +45,7 @@ IMPLICIT NONE
 ! =========  InflowWind_InputFile  =======
   TYPE, PUBLIC :: InflowWind_InputFile
     LOGICAL  :: EchoFlag      ! Echo the input file [-]
-    INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile [-]
+    INTEGER(IntKi)  :: WindType = 0      ! Type of windfile [-]
     REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation (meteorological direction) [-]
     INTEGER(IntKi)  :: NWindVel      ! Number of points to output the wind velocity (0 to 9) [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [meters]
@@ -61,9 +59,9 @@ IMPLICIT NONE
     CHARACTER(1024)  :: TSFF_FileName      ! TurbSim Full-Field -- filename [-]
     CHARACTER(1024)  :: Bladed_FileName      ! Bladed-style Full-Field -- filename [-]
     LOGICAL  :: Bladed_TowerFile      ! Bladed-style Full-Field -- tower file exists [-]
-    LOGICAL  :: CTTS_CoherentTurb      ! Coherent turbulence data exists [-]
-    CHARACTER(1024)  :: CTTS_FileName      ! Name of coherent turbulence file [-]
-    CHARACTER(1024)  :: CTTS_Path      ! Path to coherent turbulence binary data files [-]
+    LOGICAL  :: CT_CoherentTurb      ! Coherent turbulence data exists [-]
+    CHARACTER(1024)  :: CT_FileName      ! Name of coherent turbulence file [-]
+    CHARACTER(1024)  :: CT_Path      ! Path to coherent turbulence binary data files [-]
     CHARACTER(1024)  :: HAWC_FileName_u      ! HAWC -- u component binary data file name [-]
     CHARACTER(1024)  :: HAWC_FileName_v      ! HAWC -- v component binary data file name [-]
     CHARACTER(1024)  :: HAWC_FileName_w      ! HAWC -- w component binary data file name [-]
@@ -99,6 +97,7 @@ IMPLICIT NONE
     REAL(ReKi)  :: ReferenceHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind field to use [meters]
     LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
+    TYPE(InflowWind_InputFile)  :: PassedFileData      ! If we don't use the input file, pass everything through this [-]
   END TYPE InflowWind_InitInputType
 ! =======================
 ! =========  InflowWind_InitOutputType  =======
@@ -131,7 +130,6 @@ IMPLICIT NONE
     LOGICAL  :: CT_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
     REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation [degrees]
-    INTEGER(IntKi)  :: WindFileType = 0      ! Type of windfile -- set to Undef_Wind initially [-]
     INTEGER(IntKi)  :: WindType = 0      ! Type of wind -- set to Undef_Wind initially [-]
     REAL(ReKi)  :: ReferenceHeight      ! Height of the wind turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind array [meters]
@@ -188,7 +186,7 @@ CONTAINS
    ErrStat = ErrID_None
    ErrMsg  = ""
    DstinputfileData%EchoFlag = SrcinputfileData%EchoFlag
-   DstinputfileData%WindFileType = SrcinputfileData%WindFileType
+   DstinputfileData%WindType = SrcinputfileData%WindType
    DstinputfileData%PropogationDir = SrcinputfileData%PropogationDir
    DstinputfileData%NWindVel = SrcinputfileData%NWindVel
 IF (ALLOCATED(SrcinputfileData%WindVxiList)) THEN
@@ -238,9 +236,9 @@ ENDIF
    DstinputfileData%TSFF_FileName = SrcinputfileData%TSFF_FileName
    DstinputfileData%Bladed_FileName = SrcinputfileData%Bladed_FileName
    DstinputfileData%Bladed_TowerFile = SrcinputfileData%Bladed_TowerFile
-   DstinputfileData%CTTS_CoherentTurb = SrcinputfileData%CTTS_CoherentTurb
-   DstinputfileData%CTTS_FileName = SrcinputfileData%CTTS_FileName
-   DstinputfileData%CTTS_Path = SrcinputfileData%CTTS_Path
+   DstinputfileData%CT_CoherentTurb = SrcinputfileData%CT_CoherentTurb
+   DstinputfileData%CT_FileName = SrcinputfileData%CT_FileName
+   DstinputfileData%CT_Path = SrcinputfileData%CT_Path
    DstinputfileData%HAWC_FileName_u = SrcinputfileData%HAWC_FileName_u
    DstinputfileData%HAWC_FileName_v = SrcinputfileData%HAWC_FileName_v
    DstinputfileData%HAWC_FileName_w = SrcinputfileData%HAWC_FileName_w
@@ -337,7 +335,7 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Int_BufSz  = Int_BufSz  + 1  ! WindFileType
+  Int_BufSz  = Int_BufSz  + 1  ! WindType
   Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
   Int_BufSz  = Int_BufSz  + 1  ! NWindVel
   Re_BufSz    = Re_BufSz    + SIZE( InData%WindVxiList )  ! WindVxiList 
@@ -370,7 +368,7 @@ ENDIF
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindType )
   Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
   Re_Xferred   = Re_Xferred   + 1
@@ -471,7 +469,7 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  OutData%WindFileType = IntKiBuf ( Int_Xferred )
+  OutData%WindType = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   OutData%PropogationDir = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
@@ -566,6 +564,7 @@ ENDIF
    DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
    DstInitInputData%Width = SrcInitInputData%Width
    DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
+      CALL InflowWind_Copyinputfile( SrcInitInputData%PassedFileData, DstInitInputData%PassedFileData, CtrlCode, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_CopyInitInput
 
  SUBROUTINE InflowWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -576,6 +575,7 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+  CALL InflowWind_Destroyinputfile( InitInputData%PassedFileData, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyInitInput
 
  SUBROUTINE InflowWind_PackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -599,6 +599,9 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
  ! buffers to store meshes, if any
+  REAL(ReKi),     ALLOCATABLE :: Re_PassedFileData_Buf(:)
+  REAL(DbKi),     ALLOCATABLE :: Db_PassedFileData_Buf(:)
+  INTEGER(IntKi), ALLOCATABLE :: Int_PassedFileData_Buf(:)
   OnlySize = .FALSE.
   IF ( PRESENT(SizeOnly) ) THEN
     OnlySize = SizeOnly
@@ -615,6 +618,13 @@ ENDIF
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
+  CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, InData%PassedFileData, ErrStat, ErrMsg, .TRUE. ) ! PassedFileData 
+  IF(ALLOCATED(Re_PassedFileData_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_PassedFileData_Buf  ) ! PassedFileData
+  IF(ALLOCATED(Db_PassedFileData_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_PassedFileData_Buf  ) ! PassedFileData
+  IF(ALLOCATED(Int_PassedFileData_Buf))Int_BufSz = Int_BufSz + SIZE( Int_PassedFileData_Buf ) ! PassedFileData
+  IF(ALLOCATED(Re_PassedFileData_Buf))  DEALLOCATE(Re_PassedFileData_Buf)
+  IF(ALLOCATED(Db_PassedFileData_Buf))  DEALLOCATE(Db_PassedFileData_Buf)
+  IF(ALLOCATED(Int_PassedFileData_Buf)) DEALLOCATE(Int_PassedFileData_Buf)
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -624,6 +634,22 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
+  CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, InData%PassedFileData, ErrStat, ErrMsg, OnlySize ) ! PassedFileData 
+  IF(ALLOCATED(Re_PassedFileData_Buf)) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_PassedFileData_Buf)-1 ) = Re_PassedFileData_Buf
+    Re_Xferred = Re_Xferred + SIZE(Re_PassedFileData_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_PassedFileData_Buf)) THEN
+    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_PassedFileData_Buf)-1 ) = Db_PassedFileData_Buf
+    Db_Xferred = Db_Xferred + SIZE(Db_PassedFileData_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_PassedFileData_Buf)) THEN
+    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_PassedFileData_Buf)-1 ) = Int_PassedFileData_Buf
+    Int_Xferred = Int_Xferred + SIZE(Int_PassedFileData_Buf)
+  ENDIF
+  IF( ALLOCATED(Re_PassedFileData_Buf) )  DEALLOCATE(Re_PassedFileData_Buf)
+  IF( ALLOCATED(Db_PassedFileData_Buf) )  DEALLOCATE(Db_PassedFileData_Buf)
+  IF( ALLOCATED(Int_PassedFileData_Buf) ) DEALLOCATE(Int_PassedFileData_Buf)
  END SUBROUTINE InflowWind_PackInitInput
 
  SUBROUTINE InflowWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -650,6 +676,9 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
  ! buffers to store meshes, if any
+  REAL(ReKi),    ALLOCATABLE :: Re_PassedFileData_Buf(:)
+  REAL(DbKi),    ALLOCATABLE :: Db_PassedFileData_Buf(:)
+  INTEGER(IntKi),    ALLOCATABLE :: Int_PassedFileData_Buf(:)
     !
   ErrStat = ErrID_None
   ErrMsg  = ""
@@ -665,6 +694,21 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+ ! first call InflowWind_Packinputfile to get correctly sized buffers for unpacking
+  CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, OutData%PassedFileData, ErrStat, ErrMsg, .TRUE. ) ! PassedFileData 
+  IF(ALLOCATED(Re_PassedFileData_Buf)) THEN
+    Re_PassedFileData_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_PassedFileData_Buf)-1 )
+    Re_Xferred = Re_Xferred + SIZE(Re_PassedFileData_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_PassedFileData_Buf)) THEN
+    Db_PassedFileData_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_PassedFileData_Buf)-1 )
+    Db_Xferred = Db_Xferred + SIZE(Db_PassedFileData_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_PassedFileData_Buf)) THEN
+    Int_PassedFileData_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_PassedFileData_Buf)-1 )
+    Int_Xferred = Int_Xferred + SIZE(Int_PassedFileData_Buf)
+  ENDIF
+  CALL InflowWind_UnPackinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, OutData%PassedFileData, ErrStat, ErrMsg ) ! PassedFileData 
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1082,7 +1126,6 @@ ENDIF
    DstParamData%CT_Flag = SrcParamData%CT_Flag
    DstParamData%DT = SrcParamData%DT
    DstParamData%PropogationDir = SrcParamData%PropogationDir
-   DstParamData%WindFileType = SrcParamData%WindFileType
    DstParamData%WindType = SrcParamData%WindType
    DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
    DstParamData%Width = SrcParamData%Width
@@ -1198,7 +1241,6 @@ ENDIF
   Int_BufSz  = Int_BufSz  + 1  ! UnitSumFile
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
-  Int_BufSz  = Int_BufSz  + 1  ! WindFileType
   Int_BufSz  = Int_BufSz  + 1  ! WindType
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
@@ -1233,8 +1275,6 @@ ENDIF
   Db_Xferred   = Db_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
   Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileType )
-  Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindType )
   Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
@@ -1342,8 +1382,6 @@ ENDIF
   Db_Xferred   = Db_Xferred   + 1
   OutData%PropogationDir = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
-  OutData%WindFileType = IntKiBuf ( Int_Xferred )
-  Int_Xferred   = Int_Xferred   + 1
   OutData%WindType = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
