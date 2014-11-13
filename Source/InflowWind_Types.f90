@@ -42,11 +42,12 @@ IMPLICIT NONE
     INTEGER(IntKi), PUBLIC, PARAMETER  :: BladedFF_WindNumber = 4      ! Bladed style binary full-field file.  Includes native bladed format [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: HAWC_WindNumber = 5      ! HAWC wind file. [-]
     INTEGER(IntKi), PUBLIC, PARAMETER  :: User_WindNumber = 6      ! User defined wind. [-]
+    INTEGER(IntKi), PUBLIC, PARAMETER  :: Highest_WindNumber = 6      ! Highest wind number supported. [-]
 ! =========  InflowWind_InputFile  =======
   TYPE, PUBLIC :: InflowWind_InputFile
     LOGICAL  :: EchoFlag      ! Echo the input file [-]
     INTEGER(IntKi)  :: WindType = 0      ! Type of windfile [-]
-    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation (meteorological direction) [-]
+    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation (meteorological direction) [(degrees)]
     INTEGER(IntKi)  :: NWindVel      ! Number of points to output the wind velocity (0 to 9) [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [meters]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [meters]
@@ -59,9 +60,9 @@ IMPLICIT NONE
     CHARACTER(1024)  :: TSFF_FileName      ! TurbSim Full-Field -- filename [-]
     CHARACTER(1024)  :: Bladed_FileName      ! Bladed-style Full-Field -- filename [-]
     LOGICAL  :: Bladed_TowerFile      ! Bladed-style Full-Field -- tower file exists [-]
-    LOGICAL  :: CT_CoherentTurb      ! Coherent turbulence data exists [-]
-    CHARACTER(1024)  :: CT_FileName      ! Name of coherent turbulence file [-]
-    CHARACTER(1024)  :: CT_Path      ! Path to coherent turbulence binary data files [-]
+    LOGICAL  :: CTTS_CoherentTurb      ! Coherent turbulence data exists [-]
+    CHARACTER(1024)  :: CTTS_FileName      ! Name of coherent turbulence file [-]
+    CHARACTER(1024)  :: CTTS_Path      ! Path to coherent turbulence binary data files [-]
     CHARACTER(1024)  :: HAWC_FileName_u      ! HAWC -- u component binary data file name [-]
     CHARACTER(1024)  :: HAWC_FileName_v      ! HAWC -- v component binary data file name [-]
     CHARACTER(1024)  :: HAWC_FileName_w      ! HAWC -- w component binary data file name [-]
@@ -127,9 +128,9 @@ IMPLICIT NONE
     LOGICAL  :: WriteSumFile      ! Write a summary file [-]
     INTEGER(IntKi)  :: UnitSumFile      ! Unit number for the summary file [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
-    LOGICAL  :: CT_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
+    LOGICAL  :: CTTS_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
-    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation [degrees]
+    REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation [radians]
     INTEGER(IntKi)  :: WindType = 0      ! Type of wind -- set to Undef_Wind initially [-]
     REAL(ReKi)  :: ReferenceHeight      ! Height of the wind turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind array [meters]
@@ -138,9 +139,6 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVziList      ! List of Z coordinates for wind velocity measurements [-]
-    REAL(ReKi)  :: HWindSpeed      ! Horizontal windspeed for steady wind conditions [-]
-    REAL(ReKi)  :: RefHt      ! Reference height for horizontal wind speed for steady wind [-]
-    REAL(ReKi)  :: PLexp      ! Power law exponent [-]
     TYPE(IfW_UniformWind_ParameterType)  :: UniformWind      ! Parameters from UniformWind [-]
     TYPE(IfW_HAWCWind_ParameterType)  :: HAWCWind      ! Parameters from HAWCWind [-]
   END TYPE InflowWind_ParameterType
@@ -236,9 +234,9 @@ ENDIF
    DstinputfileData%TSFF_FileName = SrcinputfileData%TSFF_FileName
    DstinputfileData%Bladed_FileName = SrcinputfileData%Bladed_FileName
    DstinputfileData%Bladed_TowerFile = SrcinputfileData%Bladed_TowerFile
-   DstinputfileData%CT_CoherentTurb = SrcinputfileData%CT_CoherentTurb
-   DstinputfileData%CT_FileName = SrcinputfileData%CT_FileName
-   DstinputfileData%CT_Path = SrcinputfileData%CT_Path
+   DstinputfileData%CTTS_CoherentTurb = SrcinputfileData%CTTS_CoherentTurb
+   DstinputfileData%CTTS_FileName = SrcinputfileData%CTTS_FileName
+   DstinputfileData%CTTS_Path = SrcinputfileData%CTTS_Path
    DstinputfileData%HAWC_FileName_u = SrcinputfileData%HAWC_FileName_u
    DstinputfileData%HAWC_FileName_v = SrcinputfileData%HAWC_FileName_v
    DstinputfileData%HAWC_FileName_w = SrcinputfileData%HAWC_FileName_w
@@ -1123,7 +1121,7 @@ ENDIF
    DstParamData%WriteSumFile = SrcParamData%WriteSumFile
    DstParamData%UnitSumFile = SrcParamData%UnitSumFile
    DstParamData%Initialized = SrcParamData%Initialized
-   DstParamData%CT_Flag = SrcParamData%CT_Flag
+   DstParamData%CTTS_Flag = SrcParamData%CTTS_Flag
    DstParamData%DT = SrcParamData%DT
    DstParamData%PropogationDir = SrcParamData%PropogationDir
    DstParamData%WindType = SrcParamData%WindType
@@ -1170,9 +1168,6 @@ IF (ALLOCATED(SrcParamData%WindVziList)) THEN
    END IF
    DstParamData%WindVziList = SrcParamData%WindVziList
 ENDIF
-   DstParamData%HWindSpeed = SrcParamData%HWindSpeed
-   DstParamData%RefHt = SrcParamData%RefHt
-   DstParamData%PLexp = SrcParamData%PLexp
       CALL IfW_UniformWind_CopyParam( SrcParamData%UniformWind, DstParamData%UniformWind, CtrlCode, ErrStat, ErrMsg )
       CALL IfW_HAWCWind_CopyParam( SrcParamData%HAWCWind, DstParamData%HAWCWind, CtrlCode, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_CopyParam
@@ -1249,9 +1244,6 @@ ENDIF
   Re_BufSz    = Re_BufSz    + SIZE( InData%WindVxiList )  ! WindVxiList 
   Re_BufSz    = Re_BufSz    + SIZE( InData%WindVyiList )  ! WindVyiList 
   Re_BufSz    = Re_BufSz    + SIZE( InData%WindVziList )  ! WindVziList 
-  Re_BufSz   = Re_BufSz   + 1  ! HWindSpeed
-  Re_BufSz   = Re_BufSz   + 1  ! RefHt
-  Re_BufSz   = Re_BufSz   + 1  ! PLexp
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_UniformWind_Buf  ) ! UniformWind
   IF(ALLOCATED(Db_UniformWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_UniformWind_Buf  ) ! UniformWind
@@ -1297,12 +1289,6 @@ ENDIF
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVziList))-1 ) =  PACK(InData%WindVziList ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%WindVziList)
   ENDIF
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HWindSpeed )
-  Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefHt )
-  Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PLexp )
-  Re_Xferred   = Re_Xferred   + 1
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, OnlySize ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) THEN
     IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_UniformWind_Buf)-1 ) = Re_UniformWind_Buf
@@ -1410,12 +1396,6 @@ ENDIF
   DEALLOCATE(mask1)
     Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVziList)
   ENDIF
-  OutData%HWindSpeed = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
-  OutData%RefHt = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
-  OutData%PLexp = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
  ! first call IfW_UniformWind_PackParam to get correctly sized buffers for unpacking
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) THEN

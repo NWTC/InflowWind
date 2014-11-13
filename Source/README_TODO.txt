@@ -2,8 +2,7 @@
 2014.10.06  updated
 
 Stuff working on right now:
--- ValidateInput routines
--- ProcessInput routines
+-- SetParameters routines
 -- Calls to modules Init routines
 
 -- OutList setup and functionality (including the mapping of the points to some pointlist appended to the end of the list handed in)
