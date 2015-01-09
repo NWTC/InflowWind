@@ -1,13 +1,9 @@
 2014.08.31  started
-2014.10.06  updated
+2014.11.26  updated
 
 Stuff working on right now:
--- SetParameters routines
--- Calls to modules Init routines
-
 -- OutList setup and functionality (including the mapping of the points to some pointlist appended to the end of the list handed in)
 -- Output of OutList to glue code
--- Summary file (Init only?)
 
 List of items to tackle:
 ==============================
@@ -16,10 +12,7 @@ IfW control level
 -- change all the windtype numbers to the new numbers (figure out exactly what this will be first, then update everything)
    -- still need to split FFWind.  Others done.
 -- input file parsing / sanity checking of the sections
-   -- new type to handle the input file contents
-   -- verification subroutine to handle the input file checking --> do this by module level using the windtype numbers
-   -- filedata saving routine --> copy data needed to the appropriate places (zero out unused?)
--- input file info to submodule storage mapping
+   -- filedata parameter setting routine --> copy data needed to the submodules.  Init others to zero.
 -- summary output file.  Start this early, then add to it in the submodules.
 -- revamp submodule arrangement (renaming/splitting etc)
    -- change the calling structure in IfW.f90, then make the changes to the submodules.  This will be somewhat iterative.
@@ -49,7 +42,6 @@ Submodules
 -- BladedWind -> includes native Bladed and TurbSim bladed files.
    -- summary file writing
    -- new interpolator
-   -- Scaling parameters --> must output info on this to the summary file.
 -- CTWind -> major revamp of how this is implimented (talk to Bonnie when we get there)
    -- new interpolator (not sure if this applies here or not)
    -- summary file writing
@@ -58,7 +50,7 @@ Submodules
 
 Driver
 -- Update driver to work with updated code
--- input file for the driver
+-- input file for the driver  -- keep the other method with some enhancement
 -- list of points to pass in at each timestep (grid) (3D cartesian grid for summary file output -- see feature 1)
 --
 

@@ -41,6 +41,7 @@ else
 			$(SoftwareDir)/NWTC_Library/branches/NetLib/fftpack
 			# Mac flag requirement
 		LDFLAGS = -framework Accelerate
+      FC = /usr/local/bin/gfortran
 
 #   else
 #      RegistryProgram   = registry.exe
@@ -54,7 +55,7 @@ endif
 
 
    # Name of compiler to use and flags to use.
-FC      = gfortran
+#FC      = gfortran
 
 FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
 #FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
@@ -216,7 +217,7 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 NWTC_Base$(OBJ_EXT):                $(PREC)$(OBJ_EXT)
 $(SYS_FILE)$(OBJ_EXT):              NWTC_Base$(OBJ_EXT) $(PREC)$(OBJ_EXT)
 NWTC_Library_Types$(OBJ_EXT):       $(SYS_FILE)$(OBJ_EXT) NWTC_Base$(OBJ_EXT)
-NWTC_IO$(OBJ_EXT):                  NWTC_Library_Types$(OBJ_EXT)
+NWTC_IO$(OBJ_EXT):                  NWTC_Library_Types$(OBJ_EXT) $(SYS_FILE)$(OBJ_EXT)
 NWTC_Num$(OBJ_EXT):                 NWTC_IO$(OBJ_EXT)
 ModMesh_Types$(OBJ_EXT):            NWTC_Num$(OBJ_EXT)
 ModMesh$(OBJ_EXT):                  ModMesh_Types$(OBJ_EXT) NWTC_Num$(OBJ_EXT) ModMesh_Types$(OBJ_EXT)

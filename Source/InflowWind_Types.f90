@@ -95,7 +95,7 @@ IMPLICIT NONE
   TYPE, PUBLIC :: InflowWind_InitInputType
     CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input file to use [-]
     REAL(DbKi)  :: DT      ! Time step.  Supplied by driver [seconds]
-    REAL(ReKi)  :: ReferenceHeight      ! Hub height of the turbine [meters]
+    REAL(ReKi)  :: TurbineHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind field to use [meters]
     LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
     TYPE(InflowWind_InputFile)  :: PassedFileData      ! If we don't use the input file, pass everything through this [-]
@@ -559,7 +559,7 @@ ENDIF
    ErrMsg  = ""
    DstInitInputData%InputFileName = SrcInitInputData%InputFileName
    DstInitInputData%DT = SrcInitInputData%DT
-   DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
+   DstInitInputData%TurbineHeight = SrcInitInputData%TurbineHeight
    DstInitInputData%Width = SrcInitInputData%Width
    DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
       CALL InflowWind_Copyinputfile( SrcInitInputData%PassedFileData, DstInitInputData%PassedFileData, CtrlCode, ErrStat, ErrMsg )
@@ -614,7 +614,7 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
   Db_BufSz   = Db_BufSz   + 1  ! DT
-  Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
+  Re_BufSz   = Re_BufSz   + 1  ! TurbineHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
   CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, InData%PassedFileData, ErrStat, ErrMsg, .TRUE. ) ! PassedFileData 
   IF(ALLOCATED(Re_PassedFileData_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_PassedFileData_Buf  ) ! PassedFileData
@@ -628,7 +628,7 @@ ENDIF
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
   IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
   Db_Xferred   = Db_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%TurbineHeight )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
@@ -688,7 +688,7 @@ ENDIF
   Int_BufSz  = 0
   OutData%DT = DbKiBuf ( Db_Xferred )
   Db_Xferred   = Db_Xferred   + 1
-  OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
+  OutData%TurbineHeight = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
