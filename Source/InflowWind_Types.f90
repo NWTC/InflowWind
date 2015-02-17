@@ -57,6 +57,7 @@ IMPLICIT NONE
     REAL(ReKi)  :: Steady_PLexp      ! Steady wind -- power law exponent [-]
     CHARACTER(1024)  :: Uniform_FileName      ! Uniform wind -- filename [-]
     REAL(ReKi)  :: Uniform_RefHt      ! Uniform wind -- reference height [meters]
+    REAL(ReKi)  :: Uniform_RefLength      ! Uniform wind -- reference length [meters]
     CHARACTER(1024)  :: TSFF_FileName      ! TurbSim Full-Field -- filename [-]
     CHARACTER(1024)  :: Bladed_FileName      ! Bladed-style Full-Field -- filename [-]
     LOGICAL  :: Bladed_TowerFile      ! Bladed-style Full-Field -- tower file exists [-]
@@ -97,6 +98,7 @@ IMPLICIT NONE
     REAL(DbKi)  :: DT      ! Time step.  Supplied by driver [seconds]
     REAL(ReKi)  :: TurbineHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind field to use [meters]
+    INTEGER(IntKi)  :: NumWindPoints      ! Number of wind velocity points expected [-]
     LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
     TYPE(InflowWind_InputFile)  :: PassedFileData      ! If we don't use the input file, pass everything through this [-]
   END TYPE InflowWind_InitInputType
@@ -106,8 +108,10 @@ IMPLICIT NONE
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr      ! Names of output-to-file channels [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      ! Units of output-to-file channels [-]
     TYPE(ProgDesc)  :: Ver      ! Version information of InflowWind module [-]
-    REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
     TYPE(IfW_UniformWind_InitOutputType)  :: UniformWind      ! UniformWind InitOutput info [-]
+    REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [-]
+    REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [-]
+    INTEGER(IntKi)  :: WindFileNumTSteps      ! Number of timesteps in the time range of wind file [-]
   END TYPE InflowWind_InitOutputType
 ! =======================
 ! =========  InflowWind_OtherStateType  =======
@@ -145,12 +149,12 @@ IMPLICIT NONE
 ! =======================
 ! =========  InflowWind_InputType  =======
   TYPE, PUBLIC :: InflowWind_InputType
-    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Position      ! Array holding the input positions at a given timestep [meters]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: PositionXYZ      ! Array holding the input positions at a given timestep [meters]
   END TYPE InflowWind_InputType
 ! =======================
 ! =========  InflowWind_OutputType  =======
   TYPE, PUBLIC :: InflowWind_OutputType
-    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity      ! Array holding the U,V,W velocity for a given timestep [meters/sec]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: VelocityXYZ      ! Array holding the U,V,W velocity for a given timestep [meters/sec]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WriteOutput      ! Array with values to output to file [-]
   END TYPE InflowWind_OutputType
 ! =======================
@@ -231,6 +235,7 @@ ENDIF
    DstinputfileData%Steady_PLexp = SrcinputfileData%Steady_PLexp
    DstinputfileData%Uniform_FileName = SrcinputfileData%Uniform_FileName
    DstinputfileData%Uniform_RefHt = SrcinputfileData%Uniform_RefHt
+   DstinputfileData%Uniform_RefLength = SrcinputfileData%Uniform_RefLength
    DstinputfileData%TSFF_FileName = SrcinputfileData%TSFF_FileName
    DstinputfileData%Bladed_FileName = SrcinputfileData%Bladed_FileName
    DstinputfileData%Bladed_TowerFile = SrcinputfileData%Bladed_TowerFile
@@ -343,6 +348,7 @@ ENDIF
   Re_BufSz   = Re_BufSz   + 1  ! Steady_RefHt
   Re_BufSz   = Re_BufSz   + 1  ! Steady_PLexp
   Re_BufSz   = Re_BufSz   + 1  ! Uniform_RefHt
+  Re_BufSz   = Re_BufSz   + 1  ! Uniform_RefLength
   Int_BufSz  = Int_BufSz  + 1  ! HAWC_nx
   Int_BufSz  = Int_BufSz  + 1  ! HAWC_ny
   Int_BufSz  = Int_BufSz  + 1  ! HAWC_nz
@@ -391,6 +397,8 @@ ENDIF
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Steady_PLexp )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Uniform_RefHt )
+  Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Uniform_RefLength )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%HAWC_nx )
   Int_Xferred   = Int_Xferred   + 1
@@ -499,6 +507,8 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%Uniform_RefHt = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+  OutData%Uniform_RefLength = ReKiBuf ( Re_Xferred )
+  Re_Xferred   = Re_Xferred   + 1
   OutData%HAWC_nx = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   OutData%HAWC_ny = IntKiBuf ( Int_Xferred )
@@ -561,6 +571,7 @@ ENDIF
    DstInitInputData%DT = SrcInitInputData%DT
    DstInitInputData%TurbineHeight = SrcInitInputData%TurbineHeight
    DstInitInputData%Width = SrcInitInputData%Width
+   DstInitInputData%NumWindPoints = SrcInitInputData%NumWindPoints
    DstInitInputData%UseInputFile = SrcInitInputData%UseInputFile
       CALL InflowWind_Copyinputfile( SrcInitInputData%PassedFileData, DstInitInputData%PassedFileData, CtrlCode, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_CopyInitInput
@@ -616,6 +627,7 @@ ENDIF
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! TurbineHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
+  Int_BufSz  = Int_BufSz  + 1  ! NumWindPoints
   CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, InData%PassedFileData, ErrStat, ErrMsg, .TRUE. ) ! PassedFileData 
   IF(ALLOCATED(Re_PassedFileData_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_PassedFileData_Buf  ) ! PassedFileData
   IF(ALLOCATED(Db_PassedFileData_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_PassedFileData_Buf  ) ! PassedFileData
@@ -632,6 +644,8 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%Width )
   Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumWindPoints )
+  Int_Xferred   = Int_Xferred   + 1
   CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, InData%PassedFileData, ErrStat, ErrMsg, OnlySize ) ! PassedFileData 
   IF(ALLOCATED(Re_PassedFileData_Buf)) THEN
     IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_PassedFileData_Buf)-1 ) = Re_PassedFileData_Buf
@@ -692,6 +706,8 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%Width = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+  OutData%NumWindPoints = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
  ! first call InflowWind_Packinputfile to get correctly sized buffers for unpacking
   CALL InflowWind_Packinputfile( Re_PassedFileData_Buf, Db_PassedFileData_Buf, Int_PassedFileData_Buf, OutData%PassedFileData, ErrStat, ErrMsg, .TRUE. ) ! PassedFileData 
   IF(ALLOCATED(Re_PassedFileData_Buf)) THEN
@@ -752,8 +768,10 @@ IF (ALLOCATED(SrcInitOutputData%WriteOutputUnt)) THEN
    DstInitOutputData%WriteOutputUnt = SrcInitOutputData%WriteOutputUnt
 ENDIF
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat, ErrMsg )
-   DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
       CALL IfW_UniformWind_CopyInitOutput( SrcInitOutputData%UniformWind, DstInitOutputData%UniformWind, CtrlCode, ErrStat, ErrMsg )
+   DstInitOutputData%WindFileDT = SrcInitOutputData%WindFileDT
+   DstInitOutputData%WindFileTRange = SrcInitOutputData%WindFileTRange
+   DstInitOutputData%WindFileNumTSteps = SrcInitOutputData%WindFileNumTSteps
  END SUBROUTINE InflowWind_CopyInitOutput
 
  SUBROUTINE InflowWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
@@ -821,7 +839,6 @@ ENDIF
   IF(ALLOCATED(Re_Ver_Buf))  DEALLOCATE(Re_Ver_Buf)
   IF(ALLOCATED(Db_Ver_Buf))  DEALLOCATE(Db_Ver_Buf)
   IF(ALLOCATED(Int_Ver_Buf)) DEALLOCATE(Int_Ver_Buf)
-  Re_BufSz   = Re_BufSz   + 1  ! HubHeight
   CALL IfW_UniformWind_PackInitOutput( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_UniformWind_Buf  ) ! UniformWind
   IF(ALLOCATED(Db_UniformWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_UniformWind_Buf  ) ! UniformWind
@@ -829,6 +846,9 @@ ENDIF
   IF(ALLOCATED(Re_UniformWind_Buf))  DEALLOCATE(Re_UniformWind_Buf)
   IF(ALLOCATED(Db_UniformWind_Buf))  DEALLOCATE(Db_UniformWind_Buf)
   IF(ALLOCATED(Int_UniformWind_Buf)) DEALLOCATE(Int_UniformWind_Buf)
+  Db_BufSz   = Db_BufSz   + 1  ! WindFileDT
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindFileTRange )  ! WindFileTRange 
+  Int_BufSz  = Int_BufSz  + 1  ! WindFileNumTSteps
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -848,8 +868,6 @@ ENDIF
   IF( ALLOCATED(Re_Ver_Buf) )  DEALLOCATE(Re_Ver_Buf)
   IF( ALLOCATED(Db_Ver_Buf) )  DEALLOCATE(Db_Ver_Buf)
   IF( ALLOCATED(Int_Ver_Buf) ) DEALLOCATE(Int_Ver_Buf)
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HubHeight )
-  Re_Xferred   = Re_Xferred   + 1
   CALL IfW_UniformWind_PackInitOutput( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, OnlySize ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) THEN
     IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_UniformWind_Buf)-1 ) = Re_UniformWind_Buf
@@ -866,6 +884,12 @@ ENDIF
   IF( ALLOCATED(Re_UniformWind_Buf) )  DEALLOCATE(Re_UniformWind_Buf)
   IF( ALLOCATED(Db_UniformWind_Buf) )  DEALLOCATE(Db_UniformWind_Buf)
   IF( ALLOCATED(Int_UniformWind_Buf) ) DEALLOCATE(Int_UniformWind_Buf)
+  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%WindFileDT )
+  Db_Xferred   = Db_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindFileTRange))-1 ) =  PACK(InData%WindFileTRange ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%WindFileTRange)
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileNumTSteps )
+  Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackInitOutput
 
  SUBROUTINE InflowWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -922,8 +946,6 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_Ver_Buf)
   ENDIF
   CALL NWTC_Library_UnPackprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, OutData%Ver, ErrStat, ErrMsg ) ! Ver 
-  OutData%HubHeight = ReKiBuf ( Re_Xferred )
-  Re_Xferred   = Re_Xferred   + 1
  ! first call IfW_UniformWind_PackInitOutput to get correctly sized buffers for unpacking
   CALL IfW_UniformWind_PackInitOutput( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) THEN
@@ -939,6 +961,14 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_UniformWind_Buf)
   ENDIF
   CALL IfW_UniformWind_UnPackInitOutput( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg ) ! UniformWind 
+  OutData%WindFileDT = DbKiBuf ( Db_Xferred )
+  Db_Xferred   = Db_Xferred   + 1
+  ALLOCATE(mask1(SIZE(OutData%WindFileTRange,1))); mask1 = .TRUE.
+  OutData%WindFileTRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindFileTRange))-1 ),mask1,OutData%WindFileTRange)
+  DEALLOCATE(mask1)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%WindFileTRange)
+  OutData%WindFileNumTSteps = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1444,20 +1474,20 @@ ENDIF
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-IF (ALLOCATED(SrcInputData%Position)) THEN
-   i1_l = LBOUND(SrcInputData%Position,1)
-   i1_u = UBOUND(SrcInputData%Position,1)
-   i2_l = LBOUND(SrcInputData%Position,2)
-   i2_u = UBOUND(SrcInputData%Position,2)
-   IF (.NOT. ALLOCATED(DstInputData%Position)) THEN 
-      ALLOCATE(DstInputData%Position(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+IF (ALLOCATED(SrcInputData%PositionXYZ)) THEN
+   i1_l = LBOUND(SrcInputData%PositionXYZ,1)
+   i1_u = UBOUND(SrcInputData%PositionXYZ,1)
+   i2_l = LBOUND(SrcInputData%PositionXYZ,2)
+   i2_u = UBOUND(SrcInputData%PositionXYZ,2)
+   IF (.NOT. ALLOCATED(DstInputData%PositionXYZ)) THEN 
+      ALLOCATE(DstInputData%PositionXYZ(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_CopyInput: Error allocating DstInputData%Position.'
+         ErrMsg = 'InflowWind_CopyInput: Error allocating DstInputData%PositionXYZ.'
          RETURN
       END IF
    END IF
-   DstInputData%Position = SrcInputData%Position
+   DstInputData%PositionXYZ = SrcInputData%PositionXYZ
 ENDIF
  END SUBROUTINE InflowWind_CopyInput
 
@@ -1469,8 +1499,8 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ALLOCATED(InputData%Position)) THEN
-   DEALLOCATE(InputData%Position)
+IF (ALLOCATED(InputData%PositionXYZ)) THEN
+   DEALLOCATE(InputData%PositionXYZ)
 ENDIF
  END SUBROUTINE InflowWind_DestroyInput
 
@@ -1508,13 +1538,13 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Re_BufSz    = Re_BufSz    + SIZE( InData%Position )  ! Position 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%PositionXYZ )  ! PositionXYZ 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( ALLOCATED(InData%Position) ) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Position))-1 ) =  PACK(InData%Position ,.TRUE.)
-    Re_Xferred   = Re_Xferred   + SIZE(InData%Position)
+  IF ( ALLOCATED(InData%PositionXYZ) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%PositionXYZ))-1 ) =  PACK(InData%PositionXYZ ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%PositionXYZ)
   ENDIF
  END SUBROUTINE InflowWind_PackInput
 
@@ -1551,11 +1581,11 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  IF ( ALLOCATED(OutData%Position) ) THEN
-  ALLOCATE(mask2(SIZE(OutData%Position,1),SIZE(OutData%Position,2))); mask2 = .TRUE.
-    OutData%Position = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Position))-1 ),mask2,OutData%Position)
+  IF ( ALLOCATED(OutData%PositionXYZ) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%PositionXYZ,1),SIZE(OutData%PositionXYZ,2))); mask2 = .TRUE.
+    OutData%PositionXYZ = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%PositionXYZ))-1 ),mask2,OutData%PositionXYZ)
   DEALLOCATE(mask2)
-    Re_Xferred   = Re_Xferred   + SIZE(OutData%Position)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%PositionXYZ)
   ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
@@ -1575,20 +1605,20 @@ ENDIF
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-IF (ALLOCATED(SrcOutputData%Velocity)) THEN
-   i1_l = LBOUND(SrcOutputData%Velocity,1)
-   i1_u = UBOUND(SrcOutputData%Velocity,1)
-   i2_l = LBOUND(SrcOutputData%Velocity,2)
-   i2_u = UBOUND(SrcOutputData%Velocity,2)
-   IF (.NOT. ALLOCATED(DstOutputData%Velocity)) THEN 
-      ALLOCATE(DstOutputData%Velocity(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+IF (ALLOCATED(SrcOutputData%VelocityXYZ)) THEN
+   i1_l = LBOUND(SrcOutputData%VelocityXYZ,1)
+   i1_u = UBOUND(SrcOutputData%VelocityXYZ,1)
+   i2_l = LBOUND(SrcOutputData%VelocityXYZ,2)
+   i2_u = UBOUND(SrcOutputData%VelocityXYZ,2)
+   IF (.NOT. ALLOCATED(DstOutputData%VelocityXYZ)) THEN 
+      ALLOCATE(DstOutputData%VelocityXYZ(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_CopyOutput: Error allocating DstOutputData%Velocity.'
+         ErrMsg = 'InflowWind_CopyOutput: Error allocating DstOutputData%VelocityXYZ.'
          RETURN
       END IF
    END IF
-   DstOutputData%Velocity = SrcOutputData%Velocity
+   DstOutputData%VelocityXYZ = SrcOutputData%VelocityXYZ
 ENDIF
 IF (ALLOCATED(SrcOutputData%WriteOutput)) THEN
    i1_l = LBOUND(SrcOutputData%WriteOutput,1)
@@ -1613,8 +1643,8 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ALLOCATED(OutputData%Velocity)) THEN
-   DEALLOCATE(OutputData%Velocity)
+IF (ALLOCATED(OutputData%VelocityXYZ)) THEN
+   DEALLOCATE(OutputData%VelocityXYZ)
 ENDIF
 IF (ALLOCATED(OutputData%WriteOutput)) THEN
    DEALLOCATE(OutputData%WriteOutput)
@@ -1655,14 +1685,14 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  Re_BufSz    = Re_BufSz    + SIZE( InData%Velocity )  ! Velocity 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%VelocityXYZ )  ! VelocityXYZ 
   Re_BufSz    = Re_BufSz    + SIZE( InData%WriteOutput )  ! WriteOutput 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
-  IF ( ALLOCATED(InData%Velocity) ) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) =  PACK(InData%Velocity ,.TRUE.)
-    Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
+  IF ( ALLOCATED(InData%VelocityXYZ) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VelocityXYZ))-1 ) =  PACK(InData%VelocityXYZ ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%VelocityXYZ)
   ENDIF
   IF ( ALLOCATED(InData%WriteOutput) ) THEN
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WriteOutput))-1 ) =  PACK(InData%WriteOutput ,.TRUE.)
@@ -1703,11 +1733,11 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-  IF ( ALLOCATED(OutData%Velocity) ) THEN
-  ALLOCATE(mask2(SIZE(OutData%Velocity,1),SIZE(OutData%Velocity,2))); mask2 = .TRUE.
-    OutData%Velocity = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%Velocity))-1 ),mask2,OutData%Velocity)
+  IF ( ALLOCATED(OutData%VelocityXYZ) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%VelocityXYZ,1),SIZE(OutData%VelocityXYZ,2))); mask2 = .TRUE.
+    OutData%VelocityXYZ = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%VelocityXYZ))-1 ),mask2,OutData%VelocityXYZ)
   DEALLOCATE(mask2)
-    Re_Xferred   = Re_Xferred   + SIZE(OutData%Velocity)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%VelocityXYZ)
   ENDIF
   IF ( ALLOCATED(OutData%WriteOutput) ) THEN
   ALLOCATE(mask1(SIZE(OutData%WriteOutput,1))); mask1 = .TRUE.
@@ -2153,8 +2183,8 @@ ENDIF
  endif
  order = SIZE(u) - 1
  IF ( order .eq. 0 ) THEN
-IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
-  u_out%Position = u(1)%Position
+IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
+  u_out%PositionXYZ = u(1)%PositionXYZ
 END IF ! check if allocated
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
@@ -2162,11 +2192,11 @@ END IF ! check if allocated
     ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
-  ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  b2 = -(u(1)%Position - u(2)%Position)/t(2)
-  u_out%Position = u(1)%Position + b2 * t_out
+IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
+  ALLOCATE(b2(SIZE(u_out%PositionXYZ,1),SIZE(u_out%PositionXYZ,2) ))
+  ALLOCATE(c2(SIZE(u_out%PositionXYZ,1),SIZE(u_out%PositionXYZ,2) ))
+  b2 = -(u(1)%PositionXYZ - u(2)%PositionXYZ)/t(2)
+  u_out%PositionXYZ = u(1)%PositionXYZ + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
@@ -2186,12 +2216,12 @@ END IF ! check if allocated
     ErrMsg  = ' Error in InflowWind_Input_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%Position) .AND. ALLOCATED(u(1)%Position)) THEN
-  ALLOCATE(b2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  ALLOCATE(c2(SIZE(u_out%Position,1),SIZE(u_out%Position,2) ))
-  b2 = (t(3)**2*(u(1)%Position - u(2)%Position) + t(2)**2*(-u(1)%Position + u(3)%Position))/(t(2)*t(3)*(t(2) - t(3)))
-  c2 = ( (t(2)-t(3))*u(1)%Position + t(3)*u(2)%Position - t(2)*u(3)%Position ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%Position = u(1)%Position + b2 * t_out + c2 * t_out**2
+IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
+  ALLOCATE(b2(SIZE(u_out%PositionXYZ,1),SIZE(u_out%PositionXYZ,2) ))
+  ALLOCATE(c2(SIZE(u_out%PositionXYZ,1),SIZE(u_out%PositionXYZ,2) ))
+  b2 = (t(3)**2*(u(1)%PositionXYZ - u(2)%PositionXYZ) + t(2)**2*(-u(1)%PositionXYZ + u(3)%PositionXYZ))/(t(2)*t(3)*(t(2) - t(3)))
+  c2 = ( (t(2)-t(3))*u(1)%PositionXYZ + t(3)*u(2)%PositionXYZ - t(2)*u(3)%PositionXYZ ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%PositionXYZ = u(1)%PositionXYZ + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
@@ -2311,8 +2341,8 @@ END IF ! check if allocated
  endif
  order = SIZE(u) - 1
  IF ( order .eq. 0 ) THEN
-IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
-  u_out%Velocity = u(1)%Velocity
+IF (ALLOCATED(u_out%VelocityXYZ) .AND. ALLOCATED(u(1)%VelocityXYZ)) THEN
+  u_out%VelocityXYZ = u(1)%VelocityXYZ
 END IF ! check if allocated
 IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
   u_out%WriteOutput = u(1)%WriteOutput
@@ -2323,11 +2353,11 @@ END IF ! check if allocated
     ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
-  ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  b2 = -(u(1)%Velocity - u(2)%Velocity)/t(2)
-  u_out%Velocity = u(1)%Velocity + b2 * t_out
+IF (ALLOCATED(u_out%VelocityXYZ) .AND. ALLOCATED(u(1)%VelocityXYZ)) THEN
+  ALLOCATE(b2(SIZE(u_out%VelocityXYZ,1),SIZE(u_out%VelocityXYZ,2) ))
+  ALLOCATE(c2(SIZE(u_out%VelocityXYZ,1),SIZE(u_out%VelocityXYZ,2) ))
+  b2 = -(u(1)%VelocityXYZ - u(2)%VelocityXYZ)/t(2)
+  u_out%VelocityXYZ = u(1)%VelocityXYZ + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
@@ -2355,12 +2385,12 @@ END IF ! check if allocated
     ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
-  ALLOCATE(b2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  ALLOCATE(c2(SIZE(u_out%Velocity,1),SIZE(u_out%Velocity,2) ))
-  b2 = (t(3)**2*(u(1)%Velocity - u(2)%Velocity) + t(2)**2*(-u(1)%Velocity + u(3)%Velocity))/(t(2)*t(3)*(t(2) - t(3)))
-  c2 = ( (t(2)-t(3))*u(1)%Velocity + t(3)*u(2)%Velocity - t(2)*u(3)%Velocity ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%Velocity = u(1)%Velocity + b2 * t_out + c2 * t_out**2
+IF (ALLOCATED(u_out%VelocityXYZ) .AND. ALLOCATED(u(1)%VelocityXYZ)) THEN
+  ALLOCATE(b2(SIZE(u_out%VelocityXYZ,1),SIZE(u_out%VelocityXYZ,2) ))
+  ALLOCATE(c2(SIZE(u_out%VelocityXYZ,1),SIZE(u_out%VelocityXYZ,2) ))
+  b2 = (t(3)**2*(u(1)%VelocityXYZ - u(2)%VelocityXYZ) + t(2)**2*(-u(1)%VelocityXYZ + u(3)%VelocityXYZ))/(t(2)*t(3)*(t(2) - t(3)))
+  c2 = ( (t(2)-t(3))*u(1)%VelocityXYZ + t(3)*u(2)%VelocityXYZ - t(2)*u(3)%VelocityXYZ ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%VelocityXYZ = u(1)%VelocityXYZ + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated

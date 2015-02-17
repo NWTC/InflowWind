@@ -2,8 +2,11 @@
 2014.11.26  updated
 
 Stuff working on right now:
--- OutList setup and functionality (including the mapping of the points to some pointlist appended to the end of the list handed in)
--- Output of OutList to glue code
+-- Driver code: setup the datatype for IfW_InitInput
+-- Driver code: setup the storage arrays for the data from IfW.  This be setup beforehand -- may cause out of bounds during IfW exectution, but good test of that.
+                  -- Everything but the number of timesteps for the DEFAULT DT and NumTimeSteps cases.  Set that up after initialization.
+                  -- Dimensions set up beforehand. Index 0 for start.
+-- Driver code: setup the FFT.  May need to create some additional types for storing the data.
 
 List of items to tackle:
 ==============================

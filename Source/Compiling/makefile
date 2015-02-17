@@ -41,7 +41,7 @@ else
 			$(SoftwareDir)/NWTC_Library/branches/NetLib/fftpack
 			# Mac flag requirement
 		LDFLAGS = -framework Accelerate
-      FC = /usr/local/bin/gfortran
+      FC = gfortran
 
 #   else
 #      RegistryProgram   = registry.exe
