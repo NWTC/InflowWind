@@ -144,7 +144,6 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVziList      ! List of Z coordinates for wind velocity measurements [-]
     TYPE(IfW_UniformWind_ParameterType)  :: UniformWind      ! Parameters from UniformWind [-]
-    TYPE(IfW_HAWCWind_ParameterType)  :: HAWCWind      ! Parameters from HAWCWind [-]
   END TYPE InflowWind_ParameterType
 ! =======================
 ! =========  InflowWind_InputType  =======
@@ -1199,7 +1198,6 @@ IF (ALLOCATED(SrcParamData%WindVziList)) THEN
    DstParamData%WindVziList = SrcParamData%WindVziList
 ENDIF
       CALL IfW_UniformWind_CopyParam( SrcParamData%UniformWind, DstParamData%UniformWind, CtrlCode, ErrStat, ErrMsg )
-      CALL IfW_HAWCWind_CopyParam( SrcParamData%HAWCWind, DstParamData%HAWCWind, CtrlCode, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_CopyParam
 
  SUBROUTINE InflowWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -1220,7 +1218,6 @@ IF (ALLOCATED(ParamData%WindVziList)) THEN
    DEALLOCATE(ParamData%WindVziList)
 ENDIF
   CALL IfW_UniformWind_DestroyParam( ParamData%UniformWind, ErrStat, ErrMsg )
-  CALL IfW_HAWCWind_DestroyParam( ParamData%HAWCWind, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyParam
 
  SUBROUTINE InflowWind_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1247,9 +1244,6 @@ ENDIF
   REAL(ReKi),     ALLOCATABLE :: Re_UniformWind_Buf(:)
   REAL(DbKi),     ALLOCATABLE :: Db_UniformWind_Buf(:)
   INTEGER(IntKi), ALLOCATABLE :: Int_UniformWind_Buf(:)
-  REAL(ReKi),     ALLOCATABLE :: Re_HAWCWind_Buf(:)
-  REAL(DbKi),     ALLOCATABLE :: Db_HAWCWind_Buf(:)
-  INTEGER(IntKi), ALLOCATABLE :: Int_HAWCWind_Buf(:)
   OnlySize = .FALSE.
   IF ( PRESENT(SizeOnly) ) THEN
     OnlySize = SizeOnly
@@ -1281,13 +1275,6 @@ ENDIF
   IF(ALLOCATED(Re_UniformWind_Buf))  DEALLOCATE(Re_UniformWind_Buf)
   IF(ALLOCATED(Db_UniformWind_Buf))  DEALLOCATE(Db_UniformWind_Buf)
   IF(ALLOCATED(Int_UniformWind_Buf)) DEALLOCATE(Int_UniformWind_Buf)
-  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, InData%HAWCWind, ErrStat, ErrMsg, .TRUE. ) ! HAWCWind 
-  IF(ALLOCATED(Re_HAWCWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_HAWCWind_Buf  ) ! HAWCWind
-  IF(ALLOCATED(Db_HAWCWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_HAWCWind_Buf  ) ! HAWCWind
-  IF(ALLOCATED(Int_HAWCWind_Buf))Int_BufSz = Int_BufSz + SIZE( Int_HAWCWind_Buf ) ! HAWCWind
-  IF(ALLOCATED(Re_HAWCWind_Buf))  DEALLOCATE(Re_HAWCWind_Buf)
-  IF(ALLOCATED(Db_HAWCWind_Buf))  DEALLOCATE(Db_HAWCWind_Buf)
-  IF(ALLOCATED(Int_HAWCWind_Buf)) DEALLOCATE(Int_HAWCWind_Buf)
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -1335,22 +1322,6 @@ ENDIF
   IF( ALLOCATED(Re_UniformWind_Buf) )  DEALLOCATE(Re_UniformWind_Buf)
   IF( ALLOCATED(Db_UniformWind_Buf) )  DEALLOCATE(Db_UniformWind_Buf)
   IF( ALLOCATED(Int_UniformWind_Buf) ) DEALLOCATE(Int_UniformWind_Buf)
-  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, InData%HAWCWind, ErrStat, ErrMsg, OnlySize ) ! HAWCWind 
-  IF(ALLOCATED(Re_HAWCWind_Buf)) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_HAWCWind_Buf)-1 ) = Re_HAWCWind_Buf
-    Re_Xferred = Re_Xferred + SIZE(Re_HAWCWind_Buf)
-  ENDIF
-  IF(ALLOCATED(Db_HAWCWind_Buf)) THEN
-    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_HAWCWind_Buf)-1 ) = Db_HAWCWind_Buf
-    Db_Xferred = Db_Xferred + SIZE(Db_HAWCWind_Buf)
-  ENDIF
-  IF(ALLOCATED(Int_HAWCWind_Buf)) THEN
-    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_HAWCWind_Buf)-1 ) = Int_HAWCWind_Buf
-    Int_Xferred = Int_Xferred + SIZE(Int_HAWCWind_Buf)
-  ENDIF
-  IF( ALLOCATED(Re_HAWCWind_Buf) )  DEALLOCATE(Re_HAWCWind_Buf)
-  IF( ALLOCATED(Db_HAWCWind_Buf) )  DEALLOCATE(Db_HAWCWind_Buf)
-  IF( ALLOCATED(Int_HAWCWind_Buf) ) DEALLOCATE(Int_HAWCWind_Buf)
  END SUBROUTINE InflowWind_PackParam
 
  SUBROUTINE InflowWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1380,9 +1351,6 @@ ENDIF
   REAL(ReKi),    ALLOCATABLE :: Re_UniformWind_Buf(:)
   REAL(DbKi),    ALLOCATABLE :: Db_UniformWind_Buf(:)
   INTEGER(IntKi),    ALLOCATABLE :: Int_UniformWind_Buf(:)
-  REAL(ReKi),    ALLOCATABLE :: Re_HAWCWind_Buf(:)
-  REAL(DbKi),    ALLOCATABLE :: Db_HAWCWind_Buf(:)
-  INTEGER(IntKi),    ALLOCATABLE :: Int_HAWCWind_Buf(:)
     !
   ErrStat = ErrID_None
   ErrMsg  = ""
@@ -1441,21 +1409,6 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_UniformWind_Buf)
   ENDIF
   CALL IfW_UniformWind_UnPackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg ) ! UniformWind 
- ! first call IfW_HAWCWind_PackParam to get correctly sized buffers for unpacking
-  CALL IfW_HAWCWind_PackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, OutData%HAWCWind, ErrStat, ErrMsg, .TRUE. ) ! HAWCWind 
-  IF(ALLOCATED(Re_HAWCWind_Buf)) THEN
-    Re_HAWCWind_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_HAWCWind_Buf)-1 )
-    Re_Xferred = Re_Xferred + SIZE(Re_HAWCWind_Buf)
-  ENDIF
-  IF(ALLOCATED(Db_HAWCWind_Buf)) THEN
-    Db_HAWCWind_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_HAWCWind_Buf)-1 )
-    Db_Xferred = Db_Xferred + SIZE(Db_HAWCWind_Buf)
-  ENDIF
-  IF(ALLOCATED(Int_HAWCWind_Buf)) THEN
-    Int_HAWCWind_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_HAWCWind_Buf)-1 )
-    Int_Xferred = Int_Xferred + SIZE(Int_HAWCWind_Buf)
-  ENDIF
-  CALL IfW_HAWCWind_UnPackParam( Re_HAWCWind_Buf, Db_HAWCWind_Buf, Int_HAWCWind_Buf, OutData%HAWCWind, ErrStat, ErrMsg ) ! HAWCWind 
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
