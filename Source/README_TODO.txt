@@ -1,40 +1,30 @@
 2014.08.31  started
-2015.02.18  updated
+2015.03.03  updated
 
 Stuff working on right now:
--- Driver code: setup the datatype for IfW_InitInput
--- Driver code: setup the storage arrays for the data from IfW.  This be setup beforehand -- may cause out of bounds during IfW exectution, but good test of that.
-                  -- Everything but the number of timesteps for the DEFAULT DT and NumTimeSteps cases.  Set that up after initialization.
-                  -- Dimensions set up beforehand. Index 0 for start.
 -- Driver code: setup the FFT.  May need to create some additional types for storing the data.
+-- Driver code: driver input file support for points file
+-- IfW OutList
+-- IfW summary file writing.
+
 
 List of items to tackle:
 ==============================
 
 IfW control level
--- change all the windtype numbers to the new numbers (figure out exactly what this will be first, then update everything)
-   -- still need to split FFWind.  Others done.
--- input file parsing / sanity checking of the sections
-   -- filedata parameter setting routine --> copy data needed to the submodules.  Init others to zero.
--- summary output file.  Start this early, then add to it in the submodules.
--- revamp submodule arrangement (renaming/splitting etc)
-   -- change the calling structure in IfW.f90, then make the changes to the submodules.  This will be somewhat iterative.
+-- split FFWind.
+-- summary output file.
 -- placeholder for the userwind.f90 submodule.  Put directions within that module and an error message in the module with information on how
    to impliment it.
--- mean wind direction for all modules
-   -- in the CalcOutput, translate from XYZ to the X'Y'Z' coordinates (wind direction coordinates), pass in to submodule,
-      translate the U'V'W' windspeed (wind coordinates) into the global coordinates.
-   -- document how this is done someplace/somehow
-   -- for HHWind (UniformWind), give a warning if the global winddirection and wind direction in the file are different (init routine someplace,
-      using first timestep, differrent warning if non-zero global wind direction and direction changes from zero within file within the file. 
-      Continue with sim anyhow)
+-- for HHWind (UniformWind), give a warning if the global winddirection and wind direction in the file are different (init routine someplace,
+   using first timestep, differrent warning if non-zero global wind direction and direction changes from zero within file.
+   Continue with sim anyhow)
 
 
 
 Submodules
 -- Uniform wind (also steady wind)
    -- summary file writing
-   -- new interpolator
 -- FFWind -> split to TurbSimFF and BladedStyleFF.  Change the WindNumbers for this.
    -- summary file writing
    -- new interpolator
@@ -50,15 +40,6 @@ Submodules
    -- summary file writing
 
 
-
-Driver
--- Update driver to work with updated code
--- input file for the driver  -- keep the other method with some enhancement
--- list of points to pass in at each timestep (grid) (3D cartesian grid for summary file output -- see feature 1)
---
-
-
-
 Additional items
 -- CertTests and examples for each type of file.
 -- change all documentation to refer to uniform wind instead of hub-height
@@ -68,14 +49,7 @@ Additional items
 
 
 Features needed
-1) pass in 3D cartesian grid, output the results to a summary file
-2) pass into init a value corresponding to the number of points we wish to calculate.  We will initialize the array for the points then and
-   set the parameter for it.  This still needs some thinking as to what the best way to accomplish it is.
-   -- do we pad that array slightly in case there are overruns?
-   -- do we need to add the array for the requested positions to it, or is that handled automatically?
-   -- can we add some logic or a second unallocated array to pass in for future points handling?  This might make it easier later when we
-      need to add in a lidar unit for some of the timesteps but not others.  Make some simple documentation concerning this when we get to it.
-
+Lidar module integration -- Bonnie has something in the other branch that this will be based on.  Will do that after other things are done.
 
 
 Features to consider

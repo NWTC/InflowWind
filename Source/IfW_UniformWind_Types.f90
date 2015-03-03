@@ -46,6 +46,10 @@ IMPLICIT NONE
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      ! Units of output-to-file channels [-]
     TYPE(ProgDesc)  :: Ver      ! Version information off HHWind submodule [-]
     REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
+    REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [-]
+    REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [-]
+    INTEGER(IntKi)  :: WindFileNumTSteps      ! Number of timesteps in the time range of wind file [-]
+    LOGICAL  :: WindFileConstantDT      ! Timesteps are the same throughout file [-]
   END TYPE IfW_UniformWind_InitOutputType
 ! =======================
 ! =========  IfW_UniformWind_OtherStateType  =======
@@ -59,9 +63,8 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VSHR      ! HH vertical shear exponent [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VLINSHR      ! HH vertical linear shear [-]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: VGUST      ! HH wind gust [-]
-    REAL(ReKi) , DIMENSION(1:7)  :: LinearizeDels      ! The delta values for linearization -- perhaps at some point, this could be T/F and we determine the deltas by sqrt(eps) or something similar [-]
     REAL(ReKi)  :: RefHt      ! reference height; was HH (hub height); used to center the wind [-]
-    REAL(ReKi)  :: RefWid      ! reference width; was 2*R (=rotor diameter); used to scale the linear shear [-]
+    REAL(ReKi)  :: RefLength      ! reference length used to scale the linear shear [-]
     INTEGER(IntKi)  :: NumDataLines      !  [-]
     INTEGER(IntKi)  :: UnitWind      ! Unit number for the wind file opened [-]
   END TYPE IfW_UniformWind_OtherStateType
@@ -70,10 +73,8 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_UniformWind_ParameterType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
-    LOGICAL  :: Linearize = .FALSE.      ! If this is true, we are linearizing [-]
     REAL(ReKi)  :: ReferenceHeight      ! Height of the hub [meters]
     REAL(ReKi)  :: RefLength      ! RefLength of the wind field [meters]
-    REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
   END TYPE IfW_UniformWind_ParameterType
 ! =======================
 ! =========  IfW_UniformWind_InputType  =======
@@ -243,6 +244,10 @@ IF (ALLOCATED(SrcInitOutputData%WriteOutputUnt)) THEN
 ENDIF
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat, ErrMsg )
    DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
+   DstInitOutputData%WindFileDT = SrcInitOutputData%WindFileDT
+   DstInitOutputData%WindFileTRange = SrcInitOutputData%WindFileTRange
+   DstInitOutputData%WindFileNumTSteps = SrcInitOutputData%WindFileNumTSteps
+   DstInitOutputData%WindFileConstantDT = SrcInitOutputData%WindFileConstantDT
  END SUBROUTINE IfW_UniformWind_CopyInitOutput
 
  SUBROUTINE IfW_UniformWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
@@ -307,6 +312,9 @@ ENDIF
   IF(ALLOCATED(Db_Ver_Buf))  DEALLOCATE(Db_Ver_Buf)
   IF(ALLOCATED(Int_Ver_Buf)) DEALLOCATE(Int_Ver_Buf)
   Re_BufSz   = Re_BufSz   + 1  ! HubHeight
+  Db_BufSz   = Db_BufSz   + 1  ! WindFileDT
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindFileTRange )  ! WindFileTRange 
+  Int_BufSz  = Int_BufSz  + 1  ! WindFileNumTSteps
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -328,6 +336,12 @@ ENDIF
   IF( ALLOCATED(Int_Ver_Buf) ) DEALLOCATE(Int_Ver_Buf)
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%HubHeight )
   Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%WindFileDT )
+  Db_Xferred   = Db_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindFileTRange))-1 ) =  PACK(InData%WindFileTRange ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%WindFileTRange)
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileNumTSteps )
+  Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_UniformWind_PackInitOutput
 
  SUBROUTINE IfW_UniformWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -383,6 +397,14 @@ ENDIF
   CALL NWTC_Library_UnPackprogdesc( Re_Ver_Buf, Db_Ver_Buf, Int_Ver_Buf, OutData%Ver, ErrStat, ErrMsg ) ! Ver 
   OutData%HubHeight = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+  OutData%WindFileDT = DbKiBuf ( Db_Xferred )
+  Db_Xferred   = Db_Xferred   + 1
+  ALLOCATE(mask1(SIZE(OutData%WindFileTRange,1))); mask1 = .TRUE.
+  OutData%WindFileTRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindFileTRange))-1 ),mask1,OutData%WindFileTRange)
+  DEALLOCATE(mask1)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%WindFileTRange)
+  OutData%WindFileNumTSteps = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -506,9 +528,8 @@ IF (ALLOCATED(SrcOtherStateData%VGUST)) THEN
    END IF
    DstOtherStateData%VGUST = SrcOtherStateData%VGUST
 ENDIF
-   DstOtherStateData%LinearizeDels = SrcOtherStateData%LinearizeDels
    DstOtherStateData%RefHt = SrcOtherStateData%RefHt
-   DstOtherStateData%RefWid = SrcOtherStateData%RefWid
+   DstOtherStateData%RefLength = SrcOtherStateData%RefLength
    DstOtherStateData%NumDataLines = SrcOtherStateData%NumDataLines
    DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_UniformWind_CopyOtherState
@@ -590,9 +611,8 @@ ENDIF
   Re_BufSz    = Re_BufSz    + SIZE( InData%VSHR )  ! VSHR 
   Re_BufSz    = Re_BufSz    + SIZE( InData%VLINSHR )  ! VLINSHR 
   Re_BufSz    = Re_BufSz    + SIZE( InData%VGUST )  ! VGUST 
-  Re_BufSz    = Re_BufSz    + SIZE( InData%LinearizeDels )  ! LinearizeDels 
   Re_BufSz   = Re_BufSz   + 1  ! RefHt
-  Re_BufSz   = Re_BufSz   + 1  ! RefWid
+  Re_BufSz   = Re_BufSz   + 1  ! RefLength
   Int_BufSz  = Int_BufSz  + 1  ! NumDataLines
   Int_BufSz  = Int_BufSz  + 1  ! UnitWind
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
@@ -632,11 +652,9 @@ ENDIF
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%VGUST))-1 ) =  PACK(InData%VGUST ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%VGUST)
   ENDIF
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%LinearizeDels))-1 ) =  PACK(InData%LinearizeDels ,.TRUE.)
-  Re_Xferred   = Re_Xferred   + SIZE(InData%LinearizeDels)
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefHt )
   Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefWid )
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefLength )
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumDataLines )
   Int_Xferred   = Int_Xferred   + 1
@@ -727,13 +745,9 @@ ENDIF
   DEALLOCATE(mask1)
     Re_Xferred   = Re_Xferred   + SIZE(OutData%VGUST)
   ENDIF
-  ALLOCATE(mask1(SIZE(OutData%LinearizeDels,1))); mask1 = .TRUE.
-  OutData%LinearizeDels = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%LinearizeDels))-1 ),mask1,OutData%LinearizeDels)
-  DEALLOCATE(mask1)
-  Re_Xferred   = Re_Xferred   + SIZE(OutData%LinearizeDels)
   OutData%RefHt = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
-  OutData%RefWid = ReKiBuf ( Re_Xferred )
+  OutData%RefLength = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
   OutData%NumDataLines = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
@@ -759,10 +773,8 @@ ENDIF
    ErrMsg  = ""
    DstParamData%WindFileName = SrcParamData%WindFileName
    DstParamData%Initialized = SrcParamData%Initialized
-   DstParamData%Linearize = SrcParamData%Linearize
    DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
    DstParamData%RefLength = SrcParamData%RefLength
-   DstParamData%DT = SrcParamData%DT
  END SUBROUTINE IfW_UniformWind_CopyParam
 
  SUBROUTINE IfW_UniformWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -811,7 +823,6 @@ ENDIF
   Int_BufSz  = 0
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! RefLength
-  Db_BufSz   = Db_BufSz   + 1  ! DT
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -819,8 +830,6 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%RefLength )
   Re_Xferred   = Re_Xferred   + 1
-  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%DT )
-  Db_Xferred   = Db_Xferred   + 1
  END SUBROUTINE IfW_UniformWind_PackParam
 
  SUBROUTINE IfW_UniformWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -860,8 +869,6 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%RefLength = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
-  OutData%DT = DbKiBuf ( Db_Xferred )
-  Db_Xferred   = Db_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
