@@ -119,6 +119,8 @@ IMPLICIT NONE
   TYPE, PUBLIC :: InflowWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
     TYPE(IfW_UniformWind_OtherStateType)  :: UniformWind      ! OtherStates from UniformWind [-]
+    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: AllOuts      ! An array holding the value of all of the calculated (not only selected) output channels [see OutListParameters.xlsx spreadsheet]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: WindViUVW      ! List of UVW velocities for wind velocity measurements, 3xNWindVel. corresponds to ParamData%WindViXYZ [meters/second]
   END TYPE InflowWind_OtherStateType
 ! =======================
 ! =========  InflowWind_ParameterType  =======
@@ -136,15 +138,18 @@ IMPLICIT NONE
     LOGICAL  :: CTTS_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
     REAL(ReKi)  :: PropogationDir      ! Direction of wind propogation [radians]
+    REAL(ReKi) , DIMENSION(1:3,1:3)  :: RotToWind      ! Rotation matrix for rotating from the global XYZ coordinate system to the wind coordinate system (wind along X') [-]
+    REAL(ReKi) , DIMENSION(1:3,1:3)  :: RotFromWind      ! Rotation matrix for rotating from the wind coordinate system (wind along X') back to the global XYZ coordinate system.  Equal to TRANSPOSE(RotToWind) [-]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: WindViXYZprime      ! List of XYZ coordinates for velocity measurements, translated to the wind coordinate system (prime coordinates).  This equals MATMUL( RotToWind, ParamData%WindViXYZ ) [meters/second]
     INTEGER(IntKi)  :: WindType = 0      ! Type of wind -- set to Undef_Wind initially [-]
     REAL(ReKi)  :: ReferenceHeight      ! Height of the wind turbine [meters]
     REAL(ReKi)  :: Width      ! Width of the wind array [meters]
     REAL(ReKi)  :: HalfWidth      ! Half the Width of the wind array [meters]
     INTEGER(IntKi)  :: NWindVel      ! Number of points in the wind velocity list [-]
-    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVxiList      ! List of X coordinates for wind velocity measurements [-]
-    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVyiList      ! List of Y coordinates for wind velocity measurements [-]
-    REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WindVziList      ! List of Z coordinates for wind velocity measurements [-]
+    REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: WindViXYZ      ! List of XYZ coordinates for wind velocity measurements, 3xNWindVel [meters]
     TYPE(IfW_UniformWind_ParameterType)  :: UniformWind      ! Parameters from UniformWind [-]
+    INTEGER(IntKi)  :: NumOuts = 0      ! Number of parameters in the output list (number of outputs requested) [-]
+    TYPE(OutParmType) , DIMENSION(:), ALLOCATABLE  :: OutParam      ! Names and units (and other characteristics) of all requested output parameters [-]
   END TYPE InflowWind_ParameterType
 ! =======================
 ! =========  InflowWind_InputType  =======
@@ -990,6 +995,34 @@ ENDIF
    ErrMsg  = ""
    DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
       CALL IfW_UniformWind_CopyOtherState( SrcOtherStateData%UniformWind, DstOtherStateData%UniformWind, CtrlCode, ErrStat, ErrMsg )
+IF (ALLOCATED(SrcOtherStateData%AllOuts)) THEN
+   i1_l = LBOUND(SrcOtherStateData%AllOuts,1)
+   i1_u = UBOUND(SrcOtherStateData%AllOuts,1)
+   IF (.NOT. ALLOCATED(DstOtherStateData%AllOuts)) THEN 
+      ALLOCATE(DstOtherStateData%AllOuts(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyOtherState: Error allocating DstOtherStateData%AllOuts.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%AllOuts = SrcOtherStateData%AllOuts
+ENDIF
+IF (ALLOCATED(SrcOtherStateData%WindViUVW)) THEN
+   i1_l = LBOUND(SrcOtherStateData%WindViUVW,1)
+   i1_u = UBOUND(SrcOtherStateData%WindViUVW,1)
+   i2_l = LBOUND(SrcOtherStateData%WindViUVW,2)
+   i2_u = UBOUND(SrcOtherStateData%WindViUVW,2)
+   IF (.NOT. ALLOCATED(DstOtherStateData%WindViUVW)) THEN 
+      ALLOCATE(DstOtherStateData%WindViUVW(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyOtherState: Error allocating DstOtherStateData%WindViUVW.'
+         RETURN
+      END IF
+   END IF
+   DstOtherStateData%WindViUVW = SrcOtherStateData%WindViUVW
+ENDIF
  END SUBROUTINE InflowWind_CopyOtherState
 
  SUBROUTINE InflowWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -1001,6 +1034,12 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
   CALL IfW_UniformWind_DestroyOtherState( OtherStateData%UniformWind, ErrStat, ErrMsg )
+IF (ALLOCATED(OtherStateData%AllOuts)) THEN
+   DEALLOCATE(OtherStateData%AllOuts)
+ENDIF
+IF (ALLOCATED(OtherStateData%WindViUVW)) THEN
+   DEALLOCATE(OtherStateData%WindViUVW)
+ENDIF
  END SUBROUTINE InflowWind_DestroyOtherState
 
  SUBROUTINE InflowWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1048,6 +1087,8 @@ ENDIF
   IF(ALLOCATED(Re_UniformWind_Buf))  DEALLOCATE(Re_UniformWind_Buf)
   IF(ALLOCATED(Db_UniformWind_Buf))  DEALLOCATE(Db_UniformWind_Buf)
   IF(ALLOCATED(Int_UniformWind_Buf)) DEALLOCATE(Int_UniformWind_Buf)
+  Re_BufSz    = Re_BufSz    + SIZE( InData%AllOuts )  ! AllOuts 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindViUVW )  ! WindViUVW 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -1069,6 +1110,14 @@ ENDIF
   IF( ALLOCATED(Re_UniformWind_Buf) )  DEALLOCATE(Re_UniformWind_Buf)
   IF( ALLOCATED(Db_UniformWind_Buf) )  DEALLOCATE(Db_UniformWind_Buf)
   IF( ALLOCATED(Int_UniformWind_Buf) ) DEALLOCATE(Int_UniformWind_Buf)
+  IF ( ALLOCATED(InData%AllOuts) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%AllOuts))-1 ) =  PACK(InData%AllOuts ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%AllOuts)
+  ENDIF
+  IF ( ALLOCATED(InData%WindViUVW) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindViUVW))-1 ) =  PACK(InData%WindViUVW ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindViUVW)
+  ENDIF
  END SUBROUTINE InflowWind_PackOtherState
 
  SUBROUTINE InflowWind_UnPackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1124,6 +1173,18 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_UniformWind_Buf)
   ENDIF
   CALL IfW_UniformWind_UnPackOtherState( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg ) ! UniformWind 
+  IF ( ALLOCATED(OutData%AllOuts) ) THEN
+  ALLOCATE(mask1(SIZE(OutData%AllOuts,1))); mask1 = .TRUE.
+    OutData%AllOuts = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%AllOuts))-1 ),mask1,OutData%AllOuts)
+  DEALLOCATE(mask1)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%AllOuts)
+  ENDIF
+  IF ( ALLOCATED(OutData%WindViUVW) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%WindViUVW,1),SIZE(OutData%WindViUVW,2))); mask2 = .TRUE.
+    OutData%WindViUVW = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindViUVW))-1 ),mask2,OutData%WindViUVW)
+  DEALLOCATE(mask2)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindViUVW)
+  ENDIF
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1155,51 +1216,60 @@ ENDIF
    DstParamData%CTTS_Flag = SrcParamData%CTTS_Flag
    DstParamData%DT = SrcParamData%DT
    DstParamData%PropogationDir = SrcParamData%PropogationDir
+   DstParamData%RotToWind = SrcParamData%RotToWind
+   DstParamData%RotFromWind = SrcParamData%RotFromWind
+IF (ALLOCATED(SrcParamData%WindViXYZprime)) THEN
+   i1_l = LBOUND(SrcParamData%WindViXYZprime,1)
+   i1_u = UBOUND(SrcParamData%WindViXYZprime,1)
+   i2_l = LBOUND(SrcParamData%WindViXYZprime,2)
+   i2_u = UBOUND(SrcParamData%WindViXYZprime,2)
+   IF (.NOT. ALLOCATED(DstParamData%WindViXYZprime)) THEN 
+      ALLOCATE(DstParamData%WindViXYZprime(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindViXYZprime.'
+         RETURN
+      END IF
+   END IF
+   DstParamData%WindViXYZprime = SrcParamData%WindViXYZprime
+ENDIF
    DstParamData%WindType = SrcParamData%WindType
    DstParamData%ReferenceHeight = SrcParamData%ReferenceHeight
    DstParamData%Width = SrcParamData%Width
    DstParamData%HalfWidth = SrcParamData%HalfWidth
    DstParamData%NWindVel = SrcParamData%NWindVel
-IF (ALLOCATED(SrcParamData%WindVxiList)) THEN
-   i1_l = LBOUND(SrcParamData%WindVxiList,1)
-   i1_u = UBOUND(SrcParamData%WindVxiList,1)
-   IF (.NOT. ALLOCATED(DstParamData%WindVxiList)) THEN 
-      ALLOCATE(DstParamData%WindVxiList(i1_l:i1_u),STAT=ErrStat)
+IF (ALLOCATED(SrcParamData%WindViXYZ)) THEN
+   i1_l = LBOUND(SrcParamData%WindViXYZ,1)
+   i1_u = UBOUND(SrcParamData%WindViXYZ,1)
+   i2_l = LBOUND(SrcParamData%WindViXYZ,2)
+   i2_u = UBOUND(SrcParamData%WindViXYZ,2)
+   IF (.NOT. ALLOCATED(DstParamData%WindViXYZ)) THEN 
+      ALLOCATE(DstParamData%WindViXYZ(i1_l:i1_u,i2_l:i2_u),STAT=ErrStat)
       IF (ErrStat /= 0) THEN 
          ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVxiList.'
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindViXYZ.'
          RETURN
       END IF
    END IF
-   DstParamData%WindVxiList = SrcParamData%WindVxiList
-ENDIF
-IF (ALLOCATED(SrcParamData%WindVyiList)) THEN
-   i1_l = LBOUND(SrcParamData%WindVyiList,1)
-   i1_u = UBOUND(SrcParamData%WindVyiList,1)
-   IF (.NOT. ALLOCATED(DstParamData%WindVyiList)) THEN 
-      ALLOCATE(DstParamData%WindVyiList(i1_l:i1_u),STAT=ErrStat)
-      IF (ErrStat /= 0) THEN 
-         ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVyiList.'
-         RETURN
-      END IF
-   END IF
-   DstParamData%WindVyiList = SrcParamData%WindVyiList
-ENDIF
-IF (ALLOCATED(SrcParamData%WindVziList)) THEN
-   i1_l = LBOUND(SrcParamData%WindVziList,1)
-   i1_u = UBOUND(SrcParamData%WindVziList,1)
-   IF (.NOT. ALLOCATED(DstParamData%WindVziList)) THEN 
-      ALLOCATE(DstParamData%WindVziList(i1_l:i1_u),STAT=ErrStat)
-      IF (ErrStat /= 0) THEN 
-         ErrStat = ErrID_Fatal 
-         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%WindVziList.'
-         RETURN
-      END IF
-   END IF
-   DstParamData%WindVziList = SrcParamData%WindVziList
+   DstParamData%WindViXYZ = SrcParamData%WindViXYZ
 ENDIF
       CALL IfW_UniformWind_CopyParam( SrcParamData%UniformWind, DstParamData%UniformWind, CtrlCode, ErrStat, ErrMsg )
+   DstParamData%NumOuts = SrcParamData%NumOuts
+IF (ALLOCATED(SrcParamData%OutParam)) THEN
+   i1_l = LBOUND(SrcParamData%OutParam,1)
+   i1_u = UBOUND(SrcParamData%OutParam,1)
+   IF (.NOT. ALLOCATED(DstParamData%OutParam)) THEN 
+      ALLOCATE(DstParamData%OutParam(i1_l:i1_u),STAT=ErrStat)
+      IF (ErrStat /= 0) THEN 
+         ErrStat = ErrID_Fatal 
+         ErrMsg = 'InflowWind_CopyParam: Error allocating DstParamData%OutParam.'
+         RETURN
+      END IF
+   END IF
+   DO i1 = LBOUND(SrcParamData%OutParam,1), UBOUND(SrcParamData%OutParam,1)
+      CALL NWTC_Library_Copyoutparmtype( SrcParamData%OutParam(i1), DstParamData%OutParam(i1), CtrlCode, ErrStat, ErrMsg )
+   ENDDO
+ENDIF
  END SUBROUTINE InflowWind_CopyParam
 
  SUBROUTINE InflowWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -1210,16 +1280,19 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ALLOCATED(ParamData%WindVxiList)) THEN
-   DEALLOCATE(ParamData%WindVxiList)
+IF (ALLOCATED(ParamData%WindViXYZprime)) THEN
+   DEALLOCATE(ParamData%WindViXYZprime)
 ENDIF
-IF (ALLOCATED(ParamData%WindVyiList)) THEN
-   DEALLOCATE(ParamData%WindVyiList)
-ENDIF
-IF (ALLOCATED(ParamData%WindVziList)) THEN
-   DEALLOCATE(ParamData%WindVziList)
+IF (ALLOCATED(ParamData%WindViXYZ)) THEN
+   DEALLOCATE(ParamData%WindViXYZ)
 ENDIF
   CALL IfW_UniformWind_DestroyParam( ParamData%UniformWind, ErrStat, ErrMsg )
+IF (ALLOCATED(ParamData%OutParam)) THEN
+DO i1 = LBOUND(ParamData%OutParam,1), UBOUND(ParamData%OutParam,1)
+  CALL NWTC_Library_Destroyoutparmtype( ParamData%OutParam(i1), ErrStat, ErrMsg )
+ENDDO
+   DEALLOCATE(ParamData%OutParam)
+ENDIF
  END SUBROUTINE InflowWind_DestroyParam
 
  SUBROUTINE InflowWind_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1246,6 +1319,9 @@ ENDIF
   REAL(ReKi),     ALLOCATABLE :: Re_UniformWind_Buf(:)
   REAL(DbKi),     ALLOCATABLE :: Db_UniformWind_Buf(:)
   INTEGER(IntKi), ALLOCATABLE :: Int_UniformWind_Buf(:)
+  REAL(ReKi),     ALLOCATABLE :: Re_OutParam_Buf(:)
+  REAL(DbKi),     ALLOCATABLE :: Db_OutParam_Buf(:)
+  INTEGER(IntKi), ALLOCATABLE :: Int_OutParam_Buf(:)
   OnlySize = .FALSE.
   IF ( PRESENT(SizeOnly) ) THEN
     OnlySize = SizeOnly
@@ -1262,14 +1338,15 @@ ENDIF
   Int_BufSz  = Int_BufSz  + 1  ! UnitSumFile
   Db_BufSz   = Db_BufSz   + 1  ! DT
   Re_BufSz   = Re_BufSz   + 1  ! PropogationDir
+  Re_BufSz    = Re_BufSz    + SIZE( InData%RotToWind )  ! RotToWind 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%RotFromWind )  ! RotFromWind 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindViXYZprime )  ! WindViXYZprime 
   Int_BufSz  = Int_BufSz  + 1  ! WindType
   Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
   Re_BufSz   = Re_BufSz   + 1  ! Width
   Re_BufSz   = Re_BufSz   + 1  ! HalfWidth
   Int_BufSz  = Int_BufSz  + 1  ! NWindVel
-  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVxiList )  ! WindVxiList 
-  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVyiList )  ! WindVyiList 
-  Re_BufSz    = Re_BufSz    + SIZE( InData%WindVziList )  ! WindVziList 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%WindViXYZ )  ! WindViXYZ 
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_UniformWind_Buf  ) ! UniformWind
   IF(ALLOCATED(Db_UniformWind_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_UniformWind_Buf  ) ! UniformWind
@@ -1277,6 +1354,16 @@ ENDIF
   IF(ALLOCATED(Re_UniformWind_Buf))  DEALLOCATE(Re_UniformWind_Buf)
   IF(ALLOCATED(Db_UniformWind_Buf))  DEALLOCATE(Db_UniformWind_Buf)
   IF(ALLOCATED(Int_UniformWind_Buf)) DEALLOCATE(Int_UniformWind_Buf)
+  Int_BufSz  = Int_BufSz  + 1  ! NumOuts
+DO i1 = LBOUND(InData%OutParam,1), UBOUND(InData%OutParam,1)
+  CALL NWTC_Library_Packoutparmtype( Re_OutParam_Buf, Db_OutParam_Buf, Int_OutParam_Buf, InData%OutParam(i1), ErrStat, ErrMsg, .TRUE. ) ! OutParam 
+  IF(ALLOCATED(Re_OutParam_Buf)) Re_BufSz  = Re_BufSz  + SIZE( Re_OutParam_Buf  ) ! OutParam
+  IF(ALLOCATED(Db_OutParam_Buf)) Db_BufSz  = Db_BufSz  + SIZE( Db_OutParam_Buf  ) ! OutParam
+  IF(ALLOCATED(Int_OutParam_Buf))Int_BufSz = Int_BufSz + SIZE( Int_OutParam_Buf ) ! OutParam
+  IF(ALLOCATED(Re_OutParam_Buf))  DEALLOCATE(Re_OutParam_Buf)
+  IF(ALLOCATED(Db_OutParam_Buf))  DEALLOCATE(Db_OutParam_Buf)
+  IF(ALLOCATED(Int_OutParam_Buf)) DEALLOCATE(Int_OutParam_Buf)
+ENDDO
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -1286,6 +1373,14 @@ ENDIF
   Db_Xferred   = Db_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%PropogationDir )
   Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotToWind))-1 ) =  PACK(InData%RotToWind ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%RotToWind)
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotFromWind))-1 ) =  PACK(InData%RotFromWind ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%RotFromWind)
+  IF ( ALLOCATED(InData%WindViXYZprime) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindViXYZprime))-1 ) =  PACK(InData%WindViXYZprime ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindViXYZprime)
+  ENDIF
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindType )
   Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) =  (InData%ReferenceHeight )
@@ -1296,17 +1391,9 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NWindVel )
   Int_Xferred   = Int_Xferred   + 1
-  IF ( ALLOCATED(InData%WindVxiList) ) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVxiList))-1 ) =  PACK(InData%WindVxiList ,.TRUE.)
-    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVxiList)
-  ENDIF
-  IF ( ALLOCATED(InData%WindVyiList) ) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVyiList))-1 ) =  PACK(InData%WindVyiList ,.TRUE.)
-    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVyiList)
-  ENDIF
-  IF ( ALLOCATED(InData%WindVziList) ) THEN
-    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVziList))-1 ) =  PACK(InData%WindVziList ,.TRUE.)
-    Re_Xferred   = Re_Xferred   + SIZE(InData%WindVziList)
+  IF ( ALLOCATED(InData%WindViXYZ) ) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindViXYZ))-1 ) =  PACK(InData%WindViXYZ ,.TRUE.)
+    Re_Xferred   = Re_Xferred   + SIZE(InData%WindViXYZ)
   ENDIF
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, InData%UniformWind, ErrStat, ErrMsg, OnlySize ) ! UniformWind 
   IF(ALLOCATED(Re_UniformWind_Buf)) THEN
@@ -1324,6 +1411,26 @@ ENDIF
   IF( ALLOCATED(Re_UniformWind_Buf) )  DEALLOCATE(Re_UniformWind_Buf)
   IF( ALLOCATED(Db_UniformWind_Buf) )  DEALLOCATE(Db_UniformWind_Buf)
   IF( ALLOCATED(Int_UniformWind_Buf) ) DEALLOCATE(Int_UniformWind_Buf)
+  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%NumOuts )
+  Int_Xferred   = Int_Xferred   + 1
+DO i1 = LBOUND(InData%OutParam,1), UBOUND(InData%OutParam,1)
+  CALL NWTC_Library_Packoutparmtype( Re_OutParam_Buf, Db_OutParam_Buf, Int_OutParam_Buf, InData%OutParam(i1), ErrStat, ErrMsg, OnlySize ) ! OutParam 
+  IF(ALLOCATED(Re_OutParam_Buf)) THEN
+    IF ( .NOT. OnlySize ) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_OutParam_Buf)-1 ) = Re_OutParam_Buf
+    Re_Xferred = Re_Xferred + SIZE(Re_OutParam_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_OutParam_Buf)) THEN
+    IF ( .NOT. OnlySize ) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_OutParam_Buf)-1 ) = Db_OutParam_Buf
+    Db_Xferred = Db_Xferred + SIZE(Db_OutParam_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_OutParam_Buf)) THEN
+    IF ( .NOT. OnlySize ) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_OutParam_Buf)-1 ) = Int_OutParam_Buf
+    Int_Xferred = Int_Xferred + SIZE(Int_OutParam_Buf)
+  ENDIF
+  IF( ALLOCATED(Re_OutParam_Buf) )  DEALLOCATE(Re_OutParam_Buf)
+  IF( ALLOCATED(Db_OutParam_Buf) )  DEALLOCATE(Db_OutParam_Buf)
+  IF( ALLOCATED(Int_OutParam_Buf) ) DEALLOCATE(Int_OutParam_Buf)
+ENDDO
  END SUBROUTINE InflowWind_PackParam
 
  SUBROUTINE InflowWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1353,6 +1460,9 @@ ENDIF
   REAL(ReKi),    ALLOCATABLE :: Re_UniformWind_Buf(:)
   REAL(DbKi),    ALLOCATABLE :: Db_UniformWind_Buf(:)
   INTEGER(IntKi),    ALLOCATABLE :: Int_UniformWind_Buf(:)
+  REAL(ReKi),    ALLOCATABLE :: Re_OutParam_Buf(:)
+  REAL(DbKi),    ALLOCATABLE :: Db_OutParam_Buf(:)
+  INTEGER(IntKi),    ALLOCATABLE :: Int_OutParam_Buf(:)
     !
   ErrStat = ErrID_None
   ErrMsg  = ""
@@ -1368,6 +1478,20 @@ ENDIF
   Db_Xferred   = Db_Xferred   + 1
   OutData%PropogationDir = ReKiBuf ( Re_Xferred )
   Re_Xferred   = Re_Xferred   + 1
+  ALLOCATE(mask2(SIZE(OutData%RotToWind,1),SIZE(OutData%RotToWind,2))); mask2 = .TRUE.
+  OutData%RotToWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotToWind))-1 ),mask2,OutData%RotToWind)
+  DEALLOCATE(mask2)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%RotToWind)
+  ALLOCATE(mask2(SIZE(OutData%RotFromWind,1),SIZE(OutData%RotFromWind,2))); mask2 = .TRUE.
+  OutData%RotFromWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotFromWind))-1 ),mask2,OutData%RotFromWind)
+  DEALLOCATE(mask2)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%RotFromWind)
+  IF ( ALLOCATED(OutData%WindViXYZprime) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%WindViXYZprime,1),SIZE(OutData%WindViXYZprime,2))); mask2 = .TRUE.
+    OutData%WindViXYZprime = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindViXYZprime))-1 ),mask2,OutData%WindViXYZprime)
+  DEALLOCATE(mask2)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindViXYZprime)
+  ENDIF
   OutData%WindType = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
   OutData%ReferenceHeight = ReKiBuf ( Re_Xferred )
@@ -1378,23 +1502,11 @@ ENDIF
   Re_Xferred   = Re_Xferred   + 1
   OutData%NWindVel = IntKiBuf ( Int_Xferred )
   Int_Xferred   = Int_Xferred   + 1
-  IF ( ALLOCATED(OutData%WindVxiList) ) THEN
-  ALLOCATE(mask1(SIZE(OutData%WindVxiList,1))); mask1 = .TRUE.
-    OutData%WindVxiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVxiList))-1 ),mask1,OutData%WindVxiList)
-  DEALLOCATE(mask1)
-    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVxiList)
-  ENDIF
-  IF ( ALLOCATED(OutData%WindVyiList) ) THEN
-  ALLOCATE(mask1(SIZE(OutData%WindVyiList,1))); mask1 = .TRUE.
-    OutData%WindVyiList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVyiList))-1 ),mask1,OutData%WindVyiList)
-  DEALLOCATE(mask1)
-    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVyiList)
-  ENDIF
-  IF ( ALLOCATED(OutData%WindVziList) ) THEN
-  ALLOCATE(mask1(SIZE(OutData%WindVziList,1))); mask1 = .TRUE.
-    OutData%WindVziList = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindVziList))-1 ),mask1,OutData%WindVziList)
-  DEALLOCATE(mask1)
-    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindVziList)
+  IF ( ALLOCATED(OutData%WindViXYZ) ) THEN
+  ALLOCATE(mask2(SIZE(OutData%WindViXYZ,1),SIZE(OutData%WindViXYZ,2))); mask2 = .TRUE.
+    OutData%WindViXYZ = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindViXYZ))-1 ),mask2,OutData%WindViXYZ)
+  DEALLOCATE(mask2)
+    Re_Xferred   = Re_Xferred   + SIZE(OutData%WindViXYZ)
   ENDIF
  ! first call IfW_UniformWind_PackParam to get correctly sized buffers for unpacking
   CALL IfW_UniformWind_PackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg, .TRUE. ) ! UniformWind 
@@ -1411,6 +1523,25 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_UniformWind_Buf)
   ENDIF
   CALL IfW_UniformWind_UnPackParam( Re_UniformWind_Buf, Db_UniformWind_Buf, Int_UniformWind_Buf, OutData%UniformWind, ErrStat, ErrMsg ) ! UniformWind 
+  OutData%NumOuts = IntKiBuf ( Int_Xferred )
+  Int_Xferred   = Int_Xferred   + 1
+DO i1 = LBOUND(OutData%OutParam,1), UBOUND(OutData%OutParam,1)
+ ! first call NWTC_Library_Packoutparmtype to get correctly sized buffers for unpacking
+  CALL NWTC_Library_Packoutparmtype( Re_OutParam_Buf, Db_OutParam_Buf, Int_OutParam_Buf, OutData%OutParam(i1), ErrStat, ErrMsg, .TRUE. ) ! OutParam 
+  IF(ALLOCATED(Re_OutParam_Buf)) THEN
+    Re_OutParam_Buf = ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_OutParam_Buf)-1 )
+    Re_Xferred = Re_Xferred + SIZE(Re_OutParam_Buf)
+  ENDIF
+  IF(ALLOCATED(Db_OutParam_Buf)) THEN
+    Db_OutParam_Buf = DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_OutParam_Buf)-1 )
+    Db_Xferred = Db_Xferred + SIZE(Db_OutParam_Buf)
+  ENDIF
+  IF(ALLOCATED(Int_OutParam_Buf)) THEN
+    Int_OutParam_Buf = IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_OutParam_Buf)-1 )
+    Int_Xferred = Int_Xferred + SIZE(Int_OutParam_Buf)
+  ENDIF
+  CALL NWTC_Library_UnPackoutparmtype( Re_OutParam_Buf, Db_OutParam_Buf, Int_OutParam_Buf, OutData%OutParam(i1), ErrStat, ErrMsg ) ! OutParam 
+ENDDO
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1

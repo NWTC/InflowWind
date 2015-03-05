@@ -5,9 +5,9 @@ True                 Echo           - Echo input data to <RootName>.ech (flag)
   1                  WindType       - switch for wind file type (1=steady; 2=uniform; 3=binary TurbSim FF; 4=binary Bladed-style FF; 5=HAWC format; 6=User defined)
  60.0                 PropogationDir - Direction of wind propogation (meteoroligical rotation from aligned with X (positive rotates towards -Y) -- degrees)
  9                   NWindVel       - Number of points to output the wind velocity (0 to 9)
- 0,1,2,3,4,5,6,7,8,9 WindVxiList    - List of coordinates in the inertial X direction (m)
- 0,1,2,3,4,5,6,7,8,9 WindVyiList    - List of coordinates in the inertial Y direction (m)
- 0,1,2,3,4,5,6,7,8,9 WindVziList    - List of coordinates in the inertial Z direction (m)
+ 0,-1,2,-3,4,-5,6,-7,8,-9 WindVxiList    - List of coordinates in the inertial X direction (m)
+ 0,-1,2,-3,4,-5,6,-7,8,-9 WindVyiList    - List of coordinates in the inertial Y direction (m)
+ 10,20,30,40,50,60,70,80,90,100 WindVziList    - List of coordinates in the inertial Z direction (m)
 ================== Parameters for Steady Wind Conditions [used only for WindType = 1] =========================
  10.0                HWindSpeed     - Horizontal windspeed
  90.0                RefHt          - Reference height for horizontal wind speed

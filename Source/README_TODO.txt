@@ -2,10 +2,10 @@
 2015.03.03  updated
 
 Stuff working on right now:
--- Driver code: setup the FFT.  May need to create some additional types for storing the data.
--- Driver code: driver input file support for points file
--- IfW OutList
+-- Verify that the coordinate transforms are working correctly!!!!
+-- Driver output file writing.
 -- IfW summary file writing.
+-- Driver code: setup the FFT.  May need to create some additional types for storing the data.
 
 
 List of items to tackle:
