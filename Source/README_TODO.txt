@@ -2,10 +2,8 @@
 2015.03.03  updated
 
 Stuff working on right now:
--- Verify that the coordinate transforms are working correctly!!!!
 -- Driver output file writing.
 -- IfW summary file writing.
--- Driver code: setup the FFT.  May need to create some additional types for storing the data.
 
 
 List of items to tackle:
@@ -17,8 +15,9 @@ IfW control level
 -- placeholder for the userwind.f90 submodule.  Put directions within that module and an error message in the module with information on how
    to impliment it.
 -- for HHWind (UniformWind), give a warning if the global winddirection and wind direction in the file are different (init routine someplace,
-   using first timestep, differrent warning if non-zero global wind direction and direction changes from zero within file.
+   using first timestep, different warning if non-zero global wind direction and direction changes from zero within file.
    Continue with sim anyhow)
+-- setup the FFT.  May need to create some additional types for storing the data.
 
 
 

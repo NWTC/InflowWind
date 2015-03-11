@@ -57,9 +57,14 @@ endif
    # Name of compiler to use and flags to use.
 #FC      = gfortran
 
-FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
+FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING \
+   -Wall -Wextra -Wconversion -Wpedantic  -Wno-unused-variable -Wno-unused-function -Wno-unused-dummy-argument -Wno-unused-parameter -fno-inline 
+   -DFPE_TRAP_ENABLED \
+   -ffpe-trap=overflow,invalid,zero ,denormal,inexact,underflow \
+   -fdump-fortran-optimized -fdump-fortran-original
 #FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
 #FFLAGS = -g -O0 -v -da -Q -fbacktrace -ffree-line-length-none -x f95-cpp-input -DNO_MESHMAPPING
+
 
 	# Mac needs some additional flags prepended for linking to get lapack working, hence the funny notation here.
 LDFLAGS := $(LDFLAGS)	-O2 -m$(BITS) -fbacktrace -g -fno-inline 
