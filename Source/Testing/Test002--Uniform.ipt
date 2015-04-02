@@ -56,10 +56,10 @@ True          SumPrint     - Print summary data to <RootName>.sum (flag) (curren
               OutList      - The next line(s) contains a list of output parameters.  See OutListParameters.xlsx for a listing of available output channels, (-)
 "Wind2VelX,Wind2VelY,Wind2VelZ"     - Wind velocity at point WindVxiList(2),WindVyiList(2),WindVziList(2).  X, Y, and Z direction components.
 "Wind1VelX,Wind1VelY,Wind1VelZ"     - Wind velocity at point WindVxiList(1),WindVyiList(1),WindVziList(1).  X, Y, and Z direction components.
-"Wind3VelX,Wind3VelY,Wind3VelZ"     - Wind velocity at point WindVxiList(3),WindVyiList(3),WindVziList(3).  X, Y, and Z direction components.
 "Wind4VelX,Wind4VelY,Wind4VelZ"     - Wind velocity at point WindVxiList(4),WindVyiList(4),WindVziList(4).  X, Y, and Z direction components.
-END of input file (the word "END" must appear in the first 3 columns of this last OutList line)
 "Wind5VelX,Wind5VelY,Wind5VelZ"     - Wind velocity at point WindVxiList(5),WindVyiList(5),WindVziList(5).  X, Y, and Z direction components.
+END of input file (the word "END" must appear in the first 3 columns of this last OutList line)
+"Wind3VelX,Wind3VelY,Wind3VelZ"     - Wind velocity at point WindVxiList(3),WindVyiList(3),WindVziList(3).  X, Y, and Z direction components.
 "Wind6VelX,Wind6VelY,Wind6VelZ"     - Wind velocity at point WindVxiList(6),WindVyiList(6),WindVziList(6).  X, Y, and Z direction components.
 "Wind7VelX,Wind7VelY,Wind7VelZ"     - Wind velocity at point WindVxiList(7),WindVyiList(7),WindVziList(7).  X, Y, and Z direction components.
 "Wind8VelX,Wind8VelY,Wind8VelZ"     - Wind velocity at point WindVxiList(8),WindVyiList(8),WindVziList(8).  X, Y, and Z direction components.

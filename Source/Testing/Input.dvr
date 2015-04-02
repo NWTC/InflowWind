@@ -13,7 +13,7 @@ InflowWind driver input file.  V1.00
    f           FFTcalc        -- calculate the FFT of the data
    0,10.1,70.0 FFTcoord       -- X,Y,Z coordinate to calculate the FFT at           (m)
 ----  Points file input (output given as POINTSFILENAME.Velocity.EXT) --------
-   f           PointsFile     -- read in a list of points from a file 
+   t           PointsFile     -- read in a list of points from a file 
 "Points.txt"   PointsFileName -- name of points file (comma separated x,y,z coordinates, # symbol for comments)
 ----  Output grid (Points below ground will simply be ignored) ---------------
    f           WindGrid       -- report wind data at set of Y,Z coordinates

@@ -2,7 +2,7 @@
 2015.03.03  updated
 
 Stuff working on right now:
--- Driver output file writing.
+-- Driver output file writing -- something quick for testing.  The outlist will be handled exclusively by the FAST glue code.
 -- IfW summary file writing.
 
 
@@ -18,6 +18,12 @@ IfW control level
    using first timestep, different warning if non-zero global wind direction and direction changes from zero within file.
    Continue with sim anyhow)
 -- setup the FFT.  May need to create some additional types for storing the data.
+
+
+
+Documentation
+-- what the input file parameters description (see the FAST 8 README in Bonnie's branch)
+-- 
 
 
 

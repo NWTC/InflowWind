@@ -27,7 +27,7 @@ ifeq ($(OS),Windows_NT)
 else
 #   ifeq ($(HOSTNAME), aplatt-18890s)
       SoftwareDir       = /Users/aplatt/software-development/windsvn
-      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry_Mac.exe      #registry_Mac.exe
+      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry_Mac.exe
       NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
       IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
 #      RegistryDIR       = $(IfW_DIR)/Registry
