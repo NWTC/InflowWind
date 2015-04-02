@@ -52,7 +52,7 @@ IMPLICIT NONE
 ! =======================
 ! =========  IfW_UniformWind_OtherStateType  =======
   TYPE, PUBLIC :: IfW_UniformWind_OtherStateType
-    INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
+    INTEGER(IntKi)  :: TimeIndex      ! An Index into the TData array [-]
     INTEGER(IntKi)  :: UnitWind      ! Unit number for the wind file opened [-]
   END TYPE IfW_UniformWind_OtherStateType
 ! =======================
@@ -80,6 +80,7 @@ IMPLICIT NONE
 ! =========  IfW_UniformWind_OutputType  =======
   TYPE, PUBLIC :: IfW_UniformWind_OutputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: Velocity      ! Array holding the U,V,W velocity for a given timestep [meters/sec]
+    REAL(ReKi) , DIMENSION(1:3)  :: DiskVel      ! Vector holding the U,V,W average velocity of the disk [meters/sec]
   END TYPE IfW_UniformWind_OutputType
 ! =======================
 CONTAINS
@@ -960,6 +961,7 @@ IF (ALLOCATED(SrcOutputData%Velocity)) THEN
    END IF
    DstOutputData%Velocity = SrcOutputData%Velocity
 ENDIF
+   DstOutputData%DiskVel = SrcOutputData%DiskVel
  END SUBROUTINE IfW_UniformWind_CopyOutput
 
  SUBROUTINE IfW_UniformWind_DestroyOutput( OutputData, ErrStat, ErrMsg )
@@ -1010,6 +1012,7 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
   Re_BufSz    = Re_BufSz    + SIZE( InData%Velocity )  ! Velocity 
+  Re_BufSz    = Re_BufSz    + SIZE( InData%DiskVel )  ! DiskVel 
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -1017,6 +1020,8 @@ ENDIF
     IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) =  PACK(InData%Velocity ,.TRUE.)
     Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
   ENDIF
+  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DiskVel))-1 ) =  PACK(InData%DiskVel ,.TRUE.)
+  Re_Xferred   = Re_Xferred   + SIZE(InData%DiskVel)
  END SUBROUTINE IfW_UniformWind_PackOutput
 
  SUBROUTINE IfW_UniformWind_UnPackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1058,6 +1063,10 @@ ENDIF
   DEALLOCATE(mask2)
     Re_Xferred   = Re_Xferred   + SIZE(OutData%Velocity)
   ENDIF
+  ALLOCATE(mask1(SIZE(OutData%DiskVel,1))); mask1 = .TRUE.
+  OutData%DiskVel = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DiskVel))-1 ),mask1,OutData%DiskVel)
+  DEALLOCATE(mask1)
+  Re_Xferred   = Re_Xferred   + SIZE(OutData%DiskVel)
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
@@ -1319,6 +1328,7 @@ ENDIF
 IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   u_out%Velocity = u(1)%Velocity
 END IF ! check if allocated
+  u_out%DiskVel = u(1)%DiskVel
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -1333,6 +1343,12 @@ IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
+  ALLOCATE(b1(SIZE(u_out%DiskVel,1)))
+  ALLOCATE(c1(SIZE(u_out%DiskVel,1)))
+  b1 = -(u(1)%DiskVel - u(2)%DiskVel)/t(2)
+  u_out%DiskVel = u(1)%DiskVel + b1 * t_out
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -1358,6 +1374,13 @@ IF (ALLOCATED(u_out%Velocity) .AND. ALLOCATED(u(1)%Velocity)) THEN
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
+  ALLOCATE(b1(SIZE(u_out%DiskVel,1)))
+  ALLOCATE(c1(SIZE(u_out%DiskVel,1)))
+  b1 = (t(3)**2*(u(1)%DiskVel - u(2)%DiskVel) + t(2)**2*(-u(1)%DiskVel + u(3)%DiskVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*u(1)%DiskVel + t(3)*u(2)%DiskVel - t(2)*u(3)%DiskVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  u_out%DiskVel = u(1)%DiskVel + b1 * t_out + c1 * t_out**2
+  DEALLOCATE(b1)
+  DEALLOCATE(c1)
  ELSE 
    ErrStat = ErrID_Fatal
    ErrMsg = ' order must be less than 3 in IfW_UniformWind_Output_ExtrapInterp '
