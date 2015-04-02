@@ -44,8 +44,8 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_UniformWind_InitOutputType
     TYPE(ProgDesc)  :: Ver      ! Version information off HHWind submodule [-]
     REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
-    REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [-]
-    REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [-]
+    REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [seconds]
+    REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [seconds]
     INTEGER(IntKi)  :: WindFileNumTSteps      ! Number of timesteps in the time range of wind file [-]
     LOGICAL  :: WindFileConstantDT      ! Timesteps are the same throughout file [-]
   END TYPE IfW_UniformWind_InitOutputType
