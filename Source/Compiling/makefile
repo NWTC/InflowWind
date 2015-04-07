@@ -25,7 +25,7 @@ ifeq ($(OS),Windows_NT)
    Driver_DIR        = ../Driver
    RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
 else
-#   ifeq ($(HOSTNAME), aplatt-18890s)
+#   ifeq ($(HOSTNAME), aplatt-21809s)
       SoftwareDir       = /Users/aplatt/software-development/windsvn
       RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry_Mac.exe
       NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
@@ -57,9 +57,10 @@ endif
    # Name of compiler to use and flags to use.
 #FC      = gfortran
 
-FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING \
+FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING 
+#\
    -Wall -Wextra -Wconversion -Wpedantic  -Wno-unused-variable -Wno-unused-function -Wno-unused-dummy-argument -Wno-unused-parameter -fno-inline 
-   -DFPE_TRAP_ENABLED \
+#   -DFPE_TRAP_ENABLED \
    -ffpe-trap=overflow,invalid,zero ,denormal,inexact,underflow \
    -fdump-fortran-optimized -fdump-fortran-original
 #FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING
@@ -150,10 +151,11 @@ IfW_SOURCES =              \
 	IfW_HAWCWind_Types.f90  \
 	InflowWind_Types.f90    \
 	InflowWind_Subs.f90     \
-	InflowWind.f90
-
-#	IfW_FFWind_Types.f90    \
-	IfW_FFWind.f90          \
+	InflowWind.f90          \
+	IfW_TSFFWind_Types.f90  \
+	IfW_TSFFWind.f90        \
+	IfW_BladedFFWind_Types.f90  \
+	IfW_BladedFFWind.f90
 
 #	InflowWind_Input.f90    \
 
@@ -236,14 +238,17 @@ NWTC_FFTPACK$(OBJ_EXT):					NWTC_Library$(OBJ_EXT) fftpack4.1$(OBJ_EXT)
 #InflowWind dependency rules:
 IfW_UniformWind_Types$(OBJ_EXT):    NWTC_Library$(OBJ_EXT)
 IfW_IniformWind$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) IfW_UniformWind_Types$(OBJ_EXT)
-#IfW_FFWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)
-#IfW_FFWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT) IfW_FFWind_Types$(OBJ_EXT)
+IfW_TSFFWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
+IfW_TSFFWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_TSFFWind_Types$(OBJ_EXT)
+IfW_BladedFFWind_Types$(OBJ_EXT):   NWTC_Library$(OBJ_EXT)
+IfW_BladedFFWind$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
 IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-                                    #IfW_FFWind_Types$(OBJ_EXT)
+InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
+                                    IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
 InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT)
-InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT)
+InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
+                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT)
 
 #Driver dependency rules:
 InflowWind_Driver_Types$(OBJ_EXT):  InflowWind_Types$(OBJ_EXT)
@@ -269,6 +274,8 @@ $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) | $(INTER_DIR)
 clean:
 	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*.mod $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT)
 	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)
-#	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_FFWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_TSFFWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_BladedFFWind_Types.f90
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)*_Types.f90
+	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)*_Types.f90
 	$(DEL_CMD) *_Types.f90

@@ -1,10 +1,10 @@
-MODULE IfW_FFWind
+MODULE IfW_TSFFWind
 !
 !  This module uses full-field binary wind files to determine the wind inflow.
 !  This module assumes that the origin, (0,0,0), is located at the tower centerline at ground level,
 !  and that all units are specified in the metric system (using meters and seconds).
 !  Data is shifted by half the grid width to account for turbine yaw (so that data in the X
-!  direction actually starts at -1*OtherStates%FFYHWid meters).
+!  direction actually starts at -1*ParamData%FFYHWid meters).
 !
 !  Created 25-Sep-2009 by B. Jonkman, National Renewable Energy Laboratory
 !     using subroutines and modules from AeroDyn v12.58
@@ -40,29 +40,29 @@ MODULE IfW_FFWind
 !**********************************************************************************************************************************
 
    USE                                          NWTC_Library
-   USE                                          IfW_FFWind_Types
+   USE                                          IfW_TSFFWind_Types
 
    IMPLICIT                                     NONE
    PRIVATE
 
-   TYPE(ProgDesc),   PARAMETER               :: IfW_FFWind_Ver = ProgDesc( 'IfW_FFWind', 'v2.00.00', '17-Sep-2013' )
+   TYPE(ProgDesc),   PARAMETER               :: IfW_TSFFWind_Ver = ProgDesc( 'IfW_TSFFWind', 'v1.00.00', '02-Apr-2015' )
 
-   PUBLIC                                    :: IfW_FFWind_Init
-   PUBLIC                                    :: IfW_FFWind_End
-   PUBLIC                                    :: IfW_FFWind_CalcOutput
+   PUBLIC                                    :: IfW_TSFFWind_Init
+   PUBLIC                                    :: IfW_TSFFWind_End
+   PUBLIC                                    :: IfW_TSFFWind_CalcOutput
 
 
       ! The following do not contain anything since there are no states.
-   PUBLIC                                    :: IfW_FFWind_UpdateStates
-   PUBLIC                                    :: IfW_FFWind_CalcContStateDeriv
-   PUBLIC                                    :: IfW_FFWind_UpdateDiscState
-   PUBLIC                                    :: IfW_FFWind_CalcConstrStateResidual
+   PUBLIC                                    :: IfW_TSFFWind_UpdateStates
+   PUBLIC                                    :: IfW_TSFFWind_CalcContStateDeriv
+   PUBLIC                                    :: IfW_TSFFWind_UpdateDiscState
+   PUBLIC                                    :: IfW_TSFFWind_CalcConstrStateResidual
 
 
 
 CONTAINS
 !====================================================================================================
-SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                       &
+SUBROUTINE IfW_TSFFWind_Init(InitData,   InputGuess, ParamData,                       &
                            ContStates, DiscStates, ConstrStates,     OtherStates,   &
                            OutData,    Interval,   InitOutData,      ErrStat,       ErrMsg)
    !-------------------------------------------------------------------------------------------------
@@ -76,15 +76,15 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
 
       ! Passed Variables
-   TYPE(IfW_FFWind_InitInputType),        INTENT(IN   )  :: InitData       ! Initialization data passed to the module
-   TYPE(IfW_FFWind_InputType),            INTENT(  OUT)  :: InputGuess     ! Initialized input data variable
-   TYPE(IfW_FFWind_ParameterType),        INTENT(  OUT)  :: ParamData      ! Parameters
-   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates   ! Constraint States  (unused)
-   TYPE(IfW_FFWind_OtherStateType),       INTENT(  OUT)  :: OtherStates    ! Other State data   (storage for the main data)
-   TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
-   TYPE(IfW_FFWind_InitOutputType),       INTENT(  OUT)  :: InitOutData    ! Initial output
+   TYPE(IfW_TSFFWind_InitInputType),        INTENT(IN   )  :: InitData       ! Initialization data passed to the module
+   TYPE(IfW_TSFFWind_InputType),            INTENT(  OUT)  :: InputGuess     ! Initialized input data variable
+   TYPE(IfW_TSFFWind_ParameterType),        INTENT(  OUT)  :: ParamData      ! Parameters
+   TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(  OUT)  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(  OUT)  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(  OUT)  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_TSFFWind_OtherStateType),       INTENT(  OUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_TSFFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
+   TYPE(IfW_TSFFWind_InitOutputType),       INTENT(  OUT)  :: InitOutData    ! Initial output
 
    REAL(DbKi),                            INTENT(IN   )  :: Interval       ! Time Interval to use (passed through here)
 
@@ -171,7 +171,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    CALL GetNewUnit(OtherStates%UnitWind, TmpErrStat, TmpErrMsg)
    IF (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(TmpErrStat, ErrStat)      
-      ErrMsg   = TRIM(ErrMsg)//"IfW_FFWind: "//TRIM(TmpErrMsg)//NewLine
+      ErrMsg   = TRIM(ErrMsg)//"IfW_TSFFWind: "//TRIM(TmpErrMsg)//NewLine
       IF ( ErrStat >= AbortErrLev ) RETURN
    END IF
 
@@ -211,13 +211,14 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Read the files to get the required FF data.
       !----------------------------------------------------------------------------------------------
    DumInt = Dum_Int2  ! change to default INTEGER, instead of INT(2) to compare in SELECT below
+print*,"  Type of file: ",DumInt
 
    SELECT CASE (DumInt)
 
       CASE ( 7, 8 )                                                    ! TurbSim binary format
 
          CALL Read_TurbSim_FF(OtherStates%UnitWind, TmpErrStat, TmpErrMsg)
-            CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+            CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
             IF ( ErrStat >= AbortErrLev ) THEN
                CLOSE ( OtherStates%UnitWind )
                RETURN
@@ -241,13 +242,13 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          !...........................................................................................
 
             CALL Read_Summary_FF (OtherStates%UnitWind, TRIM(SumFile), CWise, ZCenter, TI, TmpErrStat, TmpErrMsg )
-               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                IF ( ErrStat >= AbortErrLev ) THEN
                   CLOSE ( OtherStates%UnitWind )
                   RETURN
                END IF
             
-            UBar = OtherStates%MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
+            UBar = ParamData%MeanFFWS      ! temporary storage .... this is our only check to see if the summary and binary files "match"
 
 
          !...........................................................................................
@@ -255,7 +256,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          !...........................................................................................
 
             CALL OpenBInpFile (OtherStates%UnitWind, TRIM(ParamData%WindFileName), TmpErrStat, TmpErrMsg )
-               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                IF ( ErrStat >= AbortErrLev ) THEN
                   CLOSE ( OtherStates%UnitWind )
                   RETURN
@@ -263,7 +264,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             
             IF ( Dum_Int2 == -99 ) THEN                                                      ! Newer-style BLADED format
                CALL Read_Bladed_FF_Header1 (OtherStates%UnitWind, BinTI, TmpErrStat, TmpErrMsg)
-                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                   IF ( ErrStat >= AbortErrLev ) THEN
                      CLOSE ( OtherStates%UnitWind )
                      RETURN
@@ -272,13 +273,13 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                   ! If the TIs are also in the binary file (BinTI > 0),
                   ! use those numbers instead of ones from the summary file
 
-               DO I =1,OtherStates%NFFComp
+               DO I =1,ParamData%NFFComp
                   IF ( BinTI(I) > 0 ) TI(I) = BinTI(I)
                ENDDO
 
             ELSE
                CALL Read_Bladed_FF_Header0 (OtherStates%UnitWind, TmpErrStat, TmpErrMsg)     ! Older-style BLADED format
-                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                   IF ( ErrStat >= AbortErrLev ) THEN
                      CLOSE ( OtherStates%UnitWind )
                      RETURN
@@ -292,9 +293,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          ! Let's see if the summary and binary FF wind files go together before continuing.
          !...........................................................................................
 
-            IF ( ABS( UBar - OtherStates%MeanFFWS ) > 0.1 )  THEN
+            IF ( ABS( UBar - ParamData%MeanFFWS ) > 0.1 )  THEN
                   CALL SetErrStat( ErrID_Fatal, ' Error: Incompatible mean hub-height wind speeds in FF wind files. '//&
-                           '(Check that the .sum and .wnd files were generated together.)', ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+                           '(Check that the .sum and .wnd files were generated together.)', ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                RETURN
             ENDIF
 
@@ -303,7 +304,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
          ! Calculate the height of the bottom of the grid
          !...........................................................................................
 
-            OtherStates%GridBase = ZCenter - OtherStates%FFZHWid         ! the location, in meters, of the bottom of the grid
+            ParamData%GridBase = ZCenter - ParamData%FFZHWid         ! the location, in meters, of the bottom of the grid
 
 
          !...........................................................................................
@@ -313,7 +314,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL Read_Bladed_Grids( OtherStates, CWise, TI, TmpErrStat, TmpErrMsg)
             CLOSE ( OtherStates%UnitWind )
 
-               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+               CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                IF ( ErrStat >= AbortErrLev ) RETURN
             
          !...........................................................................................
@@ -324,29 +325,29 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
             IF (  Exists )  THEN
                CALL Read_FF_Tower( OtherStates, TmpErrStat, TmpErrMsg )
-                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+                  CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
                   IF ( ErrStat >= AbortErrLev ) THEN
                      CLOSE ( OtherStates%UnitWind )
                      RETURN
                   END IF
             ELSE
-               OtherStates%NTGrids = 0
+               ParamData%NTGrids = 0
             ENDIF
 
 
       CASE DEFAULT
-         CALL SetErrStat( ErrID_Fatal, ' Error: Unrecognized binary wind file type.', ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+         CALL SetErrStat( ErrID_Fatal, ' Error: Unrecognized binary wind file type.', ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
          RETURN
 
    END SELECT
 
 
    IF (ParamData%Periodic) THEN
-      OtherStates%InitXPosition = 0                ! start at the hub
-      OtherStates%TotalTime     = OtherStates%NFFSteps*OtherStates%FFDTime
+      ParamData%InitXPosition = 0                ! start at the hub
+      ParamData%TotalTime     = ParamData%NFFSteps*ParamData%FFDTime
    ELSE
-      OtherStates%InitXPosition = OtherStates%FFYHWid          ! start half the grid with ahead of the turbine
-      OtherStates%TotalTime     = (OtherStates%NFFSteps-1)*OtherStates%FFDTime
+      ParamData%InitXPosition = ParamData%FFYHWid          ! start half the grid with ahead of the turbine
+      ParamData%TotalTime     = (ParamData%NFFSteps-1)*ParamData%FFDTime
    ENDIF
 
    ParamData%Initialized = .TRUE.
@@ -357,13 +358,13 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
 
    InitOutData%HubHeight   = ParamData%ReferenceHeight
-   InitOutdata%Ver         = IfW_FFWind_Ver
+   InitOutdata%Ver         = IfW_TSFFWind_Ver
 
 
       ! Allocate and populate the OutputHdr array (contains names of outputable values)
 
    CALL AllocAry( InitOutData%WriteOutputHdr, 3, 'Empty array for names of outputable information.', TmpErrStat, TmpErrMsg )
-      CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+      CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
       IF ( ErrStat >= AbortErrLev ) RETURN
    
    InitOutData%WriteOutputHdr(1) = 'WindVxi'
@@ -374,7 +375,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Allocate and populate the OutputUnt array (contains units of outputable values)
 
    CALL AllocAry( InitOutData%WriteOutputUnt, 3, 'Empty array for units of outputable information.', TmpErrStat, TmpErrMsg )
-      CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_FFWind_Init' )                  
+      CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'IfW_TSFFWind_Init' )                  
       IF ( ErrStat >= AbortErrLev ) RETURN
 
    InitOutData%WriteOutputUnt(1) = '(m/s)'
@@ -432,7 +433,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       LineCount            = 0
       StrNeeded(:)         = .TRUE.
       ZGOffset             = 0.0
-      OtherStates%RefHt                = 0.0
+      ParamData%RefHt                = 0.0
       ParamData%Periodic   = .FALSE.
 
          !----------------------------------------------------------------------------------------------
@@ -514,7 +515,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
             IF ( INDEX( LINE, 'HUB HEIGHT' ) > 0 .OR. INDEX( LINE, 'ZHUB' ) > 0 ) THEN
 
-               READ (LINE, *, IOSTAT = TmpErrStat) OtherStates%RefHt
+               READ (LINE, *, IOSTAT = TmpErrStat) ParamData%RefHt
 
                IF ( TmpErrStat /= 0 ) THEN
                   CALL SetErrStat( ErrID_Fatal, ' Error reading hub height from FF summary file.', ErrStat, ErrMsg, 'Read_Summary_FF' )                  
@@ -542,7 +543,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
                FirstIndx = INDEX( LINE, '=' ) + 1        ! Look for the equal siqn to find the number we're looking for
 
-               READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=TmpErrStat ) OtherStates%MeanFFWS
+               READ ( LINE( FirstIndx:LEN(LINE) ), *, IOSTAT=TmpErrStat ) ParamData%MeanFFWS
 
                IF ( TmpErrStat /= 0 ) THEN
                   CALL SetErrStat( ErrID_Fatal, ' Error reading UBar binary data normalizing parameter from FF summary file.', ErrStat, ErrMsg, 'Read_Summary_FF' )                  
@@ -582,7 +583,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
             !-------------------------------------------------------------------------------------------
             ! #5: Get the grid "HEIGHT OFFSET", if it exists (in TurbSim). Otherwise, assume it's zero
-            !           ZGOffset = HH - GridBase - OtherStates%FFZHWid
+            !           ZGOffset = HH - GridBase - ParamData%FFZHWid
             !-------------------------------------------------------------------------------------------
             IF ( INDEX( LINE, 'HEIGHT OFFSET' ) > 0  ) THEN
 
@@ -629,7 +630,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Calculate the height of the grid center
       !-------------------------------------------------------------------------------------------------
 
-       ZCenter  = OtherStates%RefHt - ZGOffset
+       ZCenter  = ParamData%RefHt - ZGOffset
 
 
    END SUBROUTINE Read_Summary_FF
@@ -672,7 +673,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       CHARACTER(LEN(ErrMsg))                             :: TmpErrMsg      ! temporary error message
 
 
-      OtherStates%NFFComp = 3                                              ! this file contains 3 wind components
+      ParamData%NFFComp = 3                                              ! this file contains 3 wind components
       ErrStat = ErrID_None
       ErrMsg  = ""
       
@@ -702,7 +703,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading the number of z grid points in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%NZGrids = Dum_Int4
+            ParamData%NZGrids = Dum_Int4
 
 
             ! Read in the 4-byte integer. Can't use library read routines for this.
@@ -711,7 +712,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading the number of y grid points in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%NYGrids = Dum_Int4
+            ParamData%NYGrids = Dum_Int4
 
 
             ! Read in the 4-byte integer. Can't use library read routines for this.
@@ -720,7 +721,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading the number of tower points in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%NTGrids = Dum_Int4
+            ParamData%NTGrids = Dum_Int4
 
 
             ! Read in the 4-byte integer. Can't use library read routines for this.
@@ -729,7 +730,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading the number of time steps in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%NFFSteps = Dum_Int4
+            ParamData%NFFSteps = Dum_Int4
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -738,8 +739,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading dz in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%InvFFZD = 1.0/Dum_Real4                            ! 1/dz
-            OtherStates%FFZHWid = 0.5*(OtherStates%NZGrids-1)*Dum_Real4                ! half the grid height
+            ParamData%InvFFZD = 1.0/Dum_Real4                            ! 1/dz
+            ParamData%FFZHWid = 0.5*(ParamData%NZGrids-1)*Dum_Real4                ! half the grid height
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -748,8 +749,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading dy in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%InvFFYD = 1.0 / Dum_Real4                          ! 1/dy
-            OtherStates%FFYHWid = 0.5*(OtherStates%NYGrids-1)*Dum_Real4                ! half grid grid width
+            ParamData%InvFFYD = 1.0 / Dum_Real4                          ! 1/dy
+            ParamData%FFYHWid = 0.5*(ParamData%NYGrids-1)*Dum_Real4                ! half grid grid width
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -758,8 +759,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading dt in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%FFDTime = Dum_Real4
-            OtherStates%FFRate  = 1.0/OtherStates%FFDTime
+            ParamData%FFDTime = Dum_Real4
+            ParamData%FFRate  = 1.0/ParamData%FFDTime
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -768,8 +769,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading mean wind speed in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%MeanFFWS = Dum_Real4
-            OtherStates%InvMFFWS = 1.0 / OtherStates%MeanFFWS
+            ParamData%MeanFFWS = Dum_Real4
+            ParamData%InvMFFWS = 1.0 / ParamData%MeanFFWS
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -778,7 +779,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading zHub in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%RefHt = Dum_Real4
+            ParamData%RefHt = Dum_Real4
 
 
             ! Read in the 4-byte real. Can't use library read routines for this.
@@ -787,16 +788,16 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading GridBase in the FF binary file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'READ_TurbSim_FF' )                  
                RETURN
             ENDIF
-            OtherStates%GridBase = Dum_Real4
+            ParamData%GridBase = Dum_Real4
 
-    !        ZGOffset = OtherStates%RefHt - OtherStates%GridBase  - OtherStates%FFZHWid
+    !        ZGOffset = ParamData%RefHt - ParamData%GridBase  - ParamData%FFZHWid
 
 
          !----------------------------------------------------------------------------------------------
          ! Read the binary scaling factors
          !----------------------------------------------------------------------------------------------
 
-            DO IC = 1,OtherStates%NFFComp
+            DO IC = 1,ParamData%NFFComp
                   ! Read in the 4-byte real. Can't use library read routines for this.
                READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Vslope(IC)     ! the IC-component slope for scaling, REAL(4)
                   IF ( TmpErrStat /= 0 )  THEN
@@ -855,30 +856,30 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
          ! this could take a while, so we'll write a message indicating what's going on:
          
-         CALL WrScr( NewLine//'   Reading a '//TRIM( Num2LStr(OtherStates%NYGrids) )//'x'//TRIM( Num2LStr(OtherStates%NZGrids) )//  &
-                    ' grid ('//TRIM( Num2LStr(OtherStates%FFYHWid*2) )//' m wide, '// &
-                    TRIM( Num2LStr(OtherStates%GridBase) )//' m to '// &
-                    TRIM( Num2LStr(OtherStates%GridBase+OtherStates%FFZHWid*2) )//&
+         CALL WrScr( NewLine//'   Reading a '//TRIM( Num2LStr(ParamData%NYGrids) )//'x'//TRIM( Num2LStr(ParamData%NZGrids) )//  &
+                    ' grid ('//TRIM( Num2LStr(ParamData%FFYHWid*2) )//' m wide, '// &
+                    TRIM( Num2LStr(ParamData%GridBase) )//' m to '// &
+                    TRIM( Num2LStr(ParamData%GridBase+ParamData%FFZHWid*2) )//&
                     ' m above ground) with a characteristic wind speed of '// &
-                    TRIM( Num2LStr(OtherStates%MeanFFWS) )//' m/s. '//TRIM(DescStr) )
+                    TRIM( Num2LStr(ParamData%MeanFFWS) )//' m/s. '//TRIM(DescStr) )
 
 
       !----------------------------------------------------------------------------------------------
       ! Allocate arrays for the FF grid as well as the tower points, if they exist
       !----------------------------------------------------------------------------------------------
 
-         IF ( .NOT. ALLOCATED( OtherStates%FFData ) ) THEN
-            CALL AllocAry( OtherStates%FFData, OtherStates%NZGrids, OtherStates%NYGrids, OtherStates%NFFComp, OtherStates%NFFSteps, &
+         IF ( .NOT. ALLOCATED( ParamData%FFData ) ) THEN
+            CALL AllocAry( ParamData%FFData, ParamData%NZGrids, ParamData%NYGrids, ParamData%NFFComp, ParamData%NFFSteps, &
                   'Full-field wind data array.', TmpErrStat, TmpErrMsg )
             CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'READ_TurbSim_FF' ) 
             IF ( ErrStat >= AbortErrLev ) RETURN
          ENDIF
 
 
-         IF ( OtherStates%NTGrids > 0 ) THEN
+         IF ( ParamData%NTGrids > 0 ) THEN
 
-            IF ( .NOT. ALLOCATED( OtherStates%FFTower ) ) THEN
-               CALL AllocAry( OtherStates%FFTower, OtherStates%NFFComp, OtherStates%NTGrids, OtherStates%NFFSteps, &
+            IF ( .NOT. ALLOCATED( ParamData%FFTower ) ) THEN
+               CALL AllocAry( ParamData%FFTower, ParamData%NFFComp, ParamData%NTGrids, ParamData%NFFSteps, &
                      'Tower wind file data array.', TmpErrStat, TmpErrMsg )
                CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'READ_TurbSim_FF' ) 
                IF ( ErrStat >= AbortErrLev ) RETURN
@@ -892,19 +893,19 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
          ! Loop through time.
 
-         DO IT=1,OtherStates%NFFSteps
+         DO IT=1,ParamData%NFFSteps
 
             !...........................................................................................
             ! Read grid data at this time step.
             !...........................................................................................
 
-            DO IZ=1,OtherStates%NZGrids
+            DO IZ=1,ParamData%NZGrids
                ! Zgrid(IZ) = Z1 + (IZ-1)*dz                 ! Vertical location of grid data point, in m relative to ground
 
-               DO IY=1,OtherStates%NYGrids
+               DO IY=1,ParamData%NYGrids
                   ! Ygrid(IY) = -0.5*(ny-1)*dy + (IY-1)*dy  ! Horizontal location of grid data point, in m relative to tower centerline
 
-                  DO IC=1,OtherStates%NFFComp                           ! number of wind components (U, V, W)
+                  DO IC=1,ParamData%NFFComp                           ! number of wind components (U, V, W)
 
                         ! Read in the 2-byte integer. Can't use library read routines for this.
                      READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
@@ -914,7 +915,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                         RETURN
                      ENDIF
 
-                     OtherStates%FFData(IZ,IY,IC,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)
+                     ParamData%FFData(IZ,IY,IC,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)
 
                   ENDDO !IC
 
@@ -927,12 +928,12 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             ! Read the tower data at this time step.
             !...........................................................................................
 
-            DO IZ=1,OtherStates%NTGrids         ! If NTGrids<1, there are no tower points & FFTower is not allocated
+            DO IZ=1,ParamData%NTGrids         ! If NTGrids<1, there are no tower points & FFTower is not allocated
 
                ! Ytower     = 0               ! Lateral location of the tower data point, in m relative to tower centerline
                ! Ztower(IZ) = Z1 - (IZ-1)*dz  ! Vertical location of tower data point, in m relative to ground
 
-               DO IC=1,OtherStates%NFFComp   ! number of wind components
+               DO IC=1,ParamData%NFFComp   ! number of wind components
 
                      ! Read in a 2-byte integer. Can't use library routines for this.
                   READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
@@ -942,7 +943,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                      RETURN
                   ENDIF
 
-                  OtherStates%FFTower(IC,IZ,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)  ! wind-component scaled to m/s
+                  ParamData%FFTower(IC,IZ,IT) = ( Dum_Int2 - Voffset(IC) ) / VSlope(IC)  ! wind-component scaled to m/s
 
                ENDDO !IC
 
@@ -958,13 +959,13 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       CLOSE ( OtherStates%UnitWind )
 
       IF ( ParamData%Periodic ) THEN
-         TmpErrMsg   = '   Processed '//TRIM( Num2LStr( OtherStates%NFFSteps ) )//' time steps of '// &
-                        TRIM( Num2LStr ( OtherStates%FFRate ) )//'-Hz full-field data (period of '// &
-                        TRIM( Num2LStr( OtherStates%FFDTime*( OtherStates%NFFSteps ) ) )//' seconds).'
+         TmpErrMsg   = '   Processed '//TRIM( Num2LStr( ParamData%NFFSteps ) )//' time steps of '// &
+                        TRIM( Num2LStr ( ParamData%FFRate ) )//'-Hz full-field data (period of '// &
+                        TRIM( Num2LStr( ParamData%FFDTime*( ParamData%NFFSteps ) ) )//' seconds).'
       ELSE
-         TmpErrMsg   = '   Processed '//TRIM( Num2LStr( OtherStates%NFFSteps ) )//' time steps of '// &
-                        TRIM( Num2LStr ( OtherStates%FFRate ) )//'-Hz full-field data ('// &
-                        TRIM( Num2LStr( OtherStates%FFDTime*( OtherStates%NFFSteps - 1 ) ) )//' seconds).'
+         TmpErrMsg   = '   Processed '//TRIM( Num2LStr( ParamData%NFFSteps ) )//' time steps of '// &
+                        TRIM( Num2LStr ( ParamData%FFRate ) )//'-Hz full-field data ('// &
+                        TRIM( Num2LStr( ParamData%FFDTime*( ParamData%NFFSteps - 1 ) ) )//' seconds).'
       ENDIF
   
       CALL WrScr( NewLine//TRIM(TmpErrMsg) ) 
@@ -978,7 +979,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
    !====================================================================================================
    SUBROUTINE Read_Bladed_FF_Header0 (UnitWind, ErrStat, ErrMsg)
    !   Reads the binary headers from the turbulence files of the old Bladed variety.  Note that
-   !   because of the normalization, neither OtherStates%NZGrids or OtherStates%NYGrids are larger than 32 points.
+   !   because of the normalization, neither ParamData%NZGrids or ParamData%NYGrids are larger than 32 points.
    !   21-Sep-2009 - B. Jonkman, NREL/NWTC.
    !   16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
    !----------------------------------------------------------------------------------------------------
@@ -1027,7 +1028,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading number of wind components from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header0')
             RETURN
          ENDIF
-         OtherStates%NFFComp = -1*Dum_Int2
+         ParamData%NFFComp = -1*Dum_Int2
 
 
          ! Read 2-byte integer. Can't use library routines for this.
@@ -1038,7 +1039,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             RETURN
          ENDIF
          FFZDelt = 0.001*Dum_Int2
-         OtherStates%InvFFZD = 1.0/FFZDelt
+         ParamData%InvFFZD = 1.0/FFZDelt
 
 
          ! Read 2-byte integer. Can't use library routines for this.
@@ -1049,7 +1050,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             RETURN
          ENDIF
          FFYDelt = 0.001*Dum_Int2
-         OtherStates%InvFFYD = 1.0/FFYDelt
+         ParamData%InvFFYD = 1.0/FFYDelt
 
 
          ! Read 2-byte integer. Can't use library routines for this.
@@ -1069,7 +1070,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading number of time steps from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header0')
             RETURN
          ENDIF
-         OtherStates%NFFSteps = 2*Dum_Int2
+         ParamData%NFFSteps = 2*Dum_Int2
 
 
          ! Read 2-byte integer. Can't use library routines for this.
@@ -1079,10 +1080,10 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading mean full-field wind speed from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header0')
             RETURN
          ENDIF
-         OtherStates%MeanFFWS = 0.1*Dum_Int2
-         OtherStates%InvMFFWS = 1.0/OtherStates%MeanFFWS
-         OtherStates%FFDTime  = FFXDelt/OtherStates%MeanFFWS
-         OtherStates%FFRate   = 1.0/OtherStates%FFDTime
+         ParamData%MeanFFWS = 0.1*Dum_Int2
+         ParamData%InvMFFWS = 1.0/ParamData%MeanFFWS
+         ParamData%FFDTime  = FFXDelt/ParamData%MeanFFWS
+         ParamData%FFRate   = 1.0/ParamData%FFDTime
 
 
       DO I = 1,5
@@ -1105,8 +1106,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading nz from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header0')
             RETURN
          ENDIF
-         OtherStates%NZGrids  = Dum_Int2/1000
-         OtherStates%FFZHWid  = 0.5*FFZDelt*( OtherStates%NZGrids - 1 )    ! half the vertical size of the grid
+         ParamData%NZGrids  = Dum_Int2/1000
+         ParamData%FFZHWid  = 0.5*FFZDelt*( ParamData%NZGrids - 1 )    ! half the vertical size of the grid
 
 
          ! Read 2-byte integer. Can't use library routines for this.
@@ -1116,11 +1117,11 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading ny from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header0')
             RETURN
          ENDIF
-         OtherStates%NYGrids  = Dum_Int2/1000
-         OtherStates%FFYHWid  = 0.5*FFYDelt*( OtherStates%NYGrids - 1 )
+         ParamData%NYGrids  = Dum_Int2/1000
+         ParamData%FFYHWid  = 0.5*FFYDelt*( ParamData%NYGrids - 1 )
 
 
-      IF (OtherStates%NFFComp == 3) THEN
+      IF (ParamData%NFFComp == 3) THEN
 
          DO I=1,6
 
@@ -1216,14 +1217,14 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             !----------------------------------------
             !1-component Von Karman (1) or Kaimal (2)
             !----------------------------------------
-               OtherStates%NFFComp = 1
+               ParamData%NFFComp = 1
 
          CASE(3, 5)
             !----------------------------------------
             !3-component Von Karman (3) or IEC-2
             ! Kaimal (5)
             !----------------------------------------
-               OtherStates%NFFComp = 3
+               ParamData%NFFComp = 3
 
          CASE(4)
             !----------------------------------------
@@ -1237,7 +1238,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                      CALL SetErrStat( ErrID_Fatal, ' Error reading number of components from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
                      RETURN
                   ENDIF
-                  OtherStates%NFFComp = Dum_Int4
+                  ParamData%NFFComp = Dum_Int4
 
                   ! Read 4-byte real. Can't use library routines for this.
                READ (UnitWind, IOSTAT=TmpErrStat)   Dum_Real4                                       ! Latitude (deg)
@@ -1297,7 +1298,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                      CALL SetErrStat( ErrID_Fatal, ' Error reading number of data from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
                      RETURN
                   ENDIF
-                  OtherStates%NFFComp = Dum_Int4
+                  ParamData%NFFComp = Dum_Int4
 
 
          CASE DEFAULT
@@ -1317,7 +1318,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             RETURN
          ENDIF
          FFZDelt = Dum_Real4
-         OtherStates%InvFFZD = 1.0/FFZDelt
+         ParamData%InvFFZD = 1.0/FFZDelt
 
 
          ! Read 4-byte real. Can't use library routines for this.
@@ -1328,7 +1329,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             RETURN
          ENDIF
          FFYDelt = Dum_Real4
-         OtherStates%InvFFYD = 1.0/FFYDelt
+         ParamData%InvFFYD = 1.0/FFYDelt
 
          ! Read 4-byte real. Can't use library routines for this.
       READ (UnitWind, IOSTAT=TmpErrStat)   Dum_Real4                                               ! delta x (m)
@@ -1347,7 +1348,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading number of time steps from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
             RETURN
          ENDIF
-         OtherStates%NFFSteps = 2*Dum_Int4
+         ParamData%NFFSteps = 2*Dum_Int4
 
 
          ! Read 4-byte real. Can't use library routines for this.
@@ -1357,10 +1358,10 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading mean full-field wind speed from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
             RETURN
          ENDIF
-         OtherStates%MeanFFWS = Dum_Real4
-         OtherStates%InvMFFWS = 1.0/OtherStates%MeanFFWS
-         OtherStates%FFDTime  = FFXDelt/OtherStates%MeanFFWS
-         OtherStates%FFRate   = 1.0/OtherStates%FFDTime
+         ParamData%MeanFFWS = Dum_Real4
+         ParamData%InvMFFWS = 1.0/ParamData%MeanFFWS
+         ParamData%FFDTime  = FFXDelt/ParamData%MeanFFWS
+         ParamData%FFRate   = 1.0/ParamData%FFDTime
 
 
       DO I = 1,3
@@ -1396,8 +1397,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading nz from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
             RETURN
          ENDIF
-         OtherStates%NZGrids  = Dum_Int4
-         OtherStates%FFZHWid  = 0.5*FFZDelt*( OtherStates%NZGrids - 1 )    ! half the vertical size of the grid
+         ParamData%NZGrids  = Dum_Int4
+         ParamData%FFZHWid  = 0.5*FFZDelt*( ParamData%NZGrids - 1 )    ! half the vertical size of the grid
 
 
          ! Read 4-integer real. Can't use library routines for this.
@@ -1407,11 +1408,11 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             CALL SetErrStat( ErrID_Fatal, ' Error reading ny from binary FF file.', ErrStat, ErrMsg, 'Read_Bladed_FF_Header1')
             RETURN
          ENDIF
-         OtherStates%NYGrids  = Dum_Int4
-         OtherStates%FFYHWid  = 0.5*FFYDelt*( OtherStates%NYGrids - 1 )
+         ParamData%NYGrids  = Dum_Int4
+         ParamData%FFYHWid  = 0.5*FFYDelt*( ParamData%NYGrids - 1 )
 
 
-      IF (OtherStates%NFFComp == 3) THEN
+      IF (ParamData%NFFComp == 3) THEN
 
          DO I=1,6
 
@@ -1539,7 +1540,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
          ! Passed variables
 
-      TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates
+      TYPE(IfW_TSFFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates
       LOGICAL,                            INTENT(IN   )  :: CWise
       REAL(ReKi),                         INTENT(IN   )  :: TI      (3)    ! turbulence intensities of the wind components as defined in the FF file, not necessarially the actual TI
       INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
@@ -1569,11 +1570,11 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
          ! This could take a while, so we'll write a message to tell users what's going on:
          
-      CALL WrScr( NewLine//'   Reading a '//TRIM( Num2LStr(OtherStates%NYGrids) )//'x'//TRIM( Num2LStr(OtherStates%NZGrids) )//  &
-                  ' grid ('//TRIM( Num2LStr(OtherStates%FFYHWid*2) )//' m wide, '// &
-                  TRIM( Num2LStr(OtherStates%GridBase) )//' m to '// &
-                  TRIM( Num2LStr(OtherStates%GridBase+OtherStates%FFZHWid*2) )//&
-                  ' m above ground) with a characteristic wind speed of '//TRIM( Num2LStr(OtherStates%MeanFFWS) )//' m/s. ' )
+      CALL WrScr( NewLine//'   Reading a '//TRIM( Num2LStr(ParamData%NYGrids) )//'x'//TRIM( Num2LStr(ParamData%NZGrids) )//  &
+                  ' grid ('//TRIM( Num2LStr(ParamData%FFYHWid*2) )//' m wide, '// &
+                  TRIM( Num2LStr(ParamData%GridBase) )//' m to '// &
+                  TRIM( Num2LStr(ParamData%GridBase+ParamData%FFZHWid*2) )//&
+                  ' m above ground) with a characteristic wind speed of '//TRIM( Num2LStr(ParamData%MeanFFWS) )//' m/s. ' )
       ErrMsg   = ""
       ErrStat  =  ErrID_None
 
@@ -1582,25 +1583,25 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Allocate space for the FF array
       !-------------------------------------------------------------------------------------------------
 
-      TmpNumSteps = OtherStates%NFFSteps + 1       ! add another step, just in case there is an odd number of steps.
+      TmpNumSteps = ParamData%NFFSteps + 1       ! add another step, just in case there is an odd number of steps.
 
    !bjj: should we reorganize this FFData array so we access the data faster?
 
-      IF ( .NOT. ALLOCATED( OtherStates%FFData ) ) THEN
-         CALL AllocAry( OtherStates%FFData, OtherStates%NZGrids,OtherStates%NYGrids,OtherStates%NFFComp,TmpNumSteps, &
+      IF ( .NOT. ALLOCATED( ParamData%FFData ) ) THEN
+         CALL AllocAry( ParamData%FFData, ParamData%NZGrids,ParamData%NYGrids,ParamData%NFFComp,TmpNumSteps, &
                   'Full-field wind data array.', TmpErrStat, TmpErrMsg )
          CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'Read_Bladed_Grids')
          IF ( ErrStat >= AbortErrLev ) RETURN
 
       ELSE
-         IF (SIZE(OtherStates%FFData,1) /= OtherStates%NZGrids .OR. SIZE(OtherStates%FFData,2) /= OtherStates%NYGrids .OR. &
-             SIZE(OtherStates%FFData,3) /= OtherStates%NFFComp .OR. SIZE(OtherStates%FFData,3) /= TmpNumSteps ) THEN
+         IF (SIZE(ParamData%FFData,1) /= ParamData%NZGrids .OR. SIZE(ParamData%FFData,2) /= ParamData%NYGrids .OR. &
+             SIZE(ParamData%FFData,3) /= ParamData%NFFComp .OR. SIZE(ParamData%FFData,3) /= TmpNumSteps ) THEN
 
                ! Let's make the array the correct size (we should never get here, but you never know)
 
-            DEALLOCATE( OtherStates%FFData )
+            DEALLOCATE( ParamData%FFData )
 
-            CALL AllocAry( OtherStates%FFData, OtherStates%NZGrids,OtherStates%NYGrids,OtherStates%NFFComp,TmpNumSteps, &
+            CALL AllocAry( ParamData%FFData, ParamData%NZGrids,ParamData%NYGrids,ParamData%NFFComp,TmpNumSteps, &
                   'Full-field wind data array.', TmpErrStat, TmpErrMsg )
                CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'Read_Bladed_Grids')
                IF ( ErrStat >= AbortErrLev ) RETURN            
@@ -1612,15 +1613,15 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Initialize the data and set column indexing to account for direction of turbine rotation (CWise)
       !-------------------------------------------------------------------------------------------------
 
-      OtherStates%FFData(:,:,:,:) = 0.0                        ! we may have only one component
+      ParamData%FFData(:,:,:,:) = 0.0                        ! we may have only one component
 
       IF ( CWise )  THEN
-         CFirst    = OtherStates%NYGrids
+         CFirst    = ParamData%NYGrids
          CLast     = 1
          CStep     = -1
       ELSE
          CFirst    = 1
-         CLast     = OtherStates%NYGrids
+         CLast     = ParamData%NYGrids
          CStep     = 1
       ENDIF
 
@@ -1630,22 +1631,22 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
    !bjj: should we reorganize this FFData array so we access the data faster?
 
-      OtherStates%NFFSteps = TmpNumSteps
+      ParamData%NFFSteps = TmpNumSteps
 
    TIME_LOOP:  DO IT=1,TmpNumSteps     ! time (add 1 to see if there is an odd number of grids)
 
-         DO IR=1,OtherStates%NZGrids               ! the rows (vertical)
+         DO IR=1,ParamData%NZGrids               ! the rows (vertical)
 
             DO IC=CFirst,CLast,CStep   ! the columns (lateral)
 
-               DO I=1,OtherStates%NFFComp          ! wind components (U, V, W)
+               DO I=1,ParamData%NFFComp          ! wind components (U, V, W)
 
                      ! Get the next integer from the file.
                      ! This is a 2-byte integer, so we can't use the library read routines.
                   READ (OtherStates%UnitWind,IOStat=TmpErrStat)  Dum_Int2
                   IF (TmpErrStat /= 0) THEN
                      IF ( IT == TmpNumSteps ) THEN ! There really were an even number of steps
-                        OtherStates%NFFSteps = TmpNumSteps - 1
+                        ParamData%NFFSteps = TmpNumSteps - 1
                         ErrStat  = 0
                         EXIT TIME_LOOP
                      ELSE
@@ -1653,11 +1654,11 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                                     'ic = '//TRIM(Num2LStr(ic))// &
                                     ', ir = '//TRIM(Num2LStr(ir))// &
                                     ', it = '//TRIM(Num2LStr(it))// &
-                                    ', nffsteps = '//TRIM(Num2LStr(OtherStates%NFFSteps)), ErrStat, ErrMsg, 'Read_Bladed_Grids')
+                                    ', nffsteps = '//TRIM(Num2LStr(ParamData%NFFSteps)), ErrStat, ErrMsg, 'Read_Bladed_Grids')
                         RETURN
                      ENDIF
                   ELSE
-                     OtherStates%FFData(IR,IC,I,IT) = OtherStates%MeanFFWS*(FF_Offset(I)+0.00001*TI(I)*Dum_Int2)
+                     ParamData%FFData(IR,IC,I,IT) = ParamData%MeanFFWS*(FF_Offset(I)+0.00001*TI(I)*Dum_Int2)
                   ENDIF
 
                END DO !I
@@ -1669,14 +1670,14 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       END DO TIME_LOOP !IT
 
       IF ( ParamData%Periodic ) THEN
-         TmpErrMsg = '   Processed '//TRIM( Num2LStr( OtherStates%NFFSteps ) )//' time steps of '// &
-                    TRIM( Num2LStr ( OtherStates%FFRate ) )//'-Hz full-field data (period of '// &
-                    TRIM( Num2LStr( OtherStates%FFDTime*OtherStates%NFFSteps ) )//' seconds).'
+         TmpErrMsg = '   Processed '//TRIM( Num2LStr( ParamData%NFFSteps ) )//' time steps of '// &
+                    TRIM( Num2LStr ( ParamData%FFRate ) )//'-Hz full-field data (period of '// &
+                    TRIM( Num2LStr( ParamData%FFDTime*ParamData%NFFSteps ) )//' seconds).'
          
       ELSE
-         TmpErrMsg= '   Processed '//TRIM( Num2LStr( OtherStates%NFFSteps ) )//' time steps of '// &
-                    TRIM( Num2LStr ( OtherStates%FFRate ) )//'-Hz full-field data ('// &
-                    TRIM( Num2LStr( OtherStates%FFDTime*( OtherStates%NFFSteps - 1 ) ) )//' seconds).'
+         TmpErrMsg= '   Processed '//TRIM( Num2LStr( ParamData%NFFSteps ) )//' time steps of '// &
+                    TRIM( Num2LStr ( ParamData%FFRate ) )//'-Hz full-field data ('// &
+                    TRIM( Num2LStr( ParamData%FFDTime*( ParamData%NFFSteps - 1 ) ) )//' seconds).'
       ENDIF
       CALL WrScr( NewLine//TRIM(TmpErrMsg) )
       !CALL SetErrStat( ErrID_Info, TmpErrMsg, ErrStat, ErrMsg, 'Read_Bladed_Grids' )
@@ -1694,8 +1695,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
          ! Passed Variables:
 
-      TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! unit number for the wind file
-!      TYPE(IfW_FFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
+      TYPE(IfW_TSFFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! unit number for the wind file
+!      TYPE(IfW_TSFFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
       INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat        ! error status return value (0=no error; non-zero is error)
       CHARACTER(*),                       INTENT(  OUT)  :: ErrMsg         ! a message for errors that occur
 
@@ -1727,9 +1728,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ErrMsg   = ''
       ErrStat  = ErrID_None
 
-      OtherStates%NTGrids = 0
+      ParamData%NTGrids = 0
 
-      IF ( OtherStates%NFFComp /= 3 ) THEN
+      IF ( ParamData%NFFComp /= 3 ) THEN
          ErrMsg   = ' Error: Tower binary files require 3 wind components.'
          ErrStat  = ErrID_Fatal  
          RETURN
@@ -1757,7 +1758,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                RETURN
             ENDIF
 
-            IF ( ABS(Dum_Real4*OtherStates%InvFFZD-1) > TOL ) THEN
+            IF ( ABS(Dum_Real4*ParamData%InvFFZD-1) > TOL ) THEN
                CALL SetErrStat( ErrID_Fatal, ' Resolution in the FF binary file does not match the tower file.', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
             ENDIF
@@ -1770,7 +1771,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                RETURN
             ENDIF
 
-            IF ( ABS(Dum_Real4*OtherStates%InvMFFWS/OtherStates%FFDTime-1) > TOL ) THEN
+            IF ( ABS(Dum_Real4*ParamData%InvMFFWS/ParamData%FFDTime-1) > TOL ) THEN
                CALL SetErrStat( ErrID_Fatal, ' Time resolution in the FF binary file does not match the tower file.', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
             ENDIF
@@ -1783,7 +1784,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                RETURN
             ENDIF
 
-            IF ( ABS(Dum_Real4/OtherStates%GridBase-1) > TOL ) THEN
+            IF ( ABS(Dum_Real4/ParamData%GridBase-1) > TOL ) THEN
                CALL SetErrStat( ErrID_Fatal, ' Height in the FF binary file does not match the tower file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
             ENDIF
@@ -1796,7 +1797,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                RETURN
             ENDIF
 
-            IF ( Dum_Int4 /= OtherStates%NFFSteps ) THEN
+            IF ( Dum_Int4 /= ParamData%NFFSteps ) THEN
                CALL SetErrStat( ErrID_Fatal, ' Number of time steps in the FF binary file does not match the tower file.', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
             ENDIF
@@ -1808,7 +1809,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                CALL SetErrStat( ErrID_Fatal, ' Error reading NumZ in the binary tower file "'//TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
             ENDIF
-            OtherStates%NTGrids = Dum_Int4
+            ParamData%NTGrids = Dum_Int4
 
 
             ! This is a 4-byte real, so we can't use the library read routines.
@@ -1818,9 +1819,9 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                RETURN
             ENDIF
 
-            IF ( ABS(Dum_Real4*OtherStates%InvMFFWS - 1) > TOL ) THEN
+            IF ( ABS(Dum_Real4*ParamData%InvMFFWS - 1) > TOL ) THEN
                CALL SetErrStat( ErrID_Fatal, ' Mean wind speed in the FF binary file does not match the tower file.', ErrStat, ErrMsg, 'Read_FF_Tower' )
-               OtherStates%NTGrids  = 0
+               ParamData%NTGrids  = 0
                RETURN
             ENDIF
 
@@ -1831,7 +1832,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
                !bjj: not sure you can call this routine to read from a binary file...
             !CALL ReadVar( OtherStates%UnitWind, TRIM(ParamData%WindFileName), TI(IC), 'TI('//TRIM(Num2LStr(IC))//')', 'TI value for u,v, or w', TmpErrStat, TmpErrMsg )
             !IF (TmpErrStat /= ErrID_None) THEN
-            !   OtherStates%NTGrids  = 0
+            !   ParamData%NTGrids  = 0
             !   CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'Read_FF_Tower' )
             !   IF (ErrStat >= AbortErrLev) RETURN
             !ENDIF
@@ -1839,7 +1840,7 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
             READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   TI(IC)               ! TI(u), TI(v), TI(w)  [4-byte REAL]
             
             IF (TmpErrStat /= 0) THEN
-               OtherStates%NTGrids  = 0
+               ParamData%NTGrids  = 0
                CALL SetErrStat( ErrID_Fatal, ' Error reading TI('//TRIM(Num2LStr(IC))//') in the binary tower file "' &
                                //TRIM( ParamData%WindFileName )//'."', ErrStat, ErrMsg, 'Read_FF_Tower' )
                RETURN
@@ -1851,10 +1852,10 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       ! Allocate arrays for the tower points
       !----------------------------------------------------------------------------------------------
 
-         IF ( OtherStates%NTGrids > 0 ) THEN
+         IF ( ParamData%NTGrids > 0 ) THEN
 
-            IF ( .NOT. ALLOCATED( OtherStates%FFTower ) ) THEN
-               CALL AllocAry( OtherStates%FFTower, OtherStates%NFFComp, OtherStates%NTGrids, OtherStates%NFFSteps, &
+            IF ( .NOT. ALLOCATED( ParamData%FFTower ) ) THEN
+               CALL AllocAry( ParamData%FFTower, ParamData%NFFComp, ParamData%NTGrids, ParamData%NFFSteps, &
                   'Tower wind data array.', TmpErrStat, TmpErrMsg )
                CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, 'Read_FF_Tower' )
                IF (ErrStat >= AbortErrLev) RETURN
@@ -1871,25 +1872,25 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
 
          ! Loop through time.
 
-         DO IT=1,OtherStates%NFFSteps
+         DO IT=1,ParamData%NFFSteps
 
-            DO IZ=1,OtherStates%NTGrids         ! If NTGrids<1, there are no tower points & FFTower is not allocated
+            DO IZ=1,ParamData%NTGrids         ! If NTGrids<1, there are no tower points & FFTower is not allocated
 
                ! Ytower     = 0               ! Lateral location of the tower data point, in m relative to tower centerline
                ! Ztower(IZ) = Z1 - (IZ-1)*dz  ! Vertical location of tower data point, in m relative to ground
 
-               DO IC=1,OtherStates%NFFComp   ! number of wind components
+               DO IC=1,ParamData%NFFComp   ! number of wind components
 
                      ! Read in the 2-byte integer. Can't use library read routines for this.
                   READ (OtherStates%UnitWind, IOSTAT=TmpErrStat)   Dum_Int2       ! normalized wind-component, INT(2)
                   IF ( TmpErrStat /= 0 )  THEN
                      CALL SetErrStat( ErrID_Fatal, ' Error reading binary tower data file. it = '//TRIM(Num2LStr(it))// &
-                                    ', nffsteps = '//TRIM(Num2LStr(OtherStates%NFFSteps)), ErrStat, ErrMsg, 'Read_FF_Tower' )
-                     OtherStates%NTGrids  = 0
+                                    ', nffsteps = '//TRIM(Num2LStr(ParamData%NFFSteps)), ErrStat, ErrMsg, 'Read_FF_Tower' )
+                     ParamData%NTGrids  = 0
                      RETURN
                   ENDIF
 
-                  OtherStates%FFTower(IC,IZ,IT) = OtherStates%MeanFFWS*(FF_Offset(IC)+0.00001*TI(IC)*Dum_Int2)   ! wind-component scaled to m/s
+                  ParamData%FFTower(IC,IZ,IT) = ParamData%MeanFFWS*(FF_Offset(IC)+0.00001*TI(IC)*Dum_Int2)   ! wind-component scaled to m/s
 
                ENDDO !IC
 
@@ -1903,8 +1904,8 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       !-------------------------------------------------------------------------------------------------
       CLOSE ( OtherStates%UnitWind )
 
-      TmpErrMsg = '   Processed '//TRIM( Num2LStr(OtherStates%NFFSteps) )//' time steps of '// &
-            TRIM( Num2LStr(OtherStates%NTGrids) )//'x1 tower data grids.'
+      TmpErrMsg = '   Processed '//TRIM( Num2LStr(ParamData%NFFSteps) )//' time steps of '// &
+            TRIM( Num2LStr(ParamData%NTGrids) )//'x1 tower data grids.'
       
       !CALL SetErrStat( ErrID_Info, ErrMsgLcl, ErrStat, ErrMsg, 'Read_FF_Tower' )
       CALL WrScr( NewLine//TRIM(TmpErrMsg) )
@@ -1912,12 +1913,12 @@ SUBROUTINE IfW_FFWind_Init(InitData,   InputGuess, ParamData,                   
       RETURN
 
    END SUBROUTINE Read_FF_Tower
-END SUBROUTINE IfW_FFWind_Init
+END SUBROUTINE IfW_TSFFWind_Init
 !====================================================================================================
 
 
 !====================================================================================================
-SUBROUTINE IfW_FFWind_CalcOutput(Time,    InData,        ParamData,                       &
+SUBROUTINE IfW_TSFFWind_CalcOutput(Time,    InData,        ParamData,                       &
                            ContStates,    DiscStates,    ConstrStates,     OtherStates,   &
                            OutData,       ErrStat,       ErrMsg)
    !-------------------------------------------------------------------------------------------------
@@ -1934,13 +1935,13 @@ SUBROUTINE IfW_FFWind_CalcOutput(Time,    InData,        ParamData,             
 
       ! Passed Variables
    REAL(DbKi),                            INTENT(IN   )  :: Time           ! time from the start of the simulation
-   TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
-   TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
-   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
-   TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
-   TYPE(IfW_FFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
+   TYPE(IfW_TSFFWind_InputType),            INTENT(IN   )  :: InData         ! Input Data
+   TYPE(IfW_TSFFWind_ParameterType),        INTENT(IN   )  :: ParamData      ! Parameters
+   TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(IN   )  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(IN   )  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(IN   )  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_TSFFWind_OutputType),           INTENT(  OUT)  :: OutData        ! Initial output
 
       ! Error handling
    INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat        ! error status
@@ -1995,7 +1996,7 @@ SUBROUTINE IfW_FFWind_CalcOutput(Time,    InData,        ParamData,             
 
          ! Error handling
       IF (TmpErrStat /= ErrID_None) THEN  !  adding this so we don't have to convert numbers to strings every time
-         CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, "IfW_FFWind:CalcOutput [position=("//   &
+         CALL SetErrStat( TmpErrStat, TmpErrMsg, ErrStat, ErrMsg, "IfW_TSFFWind:CalcOutput [position=("//   &
                                                       TRIM(Num2LStr(InData%Position(1,PointNum)))//", "// &
                                                       TRIM(Num2LStr(InData%Position(2,PointNum)))//", "// &
                                                       TRIM(Num2LStr(InData%Position(3,PointNum)))//")]" )
@@ -2034,8 +2035,8 @@ CONTAINS
 
       REAL(DbKi),                         INTENT(IN   )  :: Time
       REAL(ReKi),                         INTENT(IN   )  :: Position(3)    ! takes the place of XGrnd, YGrnd, ZGrnd
-      TYPE(IfW_FFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
-      TYPE(IfW_FFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+      TYPE(IfW_TSFFWind_ParameterType),     INTENT(IN   )  :: ParamData      ! Parameters
+      TYPE(IfW_TSFFWind_OtherStateType),    INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
       REAL(ReKi)                                         :: FF_Interp(3)   ! The U, V, W velocities
 
       INTEGER(IntKi),                     INTENT(  OUT)  :: ErrStat
@@ -2075,7 +2076,7 @@ CONTAINS
       ! Initialize variables
       !-------------------------------------------------------------------------------------------------
 
-      FF_Interp(:)          = 0.0                         ! the output velocities (in case OtherStates%NFFComp /= 3)
+      FF_Interp(:)          = 0.0                         ! the output velocities (in case ParamData%NFFComp /= 3)
       Wnd(:)                = 0.0                         ! just in case we're on an end point
 
       ErrStat               = ErrID_None
@@ -2085,27 +2086,27 @@ CONTAINS
       ! Find the bounding time slices.
       !-------------------------------------------------------------------------------------------------
 
-      ! Perform the time shift.  At time=0, a point half the grid width downstream (OtherStates%FFYHWid) will index into the zero time slice.
+      ! Perform the time shift.  At time=0, a point half the grid width downstream (ParamData%FFYHWid) will index into the zero time slice.
       ! If we did not do this, any point downstream of the tower at the beginning of the run would index outside of the array.
       ! This all assumes the grid width is at least as large as the rotor.  If it isn't, then the interpolation will not work.
 
 
-      TimeShifted = TIME + ( OtherStates%InitXPosition - Position(1) )*OtherStates%InvMFFWS    ! in distance, X: InputInfo%Position(1) - OtherStates%InitXPosition - TIME*OtherStates%MeanFFWS
+      TimeShifted = TIME + ( ParamData%InitXPosition - Position(1) )*ParamData%InvMFFWS    ! in distance, X: InputInfo%Position(1) - ParamData%InitXPosition - TIME*ParamData%MeanFFWS
 
 
-      IF ( ParamData%Periodic ) THEN ! translate TimeShifted to ( 0 <= TimeShifted < OtherStates%TotalTime )
+      IF ( ParamData%Periodic ) THEN ! translate TimeShifted to ( 0 <= TimeShifted < ParamData%TotalTime )
 
-         TimeShifted = MODULO( TimeShifted, OtherStates%TotalTime )
+         TimeShifted = MODULO( TimeShifted, ParamData%TotalTime )
              ! If TimeShifted is a very small negative number, modulo returns the incorrect value due to internal rounding errors.
              ! See bug report #471
-         IF (TimeShifted == OtherStates%TotalTime) TimeShifted = 0.0_ReKi
+         IF (TimeShifted == ParamData%TotalTime) TimeShifted = 0.0_ReKi
 
-         TGRID = TimeShifted*OtherStates%FFRate
+         TGRID = TimeShifted*ParamData%FFRate
          ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
          T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
 
          ITLO = ITLO + 1
-         IF ( ITLO == OtherStates%NFFSteps ) THEN
+         IF ( ITLO == ParamData%NFFSteps ) THEN
             ITHI = 1
          ELSE
             ITHI = ITLO + 1
@@ -2114,15 +2115,15 @@ CONTAINS
 
       ELSE
 
-         TGRID = TimeShifted*OtherStates%FFRate
+         TGRID = TimeShifted*ParamData%FFRate
          ITLO  = INT( TGRID )             ! convert REAL to INTEGER (add 1 later because our grids start at 1, not 0)
          T     = TGRID - ITLO             ! a value between 0 and 1 that indicates a relative location between ITLO and ITHI
 
          ITLO = ITLO + 1                  ! add one since our grids start at 1, not 0
          ITHI = ITLO + 1
 
-         IF ( ITLO >= OtherStates%NFFSteps .OR. ITLO < 1 ) THEN
-            IF ( ITLO == OtherStates%NFFSteps  ) THEN
+         IF ( ITLO >= ParamData%NFFSteps .OR. ITLO < 1 ) THEN
+            IF ( ITLO == ParamData%NFFSteps  ) THEN
                ITHI = ITLO
                IF ( T <= TOL ) THEN ! we're on the last point
                   T = 0.0
@@ -2144,7 +2145,7 @@ CONTAINS
       ! Find the bounding rows for the Z position. [The lower-left corner is (1,1) when looking upwind.]
       !-------------------------------------------------------------------------------------------------
 
-      ZGRID = ( Position(3) - OtherStates%GridBase )*OtherStates%InvFFZD
+      ZGRID = ( Position(3) - ParamData%GridBase )*ParamData%InvFFZD
 
       IF (ZGRID > -1*TOL) THEN
          OnGrid = .TRUE.
@@ -2164,8 +2165,8 @@ CONTAINS
                ErrStat  = ErrID_Fatal
                RETURN
             ENDIF
-         ELSEIF ( IZLO >= OtherStates%NZGrids ) THEN
-            IF ( IZLO == OtherStates%NZGrids .AND. Z <= TOL ) THEN
+         ELSEIF ( IZLO >= ParamData%NZGrids ) THEN
+            IF ( IZLO == ParamData%NZGrids .AND. Z <= TOL ) THEN
                Z    = 0.0
                IZHI = IZLO                   ! We're right on the last point, which is still okay
             ELSE
@@ -2180,7 +2181,7 @@ CONTAINS
 
          OnGrid = .FALSE.  ! this is on the tower
 
-         IF ( OtherStates%NTGrids < 1 ) THEN
+         IF ( ParamData%NTGrids < 1 ) THEN
             ErrMsg   = ' Error: FF wind array boundaries violated. Grid too small in Z direction '// &
                        '(height (Z='//TRIM(Num2LStr(Position(3)))//' m) is below the grid and no tower points are defined).'
             ErrStat  = ErrID_Fatal
@@ -2190,10 +2191,10 @@ CONTAINS
          IZLO = INT( -1.0*ZGRID ) + 1            ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
 
 
-         IF ( IZLO >= OtherStates%NTGrids ) THEN  !our dz is the difference between the bottom tower point and the ground
-            IZLO = OtherStates%NTGrids
+         IF ( IZLO >= ParamData%NTGrids ) THEN  !our dz is the difference between the bottom tower point and the ground
+            IZLO = ParamData%NTGrids
 
-            Z    = 1.0 - Position(3) / (OtherStates%GridBase - (IZLO-1)/OtherStates%InvFFZD) !check that this isn't 0
+            Z    = 1.0 - Position(3) / (ParamData%GridBase - (IZLO-1)/ParamData%InvFFZD) !check that this isn't 0
          ELSE
             Z    = ABS(ZGRID) - (IZLO - 1)
          ENDIF
@@ -2208,24 +2209,24 @@ CONTAINS
          ! Find the bounding columns for the Y position. [The lower-left corner is (1,1) when looking upwind.]
          !-------------------------------------------------------------------------------------------------
 
-            YGRID = ( Position(2) + OtherStates%FFYHWid )*OtherStates%InvFFYD    ! really, it's (Position(2) - -1.0*OtherStates%FFYHWid)
+            YGRID = ( Position(2) + ParamData%FFYHWid )*ParamData%InvFFYD    ! really, it's (Position(2) - -1.0*ParamData%FFYHWid)
 
             IYLO = INT( YGRID ) + 1             ! convert REAL to INTEGER, then add one since our grids start at 1, not 0
             IYHI = IYLO + 1
 
             Y    = YGRID - ( IYLO - 1 )         ! a value between 0 and 1 that indicates a relative location between IYLO and IYHI
 
-            IF ( IYLO >= OtherStates%NYGrids .OR. IYLO < 1 ) THEN
+            IF ( IYLO >= ParamData%NYGrids .OR. IYLO < 1 ) THEN
                IF ( IYLO == 0 .AND. Y >= 1.0-TOL ) THEN
                   Y    = 0.0
                   IYLO = 1
-               ELSE IF ( IYLO == OtherStates%NYGrids .AND. Y <= TOL ) THEN
+               ELSE IF ( IYLO == ParamData%NYGrids .AND. Y <= TOL ) THEN
                   Y    = 0.0
                   IYHI = IYLO                   ! We're right on the last point, which is still okay
                ELSE
                   ErrMsg   = ' Error FF wind array boundaries violated: Grid too small in Y direction. Y='// &
-                             TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*OtherStates%FFYHWid))// &
-                             ', '//TRIM(Num2LStr(OtherStates%FFYHWid))//']'
+                             TRIM(Num2LStr(Position(2)))//'; Y boundaries = ['//TRIM(Num2LStr(-1.0*ParamData%FFYHWid))// &
+                             ', '//TRIM(Num2LStr(ParamData%FFYHWid))//']'
                   ErrStat = ErrID_Fatal         ! we don't return anything
                   RETURN
                ENDIF
@@ -2235,20 +2236,20 @@ CONTAINS
          ! Interpolate on the grid
          !-------------------------------------------------------------------------------------------------
 
-         DO IDIM=1,OtherStates%NFFComp       ! all the components
+         DO IDIM=1,ParamData%NFFComp       ! all the components
 
             IT = ITLO            ! Start using the ITLO slice
 
-            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be OtherStates%NFFSteps and 1 respectively)
+            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be ParamData%NFFSteps and 1 respectively)
 
                !-------------------------------------------------------------------------------------------
                ! Get the wind velocity values for the four corners of the grid for this time.
                !-------------------------------------------------------------------------------------------
 
-               W_YL_ZL = OtherStates%FFData( IZLO, IYLO, IDIM, IT )
-               W_YL_ZH = OtherStates%FFData( IZHI, IYLO, IDIM, IT )
-               W_YH_ZL = OtherStates%FFData( IZLO, IYHI, IDIM, IT )
-               W_YH_ZH = OtherStates%FFData( IZHI, IYHI, IDIM, IT )
+               W_YL_ZL = ParamData%FFData( IZLO, IYLO, IDIM, IT )
+               W_YL_ZH = ParamData%FFData( IZHI, IYLO, IDIM, IT )
+               W_YH_ZL = ParamData%FFData( IZLO, IYHI, IDIM, IT )
+               W_YH_ZH = ParamData%FFData( IZHI, IYHI, IDIM, IT )
 
 
                !-------------------------------------------------------------------------------------------
@@ -2277,22 +2278,22 @@ CONTAINS
       ! Interpolate on the tower array
       !-------------------------------------------------------------------------------------------------
 
-         DO IDIM=1,OtherStates%NFFComp    ! all the components
+         DO IDIM=1,ParamData%NFFComp    ! all the components
 
             IT = ITLO            ! Start using the ITLO slice
 
-            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be OtherStates%NFFSteps and 1 respectively)
+            DO IG=1,2            ! repeat for 2 time slices (by changing the value of IT. note that we can't loop from IXLO to IXHI because they could be ParamData%NFFSteps and 1 respectively)
 
                !-------------------------------------------------------------------------------------------
                ! Get the wind velocity values for the two corners of the grid for this time.
                !-------------------------------------------------------------------------------------------
 
-               W_YH_ZL = OtherStates%FFTower( IDIM, IZLO, IT )
+               W_YH_ZL = ParamData%FFTower( IDIM, IZLO, IT )
 
-               IF ( IZHI > OtherStates%NTGrids ) THEN
+               IF ( IZHI > ParamData%NTGrids ) THEN
                   W_YH_ZH = 0.0
                ELSE
-                  W_YH_ZH = OtherStates%FFTower( IDIM, IZHI, IT )
+                  W_YH_ZH = ParamData%FFTower( IDIM, IZHI, IT )
                ENDIF
 
 
@@ -2319,11 +2320,11 @@ CONTAINS
       RETURN
 
    END FUNCTION FF_Interp
-END SUBROUTINE IfW_FFWind_CalcOutput
+END SUBROUTINE IfW_TSFFWind_CalcOutput
 
 
 !====================================================================================================
-SUBROUTINE IfW_FFWind_End( InData,     ParamData,                                &
+SUBROUTINE IfW_TSFFWind_End( InData,     ParamData,                                &
                            ContStates, DiscStates, ConstrStates,  OtherStates,   &
                            OutData,                                              &
                            ErrStat,    ErrMsg)
@@ -2335,13 +2336,13 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
    !-------------------------------------------------------------------------------------------------
 
       ! Passed Variables
-   TYPE(IfW_FFWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
-   TYPE(IfW_FFWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
-   TYPE(IfW_FFWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
-   TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
-   TYPE(IfW_FFWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
-   TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
-   TYPE(IfW_FFWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
+   TYPE(IfW_TSFFWind_InputType),            INTENT(INOUT)  :: InData         ! Initialized input data variable
+   TYPE(IfW_TSFFWind_ParameterType),        INTENT(INOUT)  :: ParamData      ! Parameters
+   TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(INOUT)  :: ContStates     ! Continuous States  (unused)
+   TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(INOUT)  :: DiscStates     ! Discrete States    (unused)
+   TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(INOUT)  :: ConstrStates   ! Constraint States  (unused)
+   TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherStates    ! Other State data   (storage for the main data)
+   TYPE(IfW_TSFFWind_OutputType),           INTENT(INOUT)  :: OutData        ! Initial output
 
 
       ! Error Handling
@@ -2362,7 +2363,7 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
 
       ! Destroy the input data
 
-   CALL IfW_FFWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyInput(       InData,        TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -2371,7 +2372,7 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
 
       ! Destroy parameter data
 
-   CALL IfW_FFWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyParam(       ParamData,     TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -2380,25 +2381,25 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
 
       ! Destroy the state data
 
-   CALL IfW_FFWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyContState(   ContStates,    TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_FFWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyDiscState(   DiscStates,    TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_FFWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyConstrState( ConstrStates,  TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
    ENDIF
 
-   CALL IfW_FFWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyOtherState(  OtherStates,   TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -2407,7 +2408,7 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
 
       ! Destroy the output data
 
-   CALL IfW_FFWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
+   CALL IfW_TSFFWind_DestroyOutput(      OutData,       TmpErrStat, TmpErrMsg )
    If (TmpErrStat /= ErrID_None) THEN
       ErrStat  = MAX(ErrStat,TmpErrStat)
       ErrMsg   = TRIM(ErrMsg)//TRIM(TmpErrMsg)//NewLine
@@ -2418,7 +2419,7 @@ SUBROUTINE IfW_FFWind_End( InData,     ParamData,                               
    ParamData%Initialized = .FALSE.
 
 
-END SUBROUTINE IfW_FFWind_End
+END SUBROUTINE IfW_TSFFWind_End
 
 !====================================================================================================
 !====================================================================================================
@@ -2431,28 +2432,28 @@ END SUBROUTINE IfW_FFWind_End
 !  16-Apr-2013 - A. Platt, NREL.  Converted to modular framework. Modified for NWTC_Library 2.0
 !====================================================================================================
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+SUBROUTINE IfW_TSFFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
 ! Loose coupling routine for solving for constraint states, integrating continuous states, and updating discrete states
 ! Constraint states are solved for input Time; Continuous and discrete states are updated for Time + Interval
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
+      TYPE(IfW_TSFFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_TSFFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(INOUT)  :: x           ! Input: Continuous states at Time;
                                                                            ! Output: Continuous states at Time + Interval
-      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+      TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
                                                                            ! Output: Discrete states at Time  + Interval
-      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
+      TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(INOUT)  :: z           ! Input: Initial guess of constraint states at Time;
                                                                            ! Output: Constraint states at Time
-      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
          ! Local variables
 
-      TYPE(IfW_FFWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
-      TYPE(IfW_FFWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
+      TYPE(IfW_TSFFWind_ContinuousStateType)                  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_TSFFWind_ConstraintStateType)                  :: z_Residual  ! Residual of the constraint state equations (Z)
 
       INTEGER(IntKi)                                        :: ErrStat2    ! Error status of the operation (occurs after initial error)
       CHARACTER(LEN(ErrMsg))                                :: ErrMsg2     ! Error message if ErrStat2 /= ErrID_None
@@ -2469,9 +2470,9 @@ SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
          ! Check if the z guess is correct and update z with a new guess.
          ! Iterate until the value is within a given tolerance.
 
-      CALL IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      CALL IfW_TSFFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+         CALL IfW_TSFFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
          RETURN
       ENDIF
@@ -2480,9 +2481,9 @@ SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
       !
       !  z =
       !
-      !  CALL IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
+      !  CALL IfW_TSFFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_Residual, ErrStat, ErrMsg )
       !  IF ( ErrStat >= AbortErrLev ) THEN
-      !     CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
+      !     CALL IfW_TSFFWind_DestroyConstrState( z_Residual, ErrStat2, ErrMsg2)
       !     ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
       !     RETURN
       !  ENDIF
@@ -2492,28 +2493,28 @@ SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
 
          ! Destroy z_Residual because it is not necessary for the rest of the subroutine:
 
-      CALL IfW_FFWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
+      CALL IfW_TSFFWind_DestroyConstrState( z_Residual, ErrStat, ErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
 
 
 
          ! Get first time derivatives of continuous states (dxdt):
 
-      CALL IfW_FFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+      CALL IfW_TSFFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_FFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         CALL IfW_TSFFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
          RETURN
       ENDIF
 
 
          ! Update discrete states:
-         !   Note that xd [discrete state] is changed in IfW_FFWind_UpdateDiscState(), so IfW_FFWind_CalcOutput(),
-         !   IfW_FFWind_CalcContStateDeriv(), and IfW_FFWind_CalcConstrStates() must be called first (see above).
+         !   Note that xd [discrete state] is changed in IfW_TSFFWind_UpdateDiscState(), so IfW_TSFFWind_CalcOutput(),
+         !   IfW_TSFFWind_CalcContStateDeriv(), and IfW_TSFFWind_CalcConstrStates() must be called first (see above).
 
-      CALL IfW_FFWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+      CALL IfW_TSFFWind_UpdateDiscState(Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
       IF ( ErrStat >= AbortErrLev ) THEN
-         CALL IfW_FFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
+         CALL IfW_TSFFWind_DestroyContState( dxdt, ErrStat2, ErrMsg2)
          ErrMsg = TRIM(ErrMsg)//' '//TRIM(ErrMsg2)
          RETURN
       ENDIF
@@ -2526,25 +2527,25 @@ SUBROUTINE IfW_FFWind_UpdateStates( Time, u, p, x, xd, z, OtherState, ErrStat, E
 
          ! Destroy dxdt because it is not necessary for the rest of the subroutine
 
-      CALL IfW_FFWind_DestroyContState( dxdt, ErrStat, ErrMsg)
+      CALL IfW_TSFFWind_DestroyContState( dxdt, ErrStat, ErrMsg)
       IF ( ErrStat >= AbortErrLev ) RETURN
 
 
 
-END SUBROUTINE IfW_FFWind_UpdateStates
+END SUBROUTINE IfW_TSFFWind_UpdateStates
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_FFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
+SUBROUTINE IfW_TSFFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt, ErrStat, ErrMsg )
 ! Tight coupling routine for computing derivatives of continuous states
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
-      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
-      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
-      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
+      TYPE(IfW_TSFFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_TSFFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(  OUT)  :: dxdt        ! Continuous state derivatives at Time
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -2560,20 +2561,20 @@ SUBROUTINE IfW_FFWind_CalcContStateDeriv( Time, u, p, x, xd, z, OtherState, dxdt
       dxdt%DummyContState = 0.0_ReKi
 
 
-END SUBROUTINE IfW_FFWind_CalcContStateDeriv
+END SUBROUTINE IfW_TSFFWind_CalcContStateDeriv
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_FFWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
+SUBROUTINE IfW_TSFFWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat, ErrMsg )
 ! Tight coupling routine for updating discrete states
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
+      TYPE(IfW_TSFFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_TSFFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(INOUT)  :: xd          ! Input: Discrete states at Time;
                                                                            !   Output: Discrete states at Time + Interval
-      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
-      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time
+      TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
 
@@ -2588,20 +2589,20 @@ SUBROUTINE IfW_FFWind_UpdateDiscState( Time, u, p, x, xd, z, OtherState, ErrStat
 
       ! StateData%DiscState =
 
-END SUBROUTINE IfW_FFWind_UpdateDiscState
+END SUBROUTINE IfW_TSFFWind_UpdateDiscState
 !----------------------------------------------------------------------------------------------------------------------------------
-SUBROUTINE IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
+SUBROUTINE IfW_TSFFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState, z_residual, ErrStat, ErrMsg )
 ! Tight coupling routine for solving for the residual of the constraint state equations
 !..................................................................................................................................
 
       REAL(DbKi),                            INTENT(IN   )  :: Time        ! Current simulation time in seconds
-      TYPE(IfW_FFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
-      TYPE(IfW_FFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
-      TYPE(IfW_FFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
-      TYPE(IfW_FFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
-      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
-      TYPE(IfW_FFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
-      TYPE(IfW_FFWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
+      TYPE(IfW_TSFFWind_InputType),            INTENT(IN   )  :: u           ! Inputs at Time
+      TYPE(IfW_TSFFWind_ParameterType),        INTENT(IN   )  :: p           ! Parameters
+      TYPE(IfW_TSFFWind_ContinuousStateType),  INTENT(IN   )  :: x           ! Continuous states at Time
+      TYPE(IfW_TSFFWind_DiscreteStateType),    INTENT(IN   )  :: xd          ! Discrete states at Time
+      TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(IN   )  :: z           ! Constraint states at Time (possibly a guess)
+      TYPE(IfW_TSFFWind_OtherStateType),       INTENT(INOUT)  :: OtherState  ! Other/optimization states
+      TYPE(IfW_TSFFWind_ConstraintStateType),  INTENT(  OUT)  :: z_residual  ! Residual of the constraint state equations using
                                                                            ! the input values described above
       INTEGER(IntKi),                        INTENT(  OUT)  :: ErrStat     ! Error status of the operation
       CHARACTER(*),                          INTENT(  OUT)  :: ErrMsg      ! Error message if ErrStat /= ErrID_None
@@ -2617,9 +2618,9 @@ SUBROUTINE IfW_FFWind_CalcConstrStateResidual( Time, u, p, x, xd, z, OtherState,
 
       z_residual%DummyConstrState = 0.0_ReKi
 
-END SUBROUTINE IfW_FFWind_CalcConstrStateResidual
+END SUBROUTINE IfW_TSFFWind_CalcConstrStateResidual
 
 
 
 !====================================================================================================
-END MODULE IfW_FFWind
+END MODULE IfW_TSFFWind
