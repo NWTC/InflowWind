@@ -27,7 +27,7 @@ ifeq ($(OS),Windows_NT)
 else
 #   ifeq ($(HOSTNAME), aplatt-21809s)
       SoftwareDir       = /Users/aplatt/software-development/windsvn
-      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry_Mac.exe
+      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry.exe
       NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
       IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
 #      RegistryDIR       = $(IfW_DIR)/Registry
@@ -212,10 +212,16 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 	-o $(INTER_DIR)/$@ \
 	-I $(NWTC_Lib_DIR) -J $(INTER_DIR)
 
+   # Making _Types.f90 files from .txt registry files.   These registries need the extra flag.
+IfW_%_Types.f90: $(RegistryDIR)/IfW_%.txt
+	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap;
+	cp $@ ../;
+
    # Making _Types.f90 files from .txt registry files.
 %_Types.f90: $(RegistryDIR)/%.txt
 	$(RegistryProgram) $< -I $(RegistryNWTC);
 	cp $@ ../;
+
 
 
 
