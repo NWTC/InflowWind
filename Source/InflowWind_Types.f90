@@ -132,10 +132,6 @@ IMPLICIT NONE
     TYPE(IfW_TSFFWind_InitOutputType)  :: TSFFWind      ! TSFFWind InitOutput info [-]
     TYPE(IfW_BladedFFWind_InitOutputType)  :: BladedFFWind      ! BladedFFWind InitOutput info [-]
     TYPE(WindFileMetaData)  :: WindFileInfo      ! Meta data from the wind file [-]
-    REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [-]
-    REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [-]
-    INTEGER(IntKi)  :: WindFileNumTSteps      ! Number of timesteps in the time range of wind file [-]
-    LOGICAL  :: WindFileConstantDT      ! Timesteps are the same throughout file [-]
   END TYPE InflowWind_InitOutputType
 ! =======================
 ! =========  InflowWind_OtherStateType  =======
@@ -963,10 +959,6 @@ ENDIF
       CALL IfW_TSFFWind_CopyInitOutput( SrcInitOutputData%TSFFWind, DstInitOutputData%TSFFWind, CtrlCode, ErrStat, ErrMsg )
       CALL IfW_BladedFFWind_CopyInitOutput( SrcInitOutputData%BladedFFWind, DstInitOutputData%BladedFFWind, CtrlCode, ErrStat, ErrMsg )
       CALL InflowWind_Copywindfilemetadata( SrcInitOutputData%WindFileInfo, DstInitOutputData%WindFileInfo, CtrlCode, ErrStat, ErrMsg )
-   DstInitOutputData%WindFileDT = SrcInitOutputData%WindFileDT
-   DstInitOutputData%WindFileTRange = SrcInitOutputData%WindFileTRange
-   DstInitOutputData%WindFileNumTSteps = SrcInitOutputData%WindFileNumTSteps
-   DstInitOutputData%WindFileConstantDT = SrcInitOutputData%WindFileConstantDT
  END SUBROUTINE InflowWind_CopyInitOutput
 
  SUBROUTINE InflowWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
@@ -1075,9 +1067,6 @@ ENDIF
   IF(ALLOCATED(Re_WindFileInfo_Buf))  DEALLOCATE(Re_WindFileInfo_Buf)
   IF(ALLOCATED(Db_WindFileInfo_Buf))  DEALLOCATE(Db_WindFileInfo_Buf)
   IF(ALLOCATED(Int_WindFileInfo_Buf)) DEALLOCATE(Int_WindFileInfo_Buf)
-  Db_BufSz   = Db_BufSz   + 1  ! WindFileDT
-  Re_BufSz    = Re_BufSz    + SIZE( InData%WindFileTRange )  ! WindFileTRange 
-  Int_BufSz  = Int_BufSz  + 1  ! WindFileNumTSteps
   IF ( Re_BufSz  .GT. 0 ) ALLOCATE( ReKiBuf(  Re_BufSz  ) )
   IF ( Db_BufSz  .GT. 0 ) ALLOCATE( DbKiBuf(  Db_BufSz  ) )
   IF ( Int_BufSz .GT. 0 ) ALLOCATE( IntKiBuf( Int_BufSz ) )
@@ -1163,12 +1152,6 @@ ENDIF
   IF( ALLOCATED(Re_WindFileInfo_Buf) )  DEALLOCATE(Re_WindFileInfo_Buf)
   IF( ALLOCATED(Db_WindFileInfo_Buf) )  DEALLOCATE(Db_WindFileInfo_Buf)
   IF( ALLOCATED(Int_WindFileInfo_Buf) ) DEALLOCATE(Int_WindFileInfo_Buf)
-  IF ( .NOT. OnlySize ) DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) =  (InData%WindFileDT )
-  Db_Xferred   = Db_Xferred   + 1
-  IF ( .NOT. OnlySize ) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindFileTRange))-1 ) =  PACK(InData%WindFileTRange ,.TRUE.)
-  Re_Xferred   = Re_Xferred   + SIZE(InData%WindFileTRange)
-  IF ( .NOT. OnlySize ) IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = (InData%WindFileNumTSteps )
-  Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackInitOutput
 
  SUBROUTINE InflowWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1296,14 +1279,6 @@ ENDIF
     Int_Xferred = Int_Xferred + SIZE(Int_WindFileInfo_Buf)
   ENDIF
   CALL InflowWind_UnPackwindfilemetadata( Re_WindFileInfo_Buf, Db_WindFileInfo_Buf, Int_WindFileInfo_Buf, OutData%WindFileInfo, ErrStat, ErrMsg ) ! WindFileInfo 
-  OutData%WindFileDT = DbKiBuf ( Db_Xferred )
-  Db_Xferred   = Db_Xferred   + 1
-  ALLOCATE(mask1(SIZE(OutData%WindFileTRange,1))); mask1 = .TRUE.
-  OutData%WindFileTRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%WindFileTRange))-1 ),mask1,OutData%WindFileTRange)
-  DEALLOCATE(mask1)
-  Re_Xferred   = Re_Xferred   + SIZE(OutData%WindFileTRange)
-  OutData%WindFileNumTSteps = IntKiBuf ( Int_Xferred )
-  Int_Xferred   = Int_Xferred   + 1
   Re_Xferred   = Re_Xferred-1
   Db_Xferred   = Db_Xferred-1
   Int_Xferred  = Int_Xferred-1
