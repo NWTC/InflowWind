@@ -2,7 +2,7 @@
 This is a sample Inflow-Wind input file.
 ---------------------------------------------------------------------------------------------------------------
 True                 Echo           - Echo input data to <RootName>.ech (flag)
-  4                  WindType       - switch for wind file type (1=steady; 2=uniform; 3=binary TurbSim FF; 4=binary Bladed-style FF; 5=HAWC format; 6=User defined)
+  1                  WindType       - switch for wind file type (1=steady; 2=uniform; 3=binary TurbSim FF; 4=binary Bladed-style FF; 5=HAWC format; 6=User defined)
  60.0                 PropogationDir - Direction of wind propogation (meteoroligical rotation from aligned with X (positive rotates towards -Y) -- degrees)
  3                   NWindVel       - Number of points to output the wind velocity (0 to 9)
  0,10,2,-3,4,-5,6,-7,8 WindVxiList    - List of coordinates in the inertial X direction (m)

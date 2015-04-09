@@ -55,6 +55,7 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_TSFFWind_ParameterType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
+    LOGICAL  :: TowerDataExist = .FALSE.      ! Data exists for the tower [-]
     LOGICAL  :: Periodic = .FALSE.      ! Flag to indicate if the wind file is periodic [-]
     LOGICAL  :: Linearize = .FALSE.      ! If this is true, we are linearizing [-]
     REAL(ReKi) , DIMENSION(:,:,:,:), ALLOCATABLE  :: FFData      ! Array of FF data [-]
@@ -615,6 +616,7 @@ CONTAINS
    ErrMsg  = ""
    DstParamData%WindFileName = SrcParamData%WindFileName
    DstParamData%DT = SrcParamData%DT
+   DstParamData%TowerDataExist = SrcParamData%TowerDataExist
    DstParamData%Periodic = SrcParamData%Periodic
    DstParamData%Linearize = SrcParamData%Linearize
 IF (ALLOCATED(SrcParamData%FFData)) THEN
@@ -725,6 +727,7 @@ ENDIF
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%WindFileName)  ! WindFileName
       Db_BufSz   = Db_BufSz   + 1  ! DT
+      Int_BufSz  = Int_BufSz  + 1  ! TowerDataExist
       Int_BufSz  = Int_BufSz  + 1  ! Periodic
       Int_BufSz  = Int_BufSz  + 1  ! Linearize
   Int_BufSz   = Int_BufSz   + 1     ! FFData allocated yes/no
@@ -788,6 +791,8 @@ ENDIF
         END DO ! I
       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerDataExist , IntKiBuf(1), 1)
+      Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Periodic , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Linearize , IntKiBuf(1), 1)
@@ -917,6 +922,8 @@ ENDIF
       END DO ! I
       OutData%DT = DbKiBuf( Db_Xferred ) 
       Db_Xferred   = Db_Xferred + 1
+      OutData%TowerDataExist = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
+      Int_Xferred   = Int_Xferred + 1
       OutData%Periodic = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
       Int_Xferred   = Int_Xferred + 1
       OutData%Linearize = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
