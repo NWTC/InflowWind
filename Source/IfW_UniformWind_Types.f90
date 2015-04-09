@@ -53,7 +53,6 @@ IMPLICIT NONE
 ! =========  IfW_UniformWind_OtherStateType  =======
   TYPE, PUBLIC :: IfW_UniformWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex      ! An Index into the TData array [-]
-    INTEGER(IntKi)  :: UnitWind      ! Unit number for the wind file opened [-]
   END TYPE IfW_UniformWind_OtherStateType
 ! =======================
 ! =========  IfW_UniformWind_ParameterType  =======
@@ -503,7 +502,6 @@ CONTAINS
    ErrStat = ErrID_None
    ErrMsg  = ""
    DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
-   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_UniformWind_CopyOtherState
 
  SUBROUTINE IfW_UniformWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -553,7 +551,6 @@ CONTAINS
   Db_BufSz  = 0
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
-      Int_BufSz  = Int_BufSz  + 1  ! UnitWind
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -582,8 +579,6 @@ CONTAINS
   Int_Xferred = 1
 
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
-      Int_Xferred   = Int_Xferred   + 1
-      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%UnitWind
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_UniformWind_PackOtherState
 
@@ -620,8 +615,6 @@ CONTAINS
   Db_Xferred  = 1
   Int_Xferred  = 1
       OutData%TimeIndex = IntKiBuf( Int_Xferred ) 
-      Int_Xferred   = Int_Xferred + 1
-      OutData%UnitWind = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_UniformWind_UnPackOtherState
 

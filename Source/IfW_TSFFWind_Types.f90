@@ -48,7 +48,6 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_TSFFWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
-    INTEGER(IntKi)  :: UnitWind      ! Unit number for the wind file opened [-]
   END TYPE IfW_TSFFWind_OtherStateType
 ! =======================
 ! =========  IfW_TSFFWind_ParameterType  =======
@@ -469,7 +468,6 @@ CONTAINS
    ErrMsg  = ""
    DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
    DstOtherStateData%Initialized = SrcOtherStateData%Initialized
-   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_TSFFWind_CopyOtherState
 
  SUBROUTINE IfW_TSFFWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -520,7 +518,6 @@ CONTAINS
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
       Int_BufSz  = Int_BufSz  + 1  ! Initialized
-      Int_BufSz  = Int_BufSz  + 1  ! UnitWind
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -551,8 +548,6 @@ CONTAINS
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
-      Int_Xferred   = Int_Xferred   + 1
-      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%UnitWind
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_TSFFWind_PackOtherState
 
@@ -591,8 +586,6 @@ CONTAINS
       OutData%TimeIndex = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%Initialized = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
-      Int_Xferred   = Int_Xferred + 1
-      OutData%UnitWind = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_TSFFWind_UnPackOtherState
 

@@ -42,13 +42,13 @@ IMPLICIT NONE
 ! =========  IfW_BladedFFWind_InitOutputType  =======
   TYPE, PUBLIC :: IfW_BladedFFWind_InitOutputType
     TYPE(ProgDesc)  :: Ver      ! Version information off FFWind submodule [-]
+    REAL(ReKi) , DIMENSION(1:3)  :: TI      ! Turbulence intensity given in the file [-]
   END TYPE IfW_BladedFFWind_InitOutputType
 ! =======================
 ! =========  IfW_BladedFFWind_OtherStateType  =======
   TYPE, PUBLIC :: IfW_BladedFFWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
-    INTEGER(IntKi)  :: UnitWind      ! Unit number for the wind file opened [-]
   END TYPE IfW_BladedFFWind_OtherStateType
 ! =======================
 ! =========  IfW_BladedFFWind_ParameterType  =======
@@ -244,6 +244,7 @@ CONTAINS
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
+   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
    INTEGER(IntKi)                 :: ErrStat2
    CHARACTER(1024)                :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_BladedFFWind_CopyInitOutput'
@@ -253,6 +254,7 @@ CONTAINS
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
+   DstInitOutputData%TI = SrcInitOutputData%TI
  END SUBROUTINE IfW_BladedFFWind_CopyInitOutput
 
  SUBROUTINE IfW_BladedFFWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
@@ -320,6 +322,7 @@ CONTAINS
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
+      Re_BufSz   = Re_BufSz   + SIZE(InData%TI)  ! TI
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -375,6 +378,8 @@ CONTAINS
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%TI)
  END SUBROUTINE IfW_BladedFFWind_PackInitOutput
 
  SUBROUTINE IfW_BladedFFWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -396,6 +401,7 @@ CONTAINS
   LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+  INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_BladedFFWind_UnPackInitOutput'
@@ -451,6 +457,17 @@ CONTAINS
       IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
       IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+    i1_l = LBOUND(OutData%TI,1)
+    i1_u = UBOUND(OutData%TI,1)
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%TI)
+    DEALLOCATE(mask1)
  END SUBROUTINE IfW_BladedFFWind_UnPackInitOutput
 
  SUBROUTINE IfW_BladedFFWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )
@@ -469,7 +486,6 @@ CONTAINS
    ErrMsg  = ""
    DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
    DstOtherStateData%Initialized = SrcOtherStateData%Initialized
-   DstOtherStateData%UnitWind = SrcOtherStateData%UnitWind
  END SUBROUTINE IfW_BladedFFWind_CopyOtherState
 
  SUBROUTINE IfW_BladedFFWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -520,7 +536,6 @@ CONTAINS
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
       Int_BufSz  = Int_BufSz  + 1  ! Initialized
-      Int_BufSz  = Int_BufSz  + 1  ! UnitWind
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -551,8 +566,6 @@ CONTAINS
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
-      Int_Xferred   = Int_Xferred   + 1
-      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%UnitWind
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_BladedFFWind_PackOtherState
 
@@ -591,8 +604,6 @@ CONTAINS
       OutData%TimeIndex = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%Initialized = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
-      Int_Xferred   = Int_Xferred + 1
-      OutData%UnitWind = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_BladedFFWind_UnPackOtherState
 

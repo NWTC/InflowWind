@@ -62,6 +62,8 @@ IMPLICIT NONE
     LOGICAL  :: ZRange_Limited      ! ZRange limits strictly enforced [-]
     INTEGER(IntKi)  :: BinaryFormat      ! Binary format identifier [-]
     LOGICAL  :: IsBinary      ! Windfile is a binary file [-]
+    REAL(ReKi) , DIMENSION(1:3)  :: TI      ! Turbulence intensity (U,V,W) [-]
+    LOGICAL  :: TI_listed      ! Turbulence intesity given in file [-]
   END TYPE WindFileMetaData
 ! =======================
 ! =========  InflowWind_InputFile  =======
@@ -236,6 +238,8 @@ CONTAINS
    DstWindFileMetaDataData%ZRange_Limited = SrcWindFileMetaDataData%ZRange_Limited
    DstWindFileMetaDataData%BinaryFormat = SrcWindFileMetaDataData%BinaryFormat
    DstWindFileMetaDataData%IsBinary = SrcWindFileMetaDataData%IsBinary
+   DstWindFileMetaDataData%TI = SrcWindFileMetaDataData%TI
+   DstWindFileMetaDataData%TI_listed = SrcWindFileMetaDataData%TI_listed
  END SUBROUTINE InflowWind_CopyWindFileMetaData
 
  SUBROUTINE InflowWind_DestroyWindFileMetaData( WindFileMetaDataData, ErrStat, ErrMsg )
@@ -299,6 +303,8 @@ CONTAINS
       Int_BufSz  = Int_BufSz  + 1  ! ZRange_Limited
       Int_BufSz  = Int_BufSz  + 1  ! BinaryFormat
       Int_BufSz  = Int_BufSz  + 1  ! IsBinary
+      Re_BufSz   = Re_BufSz   + SIZE(InData%TI)  ! TI
+      Int_BufSz  = Int_BufSz  + 1  ! TI_listed
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -357,6 +363,10 @@ CONTAINS
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%BinaryFormat
       Int_Xferred   = Int_Xferred   + 1
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%IsBinary , IntKiBuf(1), 1)
+      Int_Xferred   = Int_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%TI)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TI_listed , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackWindFileMetaData
 
@@ -452,6 +462,19 @@ CONTAINS
       OutData%BinaryFormat = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%IsBinary = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
+      Int_Xferred   = Int_Xferred + 1
+    i1_l = LBOUND(OutData%TI,1)
+    i1_u = UBOUND(OutData%TI,1)
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%TI)
+    DEALLOCATE(mask1)
+      OutData%TI_listed = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
       Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE InflowWind_UnPackWindFileMetaData
 
