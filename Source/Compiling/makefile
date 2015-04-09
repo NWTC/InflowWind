@@ -155,7 +155,9 @@ IfW_SOURCES =              \
 	IfW_TSFFWind_Types.f90  \
 	IfW_TSFFWind.f90        \
 	IfW_BladedFFWind_Types.f90  \
-	IfW_BladedFFWind.f90
+	IfW_BladedFFWind.f90    \
+	IfW_UserWind_Types.f90  \
+	IfW_UserWind.f90
 
 #	InflowWind_Input.f90    \
 
@@ -250,11 +252,13 @@ IfW_BladedFFWind_Types$(OBJ_EXT):   NWTC_Library$(OBJ_EXT)
 IfW_BladedFFWind$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
 IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
+IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
+IfW_UserWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
-                                    IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
+                                    IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
 InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT)
 InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
-                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT)
+                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT)
 
 #Driver dependency rules:
 InflowWind_Driver_Types$(OBJ_EXT):  InflowWind_Types$(OBJ_EXT)
@@ -280,8 +284,11 @@ $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) | $(INTER_DIR)
 clean:
 	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*.mod $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT)
 	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_UniformWind_Types.f90
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_TSFFWind_Types.f90
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_BladedFFWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_HAWCWind_Types.f90
+	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_UserWind_Types.f90
 	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)*_Types.f90
 	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)*_Types.f90
 	$(DEL_CMD) *_Types.f90
