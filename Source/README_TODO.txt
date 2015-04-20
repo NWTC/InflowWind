@@ -10,36 +10,32 @@ List of items to tackle:
 ==============================
 
 IfW control level
--- split FFWind.
 -- summary output file.
--- placeholder for the userwind.f90 submodule.  Put directions within that module and an error message in the module with information on how
-   to impliment it.
 -- for HHWind (UniformWind), give a warning if the global winddirection and wind direction in the file are different (init routine someplace,
    using first timestep, different warning if non-zero global wind direction and direction changes from zero within file.
    Continue with sim anyhow)
--- setup the FFT.  May need to create some additional types for storing the data.
+X- setup the FFT.  May need to create some additional types for storing the data.
 
 
 
 Documentation
 -- what the input file parameters description (see the FAST 8 README in Bonnie's branch)
--- 
 
 
 
 Submodules
 -- Uniform wind (also steady wind)
    -- summary file writing
--- FFWind -> split to TurbSimFF and BladedStyleFF.  Change the WindNumbers for this.
+-- TSFFWind
+   -- summary file writing
+   -- new interpolator
+-- BladedFFWind
    -- summary file writing
    -- new interpolator
 -- HAWCWind -> Major revamp with the scaling.
    -- summary file writing
    -- new interpolator
    -- Scaling parameters --> must output info on this to the summary file.
--- BladedWind -> includes native Bladed and TurbSim bladed files.
-   -- summary file writing
-   -- new interpolator
 -- CTWind -> major revamp of how this is implimented (talk to Bonnie when we get there)
    -- new interpolator (not sure if this applies here or not)
    -- summary file writing
@@ -47,7 +43,6 @@ Submodules
 
 Additional items
 -- CertTests and examples for each type of file.
--- change all documentation to refer to uniform wind instead of hub-height
 -- change documentation so that it refers to the "reference-height" (RefHt) instead of "hub-height"
 -- TestRoutines directory --> need to update all of that or get rid of it if it is replaced by the driver
 
