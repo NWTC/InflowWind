@@ -36,12 +36,12 @@ IMPLICIT NONE
 ! =========  IfW_TSFFWind_InitInputType  =======
   TYPE, PUBLIC :: IfW_TSFFWind_InitInputType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
+    INTEGER(IntKi)  :: SumFileUnit      ! Unit number for the summary file (-1 for none).  Provided by IfW. [-]
   END TYPE IfW_TSFFWind_InitInputType
 ! =======================
 ! =========  IfW_TSFFWind_InitOutputType  =======
   TYPE, PUBLIC :: IfW_TSFFWind_InitOutputType
     TYPE(ProgDesc)  :: Ver      ! Version information off FFWind submodule [-]
-    REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
   END TYPE IfW_TSFFWind_InitOutputType
 ! =======================
 ! =========  IfW_TSFFWind_OtherStateType  =======
@@ -105,6 +105,7 @@ CONTAINS
    ErrStat = ErrID_None
    ErrMsg  = ""
     DstInitInputData%WindFileName = SrcInitInputData%WindFileName
+    DstInitInputData%SumFileUnit = SrcInitInputData%SumFileUnit
  END SUBROUTINE IfW_TSFFWind_CopyInitInput
 
  SUBROUTINE IfW_TSFFWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -154,6 +155,7 @@ CONTAINS
   Db_BufSz  = 0
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%WindFileName)  ! WindFileName
+      Int_BufSz  = Int_BufSz  + 1  ! SumFileUnit
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -185,6 +187,8 @@ CONTAINS
           IntKiBuf(Int_Xferred) = ICHAR(InData%WindFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
+       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SumFileUnit
+      Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_TSFFWind_PackInitInput
 
  SUBROUTINE IfW_TSFFWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -227,6 +231,8 @@ CONTAINS
         OutData%WindFileName(I:I) = CHAR(IntKiBuf(Int_Xferred))
         Int_Xferred = Int_Xferred   + 1
       END DO ! I
+      OutData%SumFileUnit = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_TSFFWind_UnPackInitInput
 
  SUBROUTINE IfW_TSFFWind_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
@@ -246,7 +252,6 @@ CONTAINS
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
-    DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
  END SUBROUTINE IfW_TSFFWind_CopyInitOutput
 
  SUBROUTINE IfW_TSFFWind_DestroyInitOutput( InitOutputData, ErrStat, ErrMsg )
@@ -314,7 +319,6 @@ CONTAINS
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
-      Re_BufSz   = Re_BufSz   + 1  ! HubHeight
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -370,8 +374,6 @@ CONTAINS
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HubHeight
-      Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_TSFFWind_PackInitOutput
 
  SUBROUTINE IfW_TSFFWind_UnPackInitOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -446,8 +448,6 @@ CONTAINS
       IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
       IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
-      OutData%HubHeight = ReKiBuf( Re_Xferred )
-      Re_Xferred   = Re_Xferred + 1
  END SUBROUTINE IfW_TSFFWind_UnPackInitOutput
 
  SUBROUTINE IfW_TSFFWind_CopyOtherState( SrcOtherStateData, DstOtherStateData, CtrlCode, ErrStat, ErrMsg )

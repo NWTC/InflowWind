@@ -111,7 +111,7 @@ IMPLICIT NONE
     CHARACTER(1024)  :: HAWC_ProfileType      ! HAWC -- Wind profile type ('LOG'=logarithmic, 'PL'=power law, or 'UD'=user defined) [-]
     REAL(ReKi)  :: HAWC_PLExp      ! HAWC -- Power law exponent (used for PL wind profile type only) [-]
     REAL(ReKi)  :: HAWC_Z0      ! HAWC -- Surface roughness length (used for LOG wind profile type only) [-]
-    LOGICAL  :: SumPrint      ! Print summary info [-]
+    LOGICAL  :: SumPrint      ! Write summary info to a file <ROOTNAME>.IfW.Sum [-]
     INTEGER(IntKi)  :: NumOuts      ! Number of parameters in the output list (number of outputs requested) [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: OutList      ! List of user-requested output channels [-]
   END TYPE InflowWind_InputFile
@@ -131,7 +131,6 @@ IMPLICIT NONE
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputHdr      ! Names of output-to-file channels [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: WriteOutputUnt      ! Units of output-to-file channels [-]
     TYPE(ProgDesc)  :: Ver      ! Version information of InflowWind module [-]
-    REAL(ReKi)  :: HubHeight      ! Height of the hub in the file [meters]
     TYPE(IfW_UniformWind_InitOutputType)  :: UniformWind      ! UniformWind InitOutput info [-]
     TYPE(IfW_TSFFWind_InitOutputType)  :: TSFFWind      ! TSFFWind InitOutput info [-]
     TYPE(IfW_BladedFFWind_InitOutputType)  :: BladedFFWind      ! BladedFFWind InitOutput info [-]
@@ -158,10 +157,6 @@ IMPLICIT NONE
     CHARACTER(3)  :: WindFileExt      ! Extention of the name of the wind file [-]
     CHARACTER(1024)  :: InputFileName      ! Name of the InflowWind input   file to use [-]
     CHARACTER(1024)  :: RootFileName      ! Root of the InflowWind input   filename [-]
-    CHARACTER(1024)  :: EchoFileName      ! Name of the InflowWind echo    file to use [-]
-    CHARACTER(1024)  :: SumFileName      ! Name of the InflowWind summary file to use [-]
-    LOGICAL  :: WriteSumFile      ! Write a summary file [-]
-    INTEGER(IntKi)  :: UnitSumFile      ! Unit number for the summary file [-]
     LOGICAL  :: Initialized = .FALSE.      ! Flag to indicate if the module was initialized [-]
     LOGICAL  :: CTTS_Flag = .FALSE.      ! determines if coherent turbulence is used [-]
     REAL(DbKi)  :: DT      ! Time step for cont. state integration & disc. state update [seconds]
@@ -1414,7 +1409,6 @@ ENDIF
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
-    DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
       CALL IfW_UniformWind_CopyInitOutput( SrcInitOutputData%UniformWind, DstInitOutputData%UniformWind, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
@@ -1522,7 +1516,6 @@ ENDIF
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
-      Re_BufSz   = Re_BufSz   + 1  ! HubHeight
       Int_BufSz   = Int_BufSz + 3  ! UniformWind: size of buffers for each call to pack subtype
       CALL IfW_UniformWind_PackInitOutput( Re_Buf, Db_Buf, Int_Buf, InData%UniformWind, ErrStat2, ErrMsg2, .TRUE. ) ! UniformWind 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
@@ -1714,8 +1707,6 @@ ENDIF
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HubHeight
-      Re_Xferred   = Re_Xferred   + 1
       CALL IfW_UniformWind_PackInitOutput( Re_Buf, Db_Buf, Int_Buf, InData%UniformWind, ErrStat2, ErrMsg2, OnlySize ) ! UniformWind 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
@@ -2013,8 +2004,6 @@ ENDIF
       IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
       IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
-      OutData%HubHeight = ReKiBuf( Re_Xferred )
-      Re_Xferred   = Re_Xferred + 1
       Buf_size=IntKiBuf( Int_Xferred )
       Int_Xferred = Int_Xferred + 1
       IF(Buf_size > 0) THEN
@@ -2890,10 +2879,6 @@ ENDIF
     DstParamData%WindFileExt = SrcParamData%WindFileExt
     DstParamData%InputFileName = SrcParamData%InputFileName
     DstParamData%RootFileName = SrcParamData%RootFileName
-    DstParamData%EchoFileName = SrcParamData%EchoFileName
-    DstParamData%SumFileName = SrcParamData%SumFileName
-    DstParamData%WriteSumFile = SrcParamData%WriteSumFile
-    DstParamData%UnitSumFile = SrcParamData%UnitSumFile
     DstParamData%Initialized = SrcParamData%Initialized
     DstParamData%CTTS_Flag = SrcParamData%CTTS_Flag
     DstParamData%DT = SrcParamData%DT
@@ -3031,10 +3016,6 @@ ENDIF
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%WindFileExt)  ! WindFileExt
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%InputFileName)  ! InputFileName
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%RootFileName)  ! RootFileName
-      Int_BufSz  = Int_BufSz  + 1*LEN(InData%EchoFileName)  ! EchoFileName
-      Int_BufSz  = Int_BufSz  + 1*LEN(InData%SumFileName)  ! SumFileName
-      Int_BufSz  = Int_BufSz  + 1  ! WriteSumFile
-      Int_BufSz  = Int_BufSz  + 1  ! UnitSumFile
       Int_BufSz  = Int_BufSz  + 1  ! Initialized
       Int_BufSz  = Int_BufSz  + 1  ! CTTS_Flag
       Db_BufSz   = Db_BufSz   + 1  ! DT
@@ -3196,18 +3177,6 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%RootFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-        DO I = 1, LEN(InData%EchoFileName)
-          IntKiBuf(Int_Xferred) = ICHAR(InData%EchoFileName(I:I), IntKi)
-          Int_Xferred = Int_Xferred   + 1
-        END DO ! I
-        DO I = 1, LEN(InData%SumFileName)
-          IntKiBuf(Int_Xferred) = ICHAR(InData%SumFileName(I:I), IntKi)
-          Int_Xferred = Int_Xferred   + 1
-        END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%WriteSumFile , IntKiBuf(1), 1)
-      Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%UnitSumFile
-      Int_Xferred   = Int_Xferred   + 1
        IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
        IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%CTTS_Flag , IntKiBuf(1), 1)
@@ -3473,18 +3442,6 @@ ENDIF
         OutData%RootFileName(I:I) = CHAR(IntKiBuf(Int_Xferred))
         Int_Xferred = Int_Xferred   + 1
       END DO ! I
-      DO I = 1, LEN(OutData%EchoFileName)
-        OutData%EchoFileName(I:I) = CHAR(IntKiBuf(Int_Xferred))
-        Int_Xferred = Int_Xferred   + 1
-      END DO ! I
-      DO I = 1, LEN(OutData%SumFileName)
-        OutData%SumFileName(I:I) = CHAR(IntKiBuf(Int_Xferred))
-        Int_Xferred = Int_Xferred   + 1
-      END DO ! I
-      OutData%WriteSumFile = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
-      Int_Xferred   = Int_Xferred + 1
-      OutData%UnitSumFile = IntKiBuf( Int_Xferred ) 
-      Int_Xferred   = Int_Xferred + 1
       OutData%Initialized = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
       Int_Xferred   = Int_Xferred + 1
       OutData%CTTS_Flag = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )

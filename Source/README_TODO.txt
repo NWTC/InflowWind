@@ -2,9 +2,8 @@
 2015.03.03  updated
 
 Stuff working on right now:
--- Driver output file writing -- something quick for testing.  The outlist will be handled exclusively by the FAST glue code.
--- IfW summary file writing.
-
+-- HAWCWind
+-- CTWind
 
 List of items to tackle:
 ==============================
@@ -24,14 +23,6 @@ Documentation
 
 
 Submodules
--- Uniform wind (also steady wind)
-   -- summary file writing
--- TSFFWind
-   -- summary file writing
-   -- new interpolator
--- BladedFFWind
-   -- summary file writing
-   -- new interpolator
 -- HAWCWind -> Major revamp with the scaling.
    -- summary file writing
    -- new interpolator
@@ -52,14 +43,7 @@ Features needed
 Lidar module integration -- Bonnie has something in the other branch that this will be based on.  Will do that after other things are done.
 
 
-Features to consider
-a) add OutSwitch like in HydroDyn.  Is this something we want, or should this just be a driver level thing?
-
-
-
 Questions
--- How are Bladed wind files (not the bladed-style ones) handled?  How do we need to modify things for that to work?  Right now there is no
-   provision in the input file for hte Bladed files, just the bladed-style TurbSim generated ones.
 -- Timeshift when periodic files are used.  We timeshift to T=0 (I think).  This is an issue when we want to compare a periodic to non-periodic
    file.  Maybe include a flag in the InitInputType and some driver handling for this?  Later add this to the input file?
 

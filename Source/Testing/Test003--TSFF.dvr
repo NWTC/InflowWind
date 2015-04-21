@@ -19,5 +19,5 @@ InflowWind driver input file.  V1.00
    T           WindGrid       -- report wind data at set of Y,Z coordinates
    6,0,98     GridCtrCoord   -- coordinate of center of grid                       (m)
    1,1,0      GridDx,GridDY,GridDZ  -- Stepsize of grid                            (m)
-   1,1,0     GridNx,GridNY,GridNZ  -- number of grid points in Y and Z directions (-)
+   3,3,2     GridNx,GridNY,GridNZ  -- number of grid points in Y and Z directions (-)
 END of driver input file

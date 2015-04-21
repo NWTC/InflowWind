@@ -37,6 +37,7 @@ IMPLICIT NONE
   TYPE, PUBLIC :: IfW_BladedFFWind_InitInputType
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     LOGICAL  :: TowerFileExist      ! Tower file exists [-]
+    INTEGER(IntKi)  :: SumFileUnit      ! Unit number for the summary file (-1 for none).  Provided by IfW. [-]
   END TYPE IfW_BladedFFWind_InitInputType
 ! =======================
 ! =========  IfW_BladedFFWind_InitOutputType  =======
@@ -107,6 +108,7 @@ CONTAINS
    ErrMsg  = ""
     DstInitInputData%WindFileName = SrcInitInputData%WindFileName
     DstInitInputData%TowerFileExist = SrcInitInputData%TowerFileExist
+    DstInitInputData%SumFileUnit = SrcInitInputData%SumFileUnit
  END SUBROUTINE IfW_BladedFFWind_CopyInitInput
 
  SUBROUTINE IfW_BladedFFWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -157,6 +159,7 @@ CONTAINS
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%WindFileName)  ! WindFileName
       Int_BufSz  = Int_BufSz  + 1  ! TowerFileExist
+      Int_BufSz  = Int_BufSz  + 1  ! SumFileUnit
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -189,6 +192,8 @@ CONTAINS
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
        IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerFileExist , IntKiBuf(1), 1)
+      Int_Xferred   = Int_Xferred   + 1
+       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SumFileUnit
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_BladedFFWind_PackInitInput
 
@@ -233,6 +238,8 @@ CONTAINS
         Int_Xferred = Int_Xferred   + 1
       END DO ! I
       OutData%TowerFileExist = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
+      Int_Xferred   = Int_Xferred + 1
+      OutData%SumFileUnit = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_BladedFFWind_UnPackInitInput
 

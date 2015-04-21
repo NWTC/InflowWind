@@ -38,12 +38,12 @@ IMPLICIT NONE
     CHARACTER(1024)  :: WindFileName      ! Name of the wind file to use [-]
     REAL(ReKi)  :: ReferenceHeight      ! Hub height of the turbine [meters]
     REAL(ReKi)  :: RefLength      ! RefLength of the wind field to use [meters]
+    INTEGER(IntKi)  :: SumFileUnit      ! Unit number for the summary file (-1 for none).  Provided by IfW. [-]
   END TYPE IfW_UniformWind_InitInputType
 ! =======================
 ! =========  IfW_UniformWind_InitOutputType  =======
   TYPE, PUBLIC :: IfW_UniformWind_InitOutputType
     TYPE(ProgDesc)  :: Ver      ! Version information off HHWind submodule [-]
-    REAL(ReKi)  :: HubHeight      ! Height of the hub [meters]
     REAL(DbKi)  :: WindFileDT      ! TimeStep of the wind file -- zero value for none [seconds]
     REAL(ReKi) , DIMENSION(1:2)  :: WindFileTRange      ! Time range of the wind file [seconds]
     INTEGER(IntKi)  :: WindFileNumTSteps      ! Number of timesteps in the time range of wind file [-]
@@ -97,6 +97,7 @@ CONTAINS
     DstInitInputData%WindFileName = SrcInitInputData%WindFileName
     DstInitInputData%ReferenceHeight = SrcInitInputData%ReferenceHeight
     DstInitInputData%RefLength = SrcInitInputData%RefLength
+    DstInitInputData%SumFileUnit = SrcInitInputData%SumFileUnit
  END SUBROUTINE IfW_UniformWind_CopyInitInput
 
  SUBROUTINE IfW_UniformWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -148,6 +149,7 @@ CONTAINS
       Int_BufSz  = Int_BufSz  + 1*LEN(InData%WindFileName)  ! WindFileName
       Re_BufSz   = Re_BufSz   + 1  ! ReferenceHeight
       Re_BufSz   = Re_BufSz   + 1  ! RefLength
+      Int_BufSz  = Int_BufSz  + 1  ! SumFileUnit
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -183,6 +185,8 @@ CONTAINS
       Re_Xferred   = Re_Xferred   + 1
        ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefLength
       Re_Xferred   = Re_Xferred   + 1
+       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SumFileUnit
+      Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_UniformWind_PackInitInput
 
  SUBROUTINE IfW_UniformWind_UnPackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -227,6 +231,8 @@ CONTAINS
       Re_Xferred   = Re_Xferred + 1
       OutData%RefLength = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
+      OutData%SumFileUnit = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE IfW_UniformWind_UnPackInitInput
 
  SUBROUTINE IfW_UniformWind_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
@@ -247,7 +253,6 @@ CONTAINS
       CALL NWTC_Library_Copyprogdesc( SrcInitOutputData%Ver, DstInitOutputData%Ver, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
-    DstInitOutputData%HubHeight = SrcInitOutputData%HubHeight
     DstInitOutputData%WindFileDT = SrcInitOutputData%WindFileDT
     DstInitOutputData%WindFileTRange = SrcInitOutputData%WindFileTRange
     DstInitOutputData%WindFileNumTSteps = SrcInitOutputData%WindFileNumTSteps
@@ -319,7 +324,6 @@ CONTAINS
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
-      Re_BufSz   = Re_BufSz   + 1  ! HubHeight
       Db_BufSz   = Db_BufSz   + 1  ! WindFileDT
       Re_BufSz   = Re_BufSz   + SIZE(InData%WindFileTRange)  ! WindFileTRange
       Int_BufSz  = Int_BufSz  + 1  ! WindFileNumTSteps
@@ -379,8 +383,6 @@ CONTAINS
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HubHeight
-      Re_Xferred   = Re_Xferred   + 1
        DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%WindFileDT
       Db_Xferred   = Db_Xferred   + 1
        ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindFileTRange))-1 ) = PACK(InData%WindFileTRange,.TRUE.)
@@ -464,8 +466,6 @@ CONTAINS
       IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
       IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
-      OutData%HubHeight = ReKiBuf( Re_Xferred )
-      Re_Xferred   = Re_Xferred + 1
       OutData%WindFileDT = DbKiBuf( Db_Xferred ) 
       Db_Xferred   = Db_Xferred + 1
     i1_l = LBOUND(OutData%WindFileTRange,1)
