@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.06.00, 14-Apr-2015)
+! FAST Registry (v2.06.01, 21-Apr-2015)
 !*********************************************************************************************************************************
 ! IfW_BladedFFWind_Types
 !.................................................................................................................................
@@ -137,7 +137,7 @@ CONTAINS
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -191,9 +191,9 @@ CONTAINS
           IntKiBuf(Int_Xferred) = ICHAR(InData%WindFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerFileExist , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerFileExist , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SumFileUnit
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SumFileUnit
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_BladedFFWind_PackInitInput
 
@@ -291,7 +291,7 @@ CONTAINS
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -385,7 +385,7 @@ CONTAINS
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%TI)
  END SUBROUTINE IfW_BladedFFWind_PackInitOutput
 
@@ -470,7 +470,7 @@ CONTAINS
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
+      OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%TI)
     DEALLOCATE(mask1)
  END SUBROUTINE IfW_BladedFFWind_UnPackInitOutput
@@ -519,7 +519,7 @@ CONTAINS
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -568,9 +568,9 @@ CONTAINS
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_BladedFFWind_PackOtherState
 
@@ -699,10 +699,10 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(ParamData%FFData)) THEN
-   DEALLOCATE(ParamData%FFData)
+  DEALLOCATE(ParamData%FFData)
 ENDIF
 IF (ALLOCATED(ParamData%FFTower)) THEN
-   DEALLOCATE(ParamData%FFTower)
+  DEALLOCATE(ParamData%FFTower)
 ENDIF
  END SUBROUTINE IfW_BladedFFWind_DestroyParam
 
@@ -721,7 +721,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -805,13 +805,13 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%WindFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Periodic , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Periodic , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Linearize , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Linearize , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerDataExist , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TowerDataExist , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
+      DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%FFData) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -854,41 +854,41 @@ ENDIF
       IF (SIZE(InData%FFTower)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%FFTower))-1 ) = PACK(InData%FFTower,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%FFTower)
   END IF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFDTime
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFDTime
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFRate
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFRate
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFYHWid
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFYHWid
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFZHWid
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%FFZHWid
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%GridBase
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%GridBase
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InitXPosition
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InitXPosition
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvFFYD
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvFFYD
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvFFZD
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvFFZD
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvMFFWS
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%InvMFFWS
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%MeanFFWS
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%MeanFFWS
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TotalTime
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TotalTime
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NFFComp
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NFFComp
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NFFSteps
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NFFSteps
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NYGrids
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NYGrids
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NZGrids
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NZGrids
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NTGrids
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NTGrids
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindFileFormat
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindFileFormat
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE IfW_BladedFFWind_PackParam
 
@@ -1082,7 +1082,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(OutputData%Velocity)) THEN
-   DEALLOCATE(OutputData%Velocity)
+  DEALLOCATE(OutputData%Velocity)
 ENDIF
  END SUBROUTINE IfW_BladedFFWind_DestroyOutput
 
@@ -1101,7 +1101,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1170,7 +1170,7 @@ ENDIF
       IF (SIZE(InData%Velocity)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%Velocity))-1 ) = PACK(InData%Velocity,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%Velocity)
   END IF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DiskVel))-1 ) = PACK(InData%DiskVel,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DiskVel))-1 ) = PACK(InData%DiskVel,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%DiskVel)
  END SUBROUTINE IfW_BladedFFWind_PackOutput
 
@@ -1242,7 +1242,7 @@ ENDIF
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%DiskVel = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DiskVel))-1 ), mask1, 0.0_ReKi )
+      OutData%DiskVel = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DiskVel))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%DiskVel)
     DEALLOCATE(mask1)
  END SUBROUTINE IfW_BladedFFWind_UnPackOutput

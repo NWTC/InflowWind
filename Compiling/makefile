@@ -12,61 +12,12 @@ BITS = 32
 
 #OS=lin
 
-   # Location of source files for InflowWind, NWTC Library, and the FAST Registry.
-   # You will probably need to change these for your system.
-
-
-
-ifeq ($(OS),Windows_NT)
-   RegistryProgram   = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/bin/Registry_win32.exe
-   NWTC_Lib_DIR      = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/Source/dependencies/NWTC_Library
-   IfW_DIR           = ..
-   RegistryDIR       = ../Source/Registry
-   Driver_DIR        = ../Source/Driver
-   RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
-   OUTPUT_NAME = InflowWind_Driver
-   DEST_DIR    = ../bin/
-else
-#   ifeq ($(HOSTNAME), aplatt-21809s)
-      SoftwareDir       = /Users/aplatt/software-development/windsvn
-      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry.exe
-      NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
-      IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
-		RegistryDIR			= ../Source/Registry
-      Driver_DIR        = $(IfW_DIR)/Driver
-      RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
-		NETLIB_DIR 			:= \
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/NWTC_Source/                    	\
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/scalapack/scalapack-2.0.2/SRC/    \
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/fftpack
-			# Mac flag requirement
-		LDFLAGS = -framework Accelerate
-      FC = gfortran
-      OUTPUT_NAME = InflowWind_Driver
-      DEST_DIR    = ../bin/
-
-#   else
-#      RegistryProgram   = registry.exe
-#      NWTC_Lib_DIR      = $(FAST_DIR)/dependencies/NWTC_Library
-#      IfW_DIR           = $(FAST_DIR)/dependencies/InflowWind
-#      RegistryDIR       = ../Registry
-#      Driver_DIR        = ../Driver
-#      RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
-#   endif
-endif
-
 
    # Name of compiler to use and flags to use.
-#FC      = gfortran
+FC      = gfortran
 
-FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C -DNO_MESHMAPPING 
-
-
-	# Mac needs some additional flags prepended for linking to get lapack working, hence the funny notation here.
-LDFLAGS := $(LDFLAGS)	-O2 -m$(BITS) -fbacktrace -g -fno-inline 
-
-
-
+FFLAGS  = -O2 -m$(BITS) -fbacktrace -ffree-line-length-none -x f95-cpp-input -C
+LDFLAGS = -O2 -m$(BITS) -fbacktrace -g -fno-inline
 # some useful gfortran options:
 #  -DFPE_TRAP_ENABLED
 #  -Wl,--large-address-aware   # not necessary when $(BITS) is 64 (64-bit target)
@@ -78,6 +29,49 @@ LDFLAGS := $(LDFLAGS)	-O2 -m$(BITS) -fbacktrace -g -fno-inline
 # makefile:
 # --warn-undefined-variables
 
+
+
+   # Location of source files for InflowWind, NWTC Library, and the FAST Registry.
+   # You will probably need to change these for your system.
+
+
+ifeq ($(OS),Windows_NT)
+# anything used in the "del_cmd" on clean cannot have the back slash:
+   RegistryProgram   = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/bin/Registry_win32.exe
+   NWTC_Lib_DIR      = ../Source/dependencies/NWTC_Library
+   NETLIB_DIR        = $(NWTC_Lib_DIR)/dependencies/lapack
+   IfW_DIR           = ../Source
+   LDFLAGS          := $(LDFLAGS) -llapack -lblas -LC:/LAPACK/win32
+   DEST_DIR          = ../bin
+
+else
+   DEST_DIR          = ../bin
+
+#   ifeq ($(HOSTNAME), aplatt-21809s)
+      SoftwareDir       = /Users/aplatt/software-development/windsvn
+      RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry.exe
+      NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
+      IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
+		NETLIB_DIR 			:= \
+			$(SoftwareDir)/NWTC_Library/branches/NetLib/NWTC_Source/                    	\
+			$(SoftwareDir)/NWTC_Library/branches/NetLib/scalapack/scalapack-2.0.2/SRC/    \
+			$(SoftwareDir)/NWTC_Library/branches/NetLib/fftpack
+			# Mac flag requirement
+	# Mac needs some additional flags prepended for linking to get lapack working, hence the funny notation here.
+		LDFLAGS := -framework Accelerate $(LDFLAGS)
+
+
+#   else
+#      RegistryProgram   = registry.exe
+#      NWTC_Lib_DIR      = $(FAST_DIR)/dependencies/NWTC_Library
+#      IfW_DIR           = $(FAST_DIR)/dependencies/InflowWind
+#   endif
+endif
+
+RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
+RegistryDIR       = $(IfW_DIR)/Registry
+Driver_DIR        = $(IfW_DIR)/Driver
+OUTPUT_NAME       = InflowWind_Driver
 
 
 
@@ -93,6 +87,7 @@ ifeq ($(OS),Windows_NT)
    EXE_EXT   = _gwin$(BITS).exe
    INTER_DIR = Obj_win$(BITS)
    MD_CMD    = @mkdir
+   CP_CMD    = copy
    OBJ_EXT   = .obj
    PATH_SEP  = \\
    SYS_FILE  = SysGnuWin
@@ -102,6 +97,7 @@ else
    EXE_EXT   = _glin$(BITS)
    INTER_DIR = Obj_lin$(BITS)
    MD_CMD    = @mkdir -p
+   CP_CMD    = cp
    OBJ_EXT   = .o
    PATH_SEP  = /
    SYS_FILE  = SysGnuLinux
@@ -123,12 +119,7 @@ LIB_SOURCES =           	\
 	NWTC_Library.f90
 
 NETLIB_SOURCES :=          \
-	NWTC_FFTPACK.f90	   	\
-	fftpack4.1.f				\
-	NWTC_LAPACK.f90			\
-	NWTC_ScaLAPACK.f90		\
-	dlasrt2.f				  	\
-	slasrt2.f                     
+	NWTC_LAPACK.f90
 
 IfW_SOURCES =              \
 	IfW_UniformWind_Types.f90  \
@@ -142,7 +133,9 @@ IfW_SOURCES =              \
 	IfW_BladedFFWind_Types.f90  \
 	IfW_BladedFFWind.f90    \
 	IfW_UserWind_Types.f90  \
-	IfW_UserWind.f90
+	IfW_UserWind.f90        \
+	Lidar_Types.f90         \
+	Lidar.f90
 
 
 
@@ -172,7 +165,7 @@ ALL_OBJS    := $(ALL_OBJS:.f=$(OBJ_EXT))
 
 all:     default
 # use this for "all" for debugging: print variables:
-#all:     ; $(info $$IceF_SOURCES is [${IceF_SOURCES}]) echo debugging
+#all:     ; $(info $$NWTC_Lib_DIR is [${NWTC_Lib_DIR}]) echo debugging
 
 default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
@@ -184,15 +177,16 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
    ### general rules for making the files ###
 
-   # Making .o files from .f90 files
-%.o: %.f90
-	$(FC) $(FFLAGS) \
+   # Making .o or .obj files from .f90 files
+%$(OBJ_EXT): %.f90
+	$(FC) -I $(INTER_DIR) $(FFLAGS) \
 	-c $< \
 	-o $(INTER_DIR)/$@ \
-	-I $(NWTC_Lib_DIR) -J $(INTER_DIR)
+	-I $(NWTC_Lib_DIR) -J $(INTER_DIR) -B $(INTER_DIR)
 
-   # Making .o files from .f files
-%.o: %.f
+
+   # Making .o or .obj files from .f files
+%$(OBJ_EXT): %.f
 	$(FC) $(FFLAGS) \
 	-c $< \
 	-o $(INTER_DIR)/$@ \
@@ -200,13 +194,13 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
    # Making _Types.f90 files from .txt registry files.   These registries need the extra flag.
 IfW_%_Types.f90: $(RegistryDIR)/IfW_%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap;
-	cp $@ $(IfW_DIR)$(PATH_SEP);
+	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap
+	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
 
    # Making _Types.f90 files from .txt registry files.
 %_Types.f90: $(RegistryDIR)/%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC);
-	cp $@ $(IfW_DIR)$(PATH_SEP);
+	$(RegistryProgram) $< -I $(RegistryNWTC)
+	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
 
 
 
@@ -221,11 +215,8 @@ NWTC_Num$(OBJ_EXT):                 NWTC_IO$(OBJ_EXT)
 ModMesh_Types$(OBJ_EXT):            NWTC_Num$(OBJ_EXT)
 ModMesh$(OBJ_EXT):                  ModMesh_Types$(OBJ_EXT) NWTC_Num$(OBJ_EXT) ModMesh_Types$(OBJ_EXT)
 ModMesh_Mapping$(OBJ_EXT):          ModMesh$(OBJ_EXT)  NWTC_LAPACK$(OBJ_EXT)
-NWTC_Library$(OBJ_EXT):             ModMesh$(OBJ_EXT)  ModMesh_Mapping$(OBJ_EXT) NWTC_Num.o NWTC_IO$(OBJ_EXT) NWTC_LAPACK$(OBJ_EXT)
 NWTC_LAPACK$(OBJ_EXT):              NWTC_Base$(OBJ_EXT)
-NWTC_ScaLAPACK$(OBJ_EXT):           NWTC_Base$(OBJ_EXT) dlasrt2$(OBJ_EXT) slasrt2$(OBJ_EXT)
-NWTC_NetLib$(OBJ_EXT):              NWTC_LAPACK$(OBJ_EXT) NWTC_ScaLAPACK$(OBJ_EXT)
-NWTC_FFTPACK$(OBJ_EXT):					NWTC_Library$(OBJ_EXT) fftpack4.1$(OBJ_EXT)
+NWTC_Library$(OBJ_EXT):             ModMesh$(OBJ_EXT)  ModMesh_Mapping$(OBJ_EXT) NWTC_Num$(OBJ_EXT) NWTC_IO$(OBJ_EXT) NWTC_LAPACK$(OBJ_EXT)
 
 #InflowWind dependency rules:
 IfW_UniformWind_Types$(OBJ_EXT):    NWTC_Library$(OBJ_EXT)
@@ -238,11 +229,14 @@ IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 #IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 IfW_UserWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
+Lidar_Types$(OBJ_EXT):              NWTC_Library$(OBJ_EXT)
+Lidar$(OBJ_EXT):                    NWTC_Library$(OBJ_EXT) Lidar_Types$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
-                                    IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
-InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT)
-InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
-                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT)
+                                    IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT) \
+                                    Lidar_Types$(OBJ_EXT)
+InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
+                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT)  Lidar$(OBJ_EXT)
+InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Subs$(OBJ_EXT)
 
 #Driver dependency rules:
 InflowWind_Driver_Types$(OBJ_EXT):  InflowWind_Types$(OBJ_EXT)
@@ -260,19 +254,21 @@ $(INTER_DIR):
    # For linking driver code.
 
 $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT): $(ALL_OBJS) | $(INTER_DIR)
-	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT) \
+	$(FC) $(LDFLAGS) -I $(INTER_DIR) -o $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT) \
 	$(foreach src, $(ALL_OBJS), $(addprefix $(INTER_DIR)/,$(src)))
 
 
    # Cleanup afterwards.
 clean:
 	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*.mod $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT)
-	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_UniformWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_TSFFWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_BladedFFWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_HAWCWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)IfW_UserWind_Types.f90
-	$(DEL_CMD) $(IfW_DIR)$(PATH_SEP)*_Types.f90
-	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)*_Types.f90
+	$(DEL_CMD) "$(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)Lidar_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_UniformWind_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_TSFFWind_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_BladedFFWind_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_HAWCWind_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_UserWind_Types.f90"
 	$(DEL_CMD) *_Types.f90
+
+#	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)*_Types.f90
+#	$(DEL_CMD) $(DEST_DIR)$(PATH_SEP)*_Types.f90

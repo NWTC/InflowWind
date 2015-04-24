@@ -17,7 +17,7 @@ True                 Echo           - Echo input data to <RootName>.ech (flag)
  90.0                RefHt          - Reference height for horizontal wind speed
  100.0               RefLength      - Reference length for linear horizontal and vertical sheer
 ================== Parameters for Binary TurbSim Full-Field files   [used only for WindType = 3] ==============
-"Test003--TSFF.Windfile.bts"          Filename       - Name of the Full field wind file to use (.bts)
+"data/Test003--TSFF.Windfile.bts"          Filename       - Name of the Full field wind file to use (.bts)
 ================== Parameters for Binary Bladed-style Full-Field files   [used only for WindType = 4] =========
 ""                   FilenameRoot   - Name of the Full field wind file to use (.wnd, .sum)
  F                   TowerFile      - Have tower file (.twr) [flag]
@@ -26,9 +26,9 @@ True                 Echo           - Echo input data to <RootName>.ech (flag)
 ""                   CTTSFilename   - Name of coherent turbulence file
 ""                   CTTSPath       - Path to coherent turbulence binary data files
 ================== Parameters for HAWC-format binary files  [Only used with WindType = 5] =====================
-"D:\DATA\Collaborations_Meetings\RisoeExchange\MannModel\wasp\Output\basic_5u.bin"    FileName_u      - name of the file containing the u-component fluctuating wind
-"D:\DATA\Collaborations_Meetings\RisoeExchange\MannModel\wasp\Output\basic_5v.bin"    FileName_v      - name of the file containing the v-component fluctuating wind
-"D:\DATA\Collaborations_Meetings\RisoeExchange\MannModel\wasp\Output\basic_5w.bin"    FileName_w      - name of the file containing the w-component fluctuating wind
+"unused"             FileName_u      - name of the file containing the u-component fluctuating wind
+"unused"             FileName_v      - name of the file containing the v-component fluctuating wind
+"unused"             FileName_w      - name of the file containing the w-component fluctuating wind
  64                  nx             - number of grids in the x direction (in the 3 files above)
  32                  ny             - number of grids in the y direction (in the 3 files above)
  32                  nz             - number of grids in the z direction (in the 3 files above)

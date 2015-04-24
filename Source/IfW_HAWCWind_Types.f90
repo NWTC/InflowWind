@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.06.00, 14-Apr-2015)
+! FAST Registry (v2.06.01, 21-Apr-2015)
 !*********************************************************************************************************************************
 ! IfW_HAWCWind_Types
 !.................................................................................................................................
@@ -152,7 +152,7 @@ CONTAINS
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -302,10 +302,10 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(InitOutputData%WriteOutputHdr)) THEN
-   DEALLOCATE(InitOutputData%WriteOutputHdr)
+  DEALLOCATE(InitOutputData%WriteOutputHdr)
 ENDIF
 IF (ALLOCATED(InitOutputData%WriteOutputUnt)) THEN
-   DEALLOCATE(InitOutputData%WriteOutputUnt)
+  DEALLOCATE(InitOutputData%WriteOutputUnt)
 ENDIF
   CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
  END SUBROUTINE IfW_HAWCWind_DestroyInitOutput
@@ -325,7 +325,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -642,7 +642,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(OtherStateData%HAWCData)) THEN
-   DEALLOCATE(OtherStateData%HAWCData)
+  DEALLOCATE(OtherStateData%HAWCData)
 ENDIF
  END SUBROUTINE IfW_HAWCWind_DestroyOtherState
 
@@ -661,7 +661,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -714,7 +714,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%HAWCData) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -878,7 +878,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -949,7 +949,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
         DO I = 1, LEN(InData%FileName_u)
           IntKiBuf(Int_Xferred) = ICHAR(InData%FileName_u(I:I), IntKi)
@@ -963,47 +963,47 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%FileName_w(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%nx
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%nx
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%ny
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%ny
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%nz
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%nz
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%dz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%ScaleMethod
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%ScaleMethod
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SigmaFz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TStart
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TStart
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TEnd
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%TEnd
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%URef
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%URef
       Re_Xferred   = Re_Xferred   + 1
         DO I = 1, LEN(InData%WindProfileType)
           IntKiBuf(Int_Xferred) = ICHAR(InData%WindProfileType(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PLExp
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PLExp
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Z0
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Z0
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HAWCWind_PackParam
 
@@ -1139,7 +1139,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(InputData%Position)) THEN
-   DEALLOCATE(InputData%Position)
+  DEALLOCATE(InputData%Position)
 ENDIF
  END SUBROUTINE IfW_HAWCWind_DestroyInput
 
@@ -1158,7 +1158,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1332,7 +1332,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(OutputData%Velocity)) THEN
-   DEALLOCATE(OutputData%Velocity)
+  DEALLOCATE(OutputData%Velocity)
 ENDIF
  END SUBROUTINE IfW_HAWCWind_DestroyOutput
 
@@ -1351,7 +1351,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1526,7 +1526,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1574,7 +1574,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyContState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyContState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HAWCWind_PackContState
 
@@ -1657,7 +1657,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1705,7 +1705,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyDiscState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyDiscState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HAWCWind_PackDiscState
 
@@ -1788,7 +1788,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1836,7 +1836,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyConstrState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyConstrState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE IfW_HAWCWind_PackConstrState
 

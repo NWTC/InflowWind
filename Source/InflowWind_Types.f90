@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.06.00, 14-Apr-2015)
+! FAST Registry (v2.06.01, 21-Apr-2015)
 !*********************************************************************************************************************************
 ! InflowWind_Types
 !.................................................................................................................................
@@ -34,8 +34,8 @@ MODULE InflowWind_Types
 USE IfW_UniformWind_Types
 USE IfW_TSFFWind_Types
 USE IfW_BladedFFWind_Types
-USE IfW_HAWCWind_Types
 USE IfW_UserWind_Types
+USE Lidar_Types
 USE NWTC_Library
 IMPLICIT NONE
     INTEGER(IntKi), PUBLIC, PARAMETER  :: Undef_WindNumber = 0      ! This is the code for an undefined WindFileType [-]
@@ -114,6 +114,10 @@ IMPLICIT NONE
     LOGICAL  :: SumPrint      ! Write summary info to a file <ROOTNAME>.IfW.Sum [-]
     INTEGER(IntKi)  :: NumOuts      ! Number of parameters in the output list (number of outputs requested) [-]
     CHARACTER(10) , DIMENSION(:), ALLOCATABLE  :: OutList      ! List of user-requested output channels [-]
+    INTEGER(IntKi)  :: SensorType = SensorType_None      ! Sensor type (for lidar/sensor module) [-]
+    INTEGER(IntKi)  :: NumPulseGate      ! the number of range gates to return wind speeds at [-]
+    REAL(ReKi) , DIMENSION(1:3)  :: RotorApexOffsetPos      ! position of the lidar unit relative to the rotor apex of rotation [m]
+    LOGICAL  :: LidRadialVel      ! TRUE => return radial component, FALSE => return 'x' direction estimate [-]
   END TYPE InflowWind_InputFile
 ! =======================
 ! =========  InflowWind_InitInputType  =======
@@ -124,6 +128,7 @@ IMPLICIT NONE
     INTEGER(IntKi)  :: NumWindPoints      ! Number of wind velocity points expected [-]
     LOGICAL  :: UseInputFile = .TRUE.      ! Should we read everthing from an input file, or do we get it some other way [-]
     TYPE(InflowWind_InputFile)  :: PassedFileData      ! If we don't use the input file, pass everything through this [-]
+    TYPE(Lidar_InitInputType)  :: lidar      ! InitInput for lidar data [-]
   END TYPE InflowWind_InitInputType
 ! =======================
 ! =========  InflowWind_InitOutputType  =======
@@ -134,7 +139,6 @@ IMPLICIT NONE
     TYPE(IfW_UniformWind_InitOutputType)  :: UniformWind      ! UniformWind InitOutput info [-]
     TYPE(IfW_TSFFWind_InitOutputType)  :: TSFFWind      ! TSFFWind InitOutput info [-]
     TYPE(IfW_BladedFFWind_InitOutputType)  :: BladedFFWind      ! BladedFFWind InitOutput info [-]
-    TYPE(IfW_HAWCWind_InitOutputType)  :: HAWCWind      ! HAWCWind InitOutput info [-]
     TYPE(IfW_UserWind_InitOutputType)  :: UserWind      ! UserWind InitOutput info [-]
     TYPE(WindFileMetaData)  :: WindFileInfo      ! Meta data from the wind file [-]
   END TYPE InflowWind_InitOutputType
@@ -176,11 +180,13 @@ IMPLICIT NONE
     TYPE(IfW_UserWind_ParameterType)  :: UserWind      ! Parameters from UserWind [-]
     INTEGER(IntKi)  :: NumOuts = 0      ! Number of parameters in the output list (number of outputs requested) [-]
     TYPE(OutParmType) , DIMENSION(:), ALLOCATABLE  :: OutParam      ! Names and units (and other characteristics) of all requested output parameters [-]
+    TYPE(Lidar_ParameterType)  :: lidar      ! Lidar parameter data [-]
   END TYPE InflowWind_ParameterType
 ! =======================
 ! =========  InflowWind_InputType  =======
   TYPE, PUBLIC :: InflowWind_InputType
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: PositionXYZ      ! Array holding the input positions at a given timestep [meters]
+    TYPE(Lidar_InputType)  :: lidar      ! Lidar data [-]
   END TYPE InflowWind_InputType
 ! =======================
 ! =========  InflowWind_OutputType  =======
@@ -188,6 +194,7 @@ IMPLICIT NONE
     REAL(ReKi) , DIMENSION(:,:), ALLOCATABLE  :: VelocityUVW      ! Array holding the U,V,W velocity for a given timestep [meters/sec]
     REAL(ReKi) , DIMENSION(:), ALLOCATABLE  :: WriteOutput      ! Array with values to output to file [-]
     REAL(ReKi) , DIMENSION(1:3)  :: DiskVel      ! Vector holding the U,V,W average velocity of the disk [meters/sec]
+    TYPE(Lidar_OutputType)  :: lidar      ! Lidar data [-]
   END TYPE InflowWind_OutputType
 ! =======================
 ! =========  InflowWind_ContinuousStateType  =======
@@ -267,7 +274,7 @@ CONTAINS
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -335,37 +342,37 @@ CONTAINS
           IntKiBuf(Int_Xferred) = ICHAR(InData%FileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%RefHt_Set , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%RefHt_Set , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
+      DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumTSteps
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumTSteps
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%ConstantDT , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%ConstantDT , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TRange))-1 ) = PACK(InData%TRange,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TRange))-1 ) = PACK(InData%TRange,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%TRange)
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TRange_Limited , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TRange_Limited , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%YRange))-1 ) = PACK(InData%YRange,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%YRange))-1 ) = PACK(InData%YRange,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%YRange)
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%YRange_Limited , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%YRange_Limited , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%ZRange))-1 ) = PACK(InData%ZRange,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%ZRange))-1 ) = PACK(InData%ZRange,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%ZRange)
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%ZRange_Limited , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%ZRange_Limited , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%BinaryFormat
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%BinaryFormat
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%IsBinary , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%IsBinary , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%TI))-1 ) = PACK(InData%TI,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%TI)
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TI_listed , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TI_listed , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackWindFileMetaData
 
@@ -427,7 +434,7 @@ CONTAINS
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%TRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TRange))-1 ), mask1, 0.0_ReKi )
+      OutData%TRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TRange))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%TRange)
     DEALLOCATE(mask1)
       OutData%TRange_Limited = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
@@ -440,7 +447,7 @@ CONTAINS
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%YRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%YRange))-1 ), mask1, 0.0_ReKi )
+      OutData%YRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%YRange))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%YRange)
     DEALLOCATE(mask1)
       OutData%YRange_Limited = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
@@ -453,7 +460,7 @@ CONTAINS
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%ZRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%ZRange))-1 ), mask1, 0.0_ReKi )
+      OutData%ZRange = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%ZRange))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%ZRange)
     DEALLOCATE(mask1)
       OutData%ZRange_Limited = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
@@ -470,7 +477,7 @@ CONTAINS
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
+      OutData%TI = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%TI))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%TI)
     DEALLOCATE(mask1)
       OutData%TI_listed = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
@@ -581,6 +588,10 @@ IF (ALLOCATED(SrcInputFileData%OutList)) THEN
   END IF
     DstInputFileData%OutList = SrcInputFileData%OutList
 ENDIF
+    DstInputFileData%SensorType = SrcInputFileData%SensorType
+    DstInputFileData%NumPulseGate = SrcInputFileData%NumPulseGate
+    DstInputFileData%RotorApexOffsetPos = SrcInputFileData%RotorApexOffsetPos
+    DstInputFileData%LidRadialVel = SrcInputFileData%LidRadialVel
  END SUBROUTINE InflowWind_CopyInputFile
 
  SUBROUTINE InflowWind_DestroyInputFile( InputFileData, ErrStat, ErrMsg )
@@ -593,16 +604,16 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(InputFileData%WindVxiList)) THEN
-   DEALLOCATE(InputFileData%WindVxiList)
+  DEALLOCATE(InputFileData%WindVxiList)
 ENDIF
 IF (ALLOCATED(InputFileData%WindVyiList)) THEN
-   DEALLOCATE(InputFileData%WindVyiList)
+  DEALLOCATE(InputFileData%WindVyiList)
 ENDIF
 IF (ALLOCATED(InputFileData%WindVziList)) THEN
-   DEALLOCATE(InputFileData%WindVziList)
+  DEALLOCATE(InputFileData%WindVziList)
 ENDIF
 IF (ALLOCATED(InputFileData%OutList)) THEN
-   DEALLOCATE(InputFileData%OutList)
+  DEALLOCATE(InputFileData%OutList)
 ENDIF
  END SUBROUTINE InflowWind_DestroyInputFile
 
@@ -621,7 +632,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -702,6 +713,10 @@ ENDIF
     Int_BufSz   = Int_BufSz   + 2*1  ! OutList upper/lower bounds for each dimension
       Int_BufSz  = Int_BufSz  + SIZE(InData%OutList)*LEN(InData%OutList)  ! OutList
   END IF
+      Int_BufSz  = Int_BufSz  + 1  ! SensorType
+      Int_BufSz  = Int_BufSz  + 1  ! NumPulseGate
+      Re_BufSz   = Re_BufSz   + SIZE(InData%RotorApexOffsetPos)  ! RotorApexOffsetPos
+      Int_BufSz  = Int_BufSz  + 1  ! LidRadialVel
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -729,13 +744,13 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%EchoFlag , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%EchoFlag , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PropogationDir
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PropogationDir
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NWindVel
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NWindVel
       Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%WindVxiList) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -776,19 +791,19 @@ ENDIF
       IF (SIZE(InData%WindVziList)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindVziList))-1 ) = PACK(InData%WindVziList,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%WindVziList)
   END IF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_HWindSpeed
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_HWindSpeed
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_RefHt
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_PLexp
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Steady_PLexp
       Re_Xferred   = Re_Xferred   + 1
         DO I = 1, LEN(InData%Uniform_FileName)
           IntKiBuf(Int_Xferred) = ICHAR(InData%Uniform_FileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Uniform_RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Uniform_RefHt
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Uniform_RefLength
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Uniform_RefLength
       Re_Xferred   = Re_Xferred   + 1
         DO I = 1, LEN(InData%TSFF_FileName)
           IntKiBuf(Int_Xferred) = ICHAR(InData%TSFF_FileName(I:I), IntKi)
@@ -798,9 +813,9 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%BladedFF_FileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%BladedFF_TowerFile , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%BladedFF_TowerFile , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%CTTS_CoherentTurb , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%CTTS_CoherentTurb , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
         DO I = 1, LEN(InData%CTTS_FileName)
           IntKiBuf(Int_Xferred) = ICHAR(InData%CTTS_FileName(I:I), IntKi)
@@ -822,51 +837,51 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%HAWC_FileName_w(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_nx
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_nx
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_ny
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_ny
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_nz
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_nz
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_dz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_RefHt
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_RefHt
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_ScaleMethod
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%HAWC_ScaleMethod
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SFz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFx
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFx
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFy
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFy
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFz
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_SigmaFz
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_TStart
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_TStart
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_TEnd
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_TEnd
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_URef
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_URef
       Re_Xferred   = Re_Xferred   + 1
         DO I = 1, LEN(InData%HAWC_ProfileType)
           IntKiBuf(Int_Xferred) = ICHAR(InData%HAWC_ProfileType(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_PLExp
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_PLExp
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_Z0
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HAWC_Z0
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%SumPrint , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%SumPrint , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumOuts
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumOuts
       Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%OutList) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -885,6 +900,14 @@ ENDIF
         END DO ! I
     END DO !i1
   END IF
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%SensorType
+      Int_Xferred   = Int_Xferred   + 1
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumPulseGate
+      Int_Xferred   = Int_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotorApexOffsetPos))-1 ) = PACK(InData%RotorApexOffsetPos,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%RotorApexOffsetPos)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%LidRadialVel , IntKiBuf(1), 1)
+      Int_Xferred   = Int_Xferred   + 1
  END SUBROUTINE InflowWind_PackInputFile
 
  SUBROUTINE InflowWind_UnPackInputFile( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -1116,6 +1139,23 @@ ENDIF
     END DO !i1
     DEALLOCATE(mask1)
   END IF
+      OutData%SensorType = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+      OutData%NumPulseGate = IntKiBuf( Int_Xferred ) 
+      Int_Xferred   = Int_Xferred + 1
+    i1_l = LBOUND(OutData%RotorApexOffsetPos,1)
+    i1_u = UBOUND(OutData%RotorApexOffsetPos,1)
+    ALLOCATE(mask1(i1_l:i1_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask1.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask1 = .TRUE. 
+      OutData%RotorApexOffsetPos = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotorApexOffsetPos))-1 ), mask1, 0.0_ReKi )
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%RotorApexOffsetPos)
+    DEALLOCATE(mask1)
+      OutData%LidRadialVel = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
+      Int_Xferred   = Int_Xferred + 1
  END SUBROUTINE InflowWind_UnPackInputFile
 
  SUBROUTINE InflowWind_CopyInitInput( SrcInitInputData, DstInitInputData, CtrlCode, ErrStat, ErrMsg )
@@ -1140,6 +1180,9 @@ ENDIF
       CALL InflowWind_Copyinputfile( SrcInitInputData%PassedFileData, DstInitInputData%PassedFileData, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
+      CALL Lidar_CopyInitInput( SrcInitInputData%lidar, DstInitInputData%lidar, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  END SUBROUTINE InflowWind_CopyInitInput
 
  SUBROUTINE InflowWind_DestroyInitInput( InitInputData, ErrStat, ErrMsg )
@@ -1152,6 +1195,7 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
   CALL InflowWind_Destroyinputfile( InitInputData%PassedFileData, ErrStat, ErrMsg )
+  CALL Lidar_DestroyInitInput( InitInputData%lidar, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyInitInput
 
  SUBROUTINE InflowWind_PackInitInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -1169,7 +1213,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1212,6 +1256,23 @@ ENDIF
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
+      Int_BufSz   = Int_BufSz + 3  ! lidar: size of buffers for each call to pack subtype
+      CALL Lidar_PackInitInput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, .TRUE. ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! lidar
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! lidar
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! lidar
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -1243,15 +1304,43 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%InputFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
+      DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Width
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Width
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumWindPoints
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumWindPoints
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%UseInputFile , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%UseInputFile , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
       CALL InflowWind_Packinputfile( Re_Buf, Db_Buf, Int_Buf, InData%PassedFileData, ErrStat2, ErrMsg2, OnlySize ) ! PassedFileData 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      CALL Lidar_PackInitInput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, OnlySize ) ! lidar 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -1365,6 +1454,46 @@ ENDIF
       IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
       IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL Lidar_UnpackInitInput( Re_Buf, Db_Buf, Int_Buf, OutData%lidar, ErrStat2, ErrMsg2 ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
  END SUBROUTINE InflowWind_UnPackInitInput
 
  SUBROUTINE InflowWind_CopyInitOutput( SrcInitOutputData, DstInitOutputData, CtrlCode, ErrStat, ErrMsg )
@@ -1418,9 +1547,6 @@ ENDIF
       CALL IfW_BladedFFWind_CopyInitOutput( SrcInitOutputData%BladedFFWind, DstInitOutputData%BladedFFWind, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
-      CALL IfW_HAWCWind_CopyInitOutput( SrcInitOutputData%HAWCWind, DstInitOutputData%HAWCWind, CtrlCode, ErrStat2, ErrMsg2 )
-         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
-         IF (ErrStat>=AbortErrLev) RETURN
       CALL IfW_UserWind_CopyInitOutput( SrcInitOutputData%UserWind, DstInitOutputData%UserWind, CtrlCode, ErrStat2, ErrMsg2 )
          CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
          IF (ErrStat>=AbortErrLev) RETURN
@@ -1439,16 +1565,15 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(InitOutputData%WriteOutputHdr)) THEN
-   DEALLOCATE(InitOutputData%WriteOutputHdr)
+  DEALLOCATE(InitOutputData%WriteOutputHdr)
 ENDIF
 IF (ALLOCATED(InitOutputData%WriteOutputUnt)) THEN
-   DEALLOCATE(InitOutputData%WriteOutputUnt)
+  DEALLOCATE(InitOutputData%WriteOutputUnt)
 ENDIF
   CALL NWTC_Library_Destroyprogdesc( InitOutputData%Ver, ErrStat, ErrMsg )
   CALL IfW_UniformWind_DestroyInitOutput( InitOutputData%UniformWind, ErrStat, ErrMsg )
   CALL IfW_TSFFWind_DestroyInitOutput( InitOutputData%TSFFWind, ErrStat, ErrMsg )
   CALL IfW_BladedFFWind_DestroyInitOutput( InitOutputData%BladedFFWind, ErrStat, ErrMsg )
-  CALL IfW_HAWCWind_DestroyInitOutput( InitOutputData%HAWCWind, ErrStat, ErrMsg )
   CALL IfW_UserWind_DestroyInitOutput( InitOutputData%UserWind, ErrStat, ErrMsg )
   CALL InflowWind_Destroywindfilemetadata( InitOutputData%WindFileInfo, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyInitOutput
@@ -1468,7 +1593,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -1564,23 +1689,6 @@ ENDIF
          DEALLOCATE(Db_Buf)
       END IF
       IF(ALLOCATED(Int_Buf)) THEN ! BladedFFWind
-         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
-         DEALLOCATE(Int_Buf)
-      END IF
-      Int_BufSz   = Int_BufSz + 3  ! HAWCWind: size of buffers for each call to pack subtype
-      CALL IfW_HAWCWind_PackInitOutput( Re_Buf, Db_Buf, Int_Buf, InData%HAWCWind, ErrStat2, ErrMsg2, .TRUE. ) ! HAWCWind 
-        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
-        IF (ErrStat >= AbortErrLev) RETURN
-
-      IF(ALLOCATED(Re_Buf)) THEN ! HAWCWind
-         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
-         DEALLOCATE(Re_Buf)
-      END IF
-      IF(ALLOCATED(Db_Buf)) THEN ! HAWCWind
-         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
-         DEALLOCATE(Db_Buf)
-      END IF
-      IF(ALLOCATED(Int_Buf)) THEN ! HAWCWind
          Int_BufSz = Int_BufSz + SIZE( Int_Buf )
          DEALLOCATE(Int_Buf)
       END IF
@@ -1764,34 +1872,6 @@ ENDIF
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
       CALL IfW_BladedFFWind_PackInitOutput( Re_Buf, Db_Buf, Int_Buf, InData%BladedFFWind, ErrStat2, ErrMsg2, OnlySize ) ! BladedFFWind 
-        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
-        IF (ErrStat >= AbortErrLev) RETURN
-
-      IF(ALLOCATED(Re_Buf)) THEN
-        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
-        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
-        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
-        DEALLOCATE(Re_Buf)
-      ELSE
-        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
-      ENDIF
-      IF(ALLOCATED(Db_Buf)) THEN
-        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
-        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
-        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
-        DEALLOCATE(Db_Buf)
-      ELSE
-        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
-      ENDIF
-      IF(ALLOCATED(Int_Buf)) THEN
-        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
-        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
-        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
-        DEALLOCATE(Int_Buf)
-      ELSE
-        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
-      ENDIF
-      CALL IfW_HAWCWind_PackInitOutput( Re_Buf, Db_Buf, Int_Buf, InData%HAWCWind, ErrStat2, ErrMsg2, OnlySize ) ! HAWCWind 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
 
@@ -2157,46 +2237,6 @@ ENDIF
         Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
         Int_Xferred = Int_Xferred + Buf_size
       END IF
-      CALL IfW_HAWCWind_UnpackInitOutput( Re_Buf, Db_Buf, Int_Buf, OutData%HAWCWind, ErrStat2, ErrMsg2 ) ! HAWCWind 
-        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
-        IF (ErrStat >= AbortErrLev) RETURN
-
-      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
-      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
-      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
-      Buf_size=IntKiBuf( Int_Xferred )
-      Int_Xferred = Int_Xferred + 1
-      IF(Buf_size > 0) THEN
-        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
-        IF (ErrStat2 /= 0) THEN 
-           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
-           RETURN
-        END IF
-        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
-        Re_Xferred = Re_Xferred + Buf_size
-      END IF
-      Buf_size=IntKiBuf( Int_Xferred )
-      Int_Xferred = Int_Xferred + 1
-      IF(Buf_size > 0) THEN
-        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
-        IF (ErrStat2 /= 0) THEN 
-           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
-           RETURN
-        END IF
-        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
-        Db_Xferred = Db_Xferred + Buf_size
-      END IF
-      Buf_size=IntKiBuf( Int_Xferred )
-      Int_Xferred = Int_Xferred + 1
-      IF(Buf_size > 0) THEN
-        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
-        IF (ErrStat2 /= 0) THEN 
-           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
-           RETURN
-        END IF
-        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
-        Int_Xferred = Int_Xferred + Buf_size
-      END IF
       CALL IfW_UserWind_UnpackInitOutput( Re_Buf, Db_Buf, Int_Buf, OutData%UserWind, ErrStat2, ErrMsg2 ) ! UserWind 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
         IF (ErrStat >= AbortErrLev) RETURN
@@ -2317,10 +2357,10 @@ ENDIF
   CALL IfW_BladedFFWind_DestroyOtherState( OtherStateData%BladedFFWind, ErrStat, ErrMsg )
   CALL IfW_UserWind_DestroyOtherState( OtherStateData%UserWind, ErrStat, ErrMsg )
 IF (ALLOCATED(OtherStateData%AllOuts)) THEN
-   DEALLOCATE(OtherStateData%AllOuts)
+  DEALLOCATE(OtherStateData%AllOuts)
 ENDIF
 IF (ALLOCATED(OtherStateData%WindViUVW)) THEN
-   DEALLOCATE(OtherStateData%WindViUVW)
+  DEALLOCATE(OtherStateData%WindViUVW)
 ENDIF
  END SUBROUTINE InflowWind_DestroyOtherState
 
@@ -2339,7 +2379,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -2466,7 +2506,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
       CALL IfW_UniformWind_PackOtherState( Re_Buf, Db_Buf, Int_Buf, InData%UniformWind, ErrStat2, ErrMsg2, OnlySize ) ! UniformWind 
         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
@@ -2947,6 +2987,9 @@ IF (ALLOCATED(SrcParamData%OutParam)) THEN
          IF (ErrStat>=AbortErrLev) RETURN
     ENDDO
 ENDIF
+      CALL Lidar_CopyParam( SrcParamData%lidar, DstParamData%lidar, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  END SUBROUTINE InflowWind_CopyParam
 
  SUBROUTINE InflowWind_DestroyParam( ParamData, ErrStat, ErrMsg )
@@ -2959,10 +3002,10 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(ParamData%WindViXYZprime)) THEN
-   DEALLOCATE(ParamData%WindViXYZprime)
+  DEALLOCATE(ParamData%WindViXYZprime)
 ENDIF
 IF (ALLOCATED(ParamData%WindViXYZ)) THEN
-   DEALLOCATE(ParamData%WindViXYZ)
+  DEALLOCATE(ParamData%WindViXYZ)
 ENDIF
   CALL IfW_UniformWind_DestroyParam( ParamData%UniformWind, ErrStat, ErrMsg )
   CALL IfW_TSFFWind_DestroyParam( ParamData%TSFFWind, ErrStat, ErrMsg )
@@ -2972,8 +3015,9 @@ IF (ALLOCATED(ParamData%OutParam)) THEN
 DO i1 = LBOUND(ParamData%OutParam,1), UBOUND(ParamData%OutParam,1)
   CALL NWTC_Library_Destroyoutparmtype( ParamData%OutParam(i1), ErrStat, ErrMsg )
 ENDDO
-   DEALLOCATE(ParamData%OutParam)
+  DEALLOCATE(ParamData%OutParam)
 ENDIF
+  CALL Lidar_DestroyParam( ParamData%lidar, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyParam
 
  SUBROUTINE InflowWind_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -2991,7 +3035,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -3130,6 +3174,23 @@ ENDIF
       END IF
     END DO
   END IF
+      Int_BufSz   = Int_BufSz + 3  ! lidar: size of buffers for each call to pack subtype
+      CALL Lidar_PackParam( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, .TRUE. ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! lidar
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! lidar
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! lidar
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -3177,17 +3238,17 @@ ENDIF
           IntKiBuf(Int_Xferred) = ICHAR(InData%RootFileName(I:I), IntKi)
           Int_Xferred = Int_Xferred   + 1
         END DO ! I
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%Initialized , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%CTTS_Flag , IntKiBuf(1), 1)
+      IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%CTTS_Flag , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
-       DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
+      DbKiBuf ( Db_Xferred:Db_Xferred+(1)-1 ) = InData%DT
       Db_Xferred   = Db_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PropogationDir
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%PropogationDir
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotToWind))-1 ) = PACK(InData%RotToWind,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotToWind))-1 ) = PACK(InData%RotToWind,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%RotToWind)
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotFromWind))-1 ) = PACK(InData%RotFromWind,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%RotFromWind))-1 ) = PACK(InData%RotFromWind,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%RotFromWind)
   IF ( .NOT. ALLOCATED(InData%WindViXYZprime) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -3205,15 +3266,15 @@ ENDIF
       IF (SIZE(InData%WindViXYZprime)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WindViXYZprime))-1 ) = PACK(InData%WindViXYZprime,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%WindViXYZprime)
   END IF
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%WindType
       Int_Xferred   = Int_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ReferenceHeight
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%ReferenceHeight
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Width
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%Width
       Re_Xferred   = Re_Xferred   + 1
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HalfWidth
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%HalfWidth
       Re_Xferred   = Re_Xferred   + 1
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NWindVel
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NWindVel
       Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%WindViXYZ) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -3343,7 +3404,7 @@ ENDIF
       ELSE
         IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
       ENDIF
-       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumOuts
+      IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%NumOuts
       Int_Xferred   = Int_Xferred   + 1
   IF ( .NOT. ALLOCATED(InData%OutParam) ) THEN
     IntKiBuf( Int_Xferred ) = 0
@@ -3386,6 +3447,34 @@ ENDIF
       ENDIF
     END DO
   END IF
+      CALL Lidar_PackParam( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, OnlySize ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
  END SUBROUTINE InflowWind_PackParam
 
  SUBROUTINE InflowWind_UnPackParam( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -3460,7 +3549,7 @@ ENDIF
        RETURN
     END IF
     mask2 = .TRUE. 
-       OutData%RotToWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotToWind))-1 ), mask2, 0.0_ReKi )
+      OutData%RotToWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotToWind))-1 ), mask2, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%RotToWind)
     DEALLOCATE(mask2)
     i1_l = LBOUND(OutData%RotFromWind,1)
@@ -3473,7 +3562,7 @@ ENDIF
        RETURN
     END IF
     mask2 = .TRUE. 
-       OutData%RotFromWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotFromWind))-1 ), mask2, 0.0_ReKi )
+      OutData%RotFromWind = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%RotFromWind))-1 ), mask2, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%RotFromWind)
     DEALLOCATE(mask2)
   IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! WindViXYZprime not allocated
@@ -3756,6 +3845,46 @@ ENDIF
       IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
     END DO
   END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL Lidar_UnpackParam( Re_Buf, Db_Buf, Int_Buf, OutData%lidar, ErrStat2, ErrMsg2 ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
  END SUBROUTINE InflowWind_UnPackParam
 
  SUBROUTINE InflowWind_CopyInput( SrcInputData, DstInputData, CtrlCode, ErrStat, ErrMsg )
@@ -3788,6 +3917,9 @@ IF (ALLOCATED(SrcInputData%PositionXYZ)) THEN
   END IF
     DstInputData%PositionXYZ = SrcInputData%PositionXYZ
 ENDIF
+      CALL Lidar_CopyInput( SrcInputData%lidar, DstInputData%lidar, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  END SUBROUTINE InflowWind_CopyInput
 
  SUBROUTINE InflowWind_DestroyInput( InputData, ErrStat, ErrMsg )
@@ -3800,8 +3932,9 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(InputData%PositionXYZ)) THEN
-   DEALLOCATE(InputData%PositionXYZ)
+  DEALLOCATE(InputData%PositionXYZ)
 ENDIF
+  CALL Lidar_DestroyInput( InputData%lidar, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyInput
 
  SUBROUTINE InflowWind_PackInput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -3819,7 +3952,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -3844,6 +3977,24 @@ ENDIF
     Int_BufSz   = Int_BufSz   + 2*2  ! PositionXYZ upper/lower bounds for each dimension
       Re_BufSz   = Re_BufSz   + SIZE(InData%PositionXYZ)  ! PositionXYZ
   END IF
+   ! Allocate buffers for subtypes, if any (we'll get sizes from these) 
+      Int_BufSz   = Int_BufSz + 3  ! lidar: size of buffers for each call to pack subtype
+      CALL Lidar_PackInput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, .TRUE. ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! lidar
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! lidar
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! lidar
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -3887,6 +4038,34 @@ ENDIF
       IF (SIZE(InData%PositionXYZ)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%PositionXYZ))-1 ) = PACK(InData%PositionXYZ,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%PositionXYZ)
   END IF
+      CALL Lidar_PackInput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, OnlySize ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
  END SUBROUTINE InflowWind_PackInput
 
  SUBROUTINE InflowWind_UnPackInput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -3949,6 +4128,46 @@ ENDIF
       Re_Xferred   = Re_Xferred   + SIZE(OutData%PositionXYZ)
     DEALLOCATE(mask2)
   END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL Lidar_UnpackInput( Re_Buf, Db_Buf, Int_Buf, OutData%lidar, ErrStat2, ErrMsg2 ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
  END SUBROUTINE InflowWind_UnPackInput
 
  SUBROUTINE InflowWind_CopyOutput( SrcOutputData, DstOutputData, CtrlCode, ErrStat, ErrMsg )
@@ -3994,6 +4213,9 @@ IF (ALLOCATED(SrcOutputData%WriteOutput)) THEN
     DstOutputData%WriteOutput = SrcOutputData%WriteOutput
 ENDIF
     DstOutputData%DiskVel = SrcOutputData%DiskVel
+      CALL Lidar_CopyOutput( SrcOutputData%lidar, DstOutputData%lidar, CtrlCode, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  END SUBROUTINE InflowWind_CopyOutput
 
  SUBROUTINE InflowWind_DestroyOutput( OutputData, ErrStat, ErrMsg )
@@ -4006,11 +4228,12 @@ ENDIF
   ErrStat = ErrID_None
   ErrMsg  = ""
 IF (ALLOCATED(OutputData%VelocityUVW)) THEN
-   DEALLOCATE(OutputData%VelocityUVW)
+  DEALLOCATE(OutputData%VelocityUVW)
 ENDIF
 IF (ALLOCATED(OutputData%WriteOutput)) THEN
-   DEALLOCATE(OutputData%WriteOutput)
+  DEALLOCATE(OutputData%WriteOutput)
 ENDIF
+  CALL Lidar_DestroyOutput( OutputData%lidar, ErrStat, ErrMsg )
  END SUBROUTINE InflowWind_DestroyOutput
 
  SUBROUTINE InflowWind_PackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -4028,7 +4251,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -4059,6 +4282,24 @@ ENDIF
       Re_BufSz   = Re_BufSz   + SIZE(InData%WriteOutput)  ! WriteOutput
   END IF
       Re_BufSz   = Re_BufSz   + SIZE(InData%DiskVel)  ! DiskVel
+   ! Allocate buffers for subtypes, if any (we'll get sizes from these) 
+      Int_BufSz   = Int_BufSz + 3  ! lidar: size of buffers for each call to pack subtype
+      CALL Lidar_PackOutput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, .TRUE. ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN ! lidar
+         Re_BufSz  = Re_BufSz  + SIZE( Re_Buf  )
+         DEALLOCATE(Re_Buf)
+      END IF
+      IF(ALLOCATED(Db_Buf)) THEN ! lidar
+         Db_BufSz  = Db_BufSz  + SIZE( Db_Buf  )
+         DEALLOCATE(Db_Buf)
+      END IF
+      IF(ALLOCATED(Int_Buf)) THEN ! lidar
+         Int_BufSz = Int_BufSz + SIZE( Int_Buf )
+         DEALLOCATE(Int_Buf)
+      END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -4115,8 +4356,36 @@ ENDIF
       IF (SIZE(InData%WriteOutput)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%WriteOutput))-1 ) = PACK(InData%WriteOutput,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%WriteOutput)
   END IF
-       ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DiskVel))-1 ) = PACK(InData%DiskVel,.TRUE.)
+      ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%DiskVel))-1 ) = PACK(InData%DiskVel,.TRUE.)
       Re_Xferred   = Re_Xferred   + SIZE(InData%DiskVel)
+      CALL Lidar_PackOutput( Re_Buf, Db_Buf, Int_Buf, InData%lidar, ErrStat2, ErrMsg2, OnlySize ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Re_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Re_Buf) > 0) ReKiBuf( Re_Xferred:Re_Xferred+SIZE(Re_Buf)-1 ) = Re_Buf
+        Re_Xferred = Re_Xferred + SIZE(Re_Buf)
+        DEALLOCATE(Re_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Db_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Db_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Db_Buf) > 0) DbKiBuf( Db_Xferred:Db_Xferred+SIZE(Db_Buf)-1 ) = Db_Buf
+        Db_Xferred = Db_Xferred + SIZE(Db_Buf)
+        DEALLOCATE(Db_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
+      IF(ALLOCATED(Int_Buf)) THEN
+        IntKiBuf( Int_Xferred ) = SIZE(Int_Buf); Int_Xferred = Int_Xferred + 1
+        IF (SIZE(Int_Buf) > 0) IntKiBuf( Int_Xferred:Int_Xferred+SIZE(Int_Buf)-1 ) = Int_Buf
+        Int_Xferred = Int_Xferred + SIZE(Int_Buf)
+        DEALLOCATE(Int_Buf)
+      ELSE
+        IntKiBuf( Int_Xferred ) = 0; Int_Xferred = Int_Xferred + 1
+      ENDIF
  END SUBROUTINE InflowWind_PackOutput
 
  SUBROUTINE InflowWind_UnPackOutput( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -4210,9 +4479,49 @@ ENDIF
        RETURN
     END IF
     mask1 = .TRUE. 
-       OutData%DiskVel = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DiskVel))-1 ), mask1, 0.0_ReKi )
+      OutData%DiskVel = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%DiskVel))-1 ), mask1, 0.0_ReKi )
       Re_Xferred   = Re_Xferred   + SIZE(OutData%DiskVel)
     DEALLOCATE(mask1)
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Re_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Re_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Re_Buf = ReKiBuf( Re_Xferred:Re_Xferred+Buf_size-1 )
+        Re_Xferred = Re_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Db_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Db_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Db_Buf = DbKiBuf( Db_Xferred:Db_Xferred+Buf_size-1 )
+        Db_Xferred = Db_Xferred + Buf_size
+      END IF
+      Buf_size=IntKiBuf( Int_Xferred )
+      Int_Xferred = Int_Xferred + 1
+      IF(Buf_size > 0) THEN
+        ALLOCATE(Int_Buf(Buf_size),STAT=ErrStat2)
+        IF (ErrStat2 /= 0) THEN 
+           CALL SetErrStat(ErrID_Fatal, 'Error allocating Int_Buf.', ErrStat, ErrMsg,RoutineName)
+           RETURN
+        END IF
+        Int_Buf = IntKiBuf( Int_Xferred:Int_Xferred+Buf_size-1 )
+        Int_Xferred = Int_Xferred + Buf_size
+      END IF
+      CALL Lidar_UnpackOutput( Re_Buf, Db_Buf, Int_Buf, OutData%lidar, ErrStat2, ErrMsg2 ) ! lidar 
+        CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg, RoutineName)
+        IF (ErrStat >= AbortErrLev) RETURN
+
+      IF(ALLOCATED(Re_Buf )) DEALLOCATE(Re_Buf )
+      IF(ALLOCATED(Db_Buf )) DEALLOCATE(Db_Buf )
+      IF(ALLOCATED(Int_Buf)) DEALLOCATE(Int_Buf)
  END SUBROUTINE InflowWind_UnPackOutput
 
  SUBROUTINE InflowWind_CopyContState( SrcContStateData, DstContStateData, CtrlCode, ErrStat, ErrMsg )
@@ -4258,7 +4567,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -4306,7 +4615,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyContState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyContState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE InflowWind_PackContState
 
@@ -4389,7 +4698,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -4437,7 +4746,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyDiscState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyDiscState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE InflowWind_PackDiscState
 
@@ -4520,7 +4829,7 @@ ENDIF
   INTEGER(IntKi)                 :: Db_Xferred
   INTEGER(IntKi)                 :: Int_BufSz
   INTEGER(IntKi)                 :: Int_Xferred
-  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5     
+  INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
   CHARACTER(1024)                :: ErrMsg2
@@ -4568,7 +4877,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyConstrState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyConstrState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE InflowWind_PackConstrState
 
@@ -4611,7 +4920,7 @@ ENDIF
 
  SUBROUTINE InflowWind_Input_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
 !
-! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
+! This subroutine calculates a extrapolated (or interpolated) Input u_out at time t_out, from previous/future time
 ! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
 !
 !  expressions below based on either
@@ -4667,6 +4976,9 @@ ENDIF
 IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
   u_out%PositionXYZ = u(1)%PositionXYZ
 END IF ! check if allocated
+      CALL Lidar_Input_ExtrapInterp( u%lidar, tin, u_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -4681,6 +4993,9 @@ IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
+      CALL Lidar_Input_ExtrapInterp( u%lidar, tin, u_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -4706,6 +5021,9 @@ IF (ALLOCATED(u_out%PositionXYZ) .AND. ALLOCATED(u(1)%PositionXYZ)) THEN
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
+      CALL Lidar_Input_ExtrapInterp( u%lidar, tin, u_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE 
    ErrStat = ErrID_Fatal
    ErrMsg = ' order must be less than 3 in InflowWind_Input_ExtrapInterp '
@@ -4714,10 +5032,10 @@ END IF ! check if allocated
  END SUBROUTINE InflowWind_Input_ExtrapInterp
 
 
- SUBROUTINE InflowWind_Output_ExtrapInterp(u, tin, u_out, tin_out, ErrStat, ErrMsg )
+ SUBROUTINE InflowWind_Output_ExtrapInterp(y, tin, y_out, tin_out, ErrStat, ErrMsg )
 !
-! This subroutine calculates a extrapolated (or interpolated) input u_out at time t_out, from previous/future time
-! values of u (which has values associated with times in t).  Order of the interpolation is given by the size of u
+! This subroutine calculates a extrapolated (or interpolated) Output y_out at time t_out, from previous/future time
+! values of y (which has values associated with times in t).  Order of the interpolation is given by the size of y
 !
 !  expressions below based on either
 !
@@ -4726,13 +5044,13 @@ END IF ! check if allocated
 !  f(t) = a + b * t + c * t**2
 !
 !  where a, b and c are determined as the solution to
-!  f(t1) = u1, f(t2) = u2, f(t3) = u3  (as appropriate)
+!  f(t1) = y1, f(t2) = y2, f(t3) = y3  (as appropriate)
 !
 !..................................................................................................................................
 
- TYPE(InflowWind_outputtype), INTENT(INOUT)  :: u(:)      ! Output at t1 > t2 > t3
+ TYPE(InflowWind_outputtype), INTENT(INOUT)  :: y(:)      ! Output at t1 > t2 > t3
  REAL(DbKi),         INTENT(IN   )  :: tin(:)      ! Times associated with the Outputs
- TYPE(InflowWind_outputtype), INTENT(INOUT)  :: u_out     ! Output at tin_out
+ TYPE(InflowWind_outputtype), INTENT(INOUT)  :: y_out     ! Output at tin_out
  REAL(DbKi),         INTENT(IN   )  :: tin_out     ! time to be extrap/interp'd to
  INTEGER(IntKi),     INTENT(  OUT)  :: ErrStat   ! Error status of the operation
  CHARACTER(*),       INTENT(  OUT)  :: ErrMsg    ! Error message if ErrStat /= ErrID_None
@@ -4757,53 +5075,59 @@ END IF ! check if allocated
  t = tin - tin(1)
  t_out = tin_out - tin(1)
 
- if ( size(t) .ne. size(u)) then
+ if ( size(t) .ne. size(y)) then
     ErrStat = ErrID_Fatal
-    ErrMsg = ' Error in InflowWind_Output_ExtrapInterp: size(t) must equal size(u) '
+    ErrMsg = ' Error in InflowWind_Output_ExtrapInterp: size(t) must equal size(y) '
     RETURN
  endif
- if (size(u) .gt. 3) then
+ if (size(y) .gt. 3) then
     ErrStat = ErrID_Fatal
-    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: size(u) must be less than 4 '
+    ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: size(y) must be less than 4 '
     RETURN
  endif
- order = SIZE(u) - 1
+ order = SIZE(y) - 1
  IF ( order .eq. 0 ) THEN
-IF (ALLOCATED(u_out%VelocityUVW) .AND. ALLOCATED(u(1)%VelocityUVW)) THEN
-  u_out%VelocityUVW = u(1)%VelocityUVW
+IF (ALLOCATED(y_out%VelocityUVW) .AND. ALLOCATED(y(1)%VelocityUVW)) THEN
+  y_out%VelocityUVW = y(1)%VelocityUVW
 END IF ! check if allocated
-IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
-  u_out%WriteOutput = u(1)%WriteOutput
+IF (ALLOCATED(y_out%WriteOutput) .AND. ALLOCATED(y(1)%WriteOutput)) THEN
+  y_out%WriteOutput = y(1)%WriteOutput
 END IF ! check if allocated
-  u_out%DiskVel = u(1)%DiskVel
+  y_out%DiskVel = y(1)%DiskVel
+      CALL Lidar_Output_ExtrapInterp( y%lidar, tin, y_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE IF ( order .eq. 1 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
     ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(2) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%VelocityUVW) .AND. ALLOCATED(u(1)%VelocityUVW)) THEN
-  ALLOCATE(b2(SIZE(u_out%VelocityUVW,1),SIZE(u_out%VelocityUVW,2) ))
-  ALLOCATE(c2(SIZE(u_out%VelocityUVW,1),SIZE(u_out%VelocityUVW,2) ))
-  b2 = -(u(1)%VelocityUVW - u(2)%VelocityUVW)/t(2)
-  u_out%VelocityUVW = u(1)%VelocityUVW + b2 * t_out
+IF (ALLOCATED(y_out%VelocityUVW) .AND. ALLOCATED(y(1)%VelocityUVW)) THEN
+  ALLOCATE(b2(SIZE(y_out%VelocityUVW,1),SIZE(y_out%VelocityUVW,2) ))
+  ALLOCATE(c2(SIZE(y_out%VelocityUVW,1),SIZE(y_out%VelocityUVW,2) ))
+  b2 = -(y(1)%VelocityUVW - y(2)%VelocityUVW)/t(2)
+  y_out%VelocityUVW = y(1)%VelocityUVW + b2 * t_out
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
-IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
-  ALLOCATE(b1(SIZE(u_out%WriteOutput,1)))
-  ALLOCATE(c1(SIZE(u_out%WriteOutput,1)))
-  b1 = -(u(1)%WriteOutput - u(2)%WriteOutput)/t(2)
-  u_out%WriteOutput = u(1)%WriteOutput + b1 * t_out
+IF (ALLOCATED(y_out%WriteOutput) .AND. ALLOCATED(y(1)%WriteOutput)) THEN
+  ALLOCATE(b1(SIZE(y_out%WriteOutput,1)))
+  ALLOCATE(c1(SIZE(y_out%WriteOutput,1)))
+  b1 = -(y(1)%WriteOutput - y(2)%WriteOutput)/t(2)
+  y_out%WriteOutput = y(1)%WriteOutput + b1 * t_out
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-  ALLOCATE(b1(SIZE(u_out%DiskVel,1)))
-  ALLOCATE(c1(SIZE(u_out%DiskVel,1)))
-  b1 = -(u(1)%DiskVel - u(2)%DiskVel)/t(2)
-  u_out%DiskVel = u(1)%DiskVel + b1 * t_out
+  ALLOCATE(b1(SIZE(y_out%DiskVel,1)))
+  ALLOCATE(c1(SIZE(y_out%DiskVel,1)))
+  b1 = -(y(1)%DiskVel - y(2)%DiskVel)/t(2)
+  y_out%DiskVel = y(1)%DiskVel + b1 * t_out
   DEALLOCATE(b1)
   DEALLOCATE(c1)
+      CALL Lidar_Output_ExtrapInterp( y%lidar, tin, y_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE IF ( order .eq. 2 ) THEN
   IF ( EqualRealNos( t(1), t(2) ) ) THEN
     ErrStat = ErrID_Fatal
@@ -4820,31 +5144,34 @@ END IF ! check if allocated
     ErrMsg  = ' Error in InflowWind_Output_ExtrapInterp: t(1) must not equal t(3) to avoid a division-by-zero error.'
     RETURN
   END IF
-IF (ALLOCATED(u_out%VelocityUVW) .AND. ALLOCATED(u(1)%VelocityUVW)) THEN
-  ALLOCATE(b2(SIZE(u_out%VelocityUVW,1),SIZE(u_out%VelocityUVW,2) ))
-  ALLOCATE(c2(SIZE(u_out%VelocityUVW,1),SIZE(u_out%VelocityUVW,2) ))
-  b2 = (t(3)**2*(u(1)%VelocityUVW - u(2)%VelocityUVW) + t(2)**2*(-u(1)%VelocityUVW + u(3)%VelocityUVW))/(t(2)*t(3)*(t(2) - t(3)))
-  c2 = ( (t(2)-t(3))*u(1)%VelocityUVW + t(3)*u(2)%VelocityUVW - t(2)*u(3)%VelocityUVW ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%VelocityUVW = u(1)%VelocityUVW + b2 * t_out + c2 * t_out**2
+IF (ALLOCATED(y_out%VelocityUVW) .AND. ALLOCATED(y(1)%VelocityUVW)) THEN
+  ALLOCATE(b2(SIZE(y_out%VelocityUVW,1),SIZE(y_out%VelocityUVW,2) ))
+  ALLOCATE(c2(SIZE(y_out%VelocityUVW,1),SIZE(y_out%VelocityUVW,2) ))
+  b2 = (t(3)**2*(y(1)%VelocityUVW - y(2)%VelocityUVW) + t(2)**2*(-y(1)%VelocityUVW + y(3)%VelocityUVW))/(t(2)*t(3)*(t(2) - t(3)))
+  c2 = ( (t(2)-t(3))*y(1)%VelocityUVW + t(3)*y(2)%VelocityUVW - t(2)*y(3)%VelocityUVW ) / (t(2)*t(3)*(t(2) - t(3)))
+  y_out%VelocityUVW = y(1)%VelocityUVW + b2 * t_out + c2 * t_out**2
   DEALLOCATE(b2)
   DEALLOCATE(c2)
 END IF ! check if allocated
-IF (ALLOCATED(u_out%WriteOutput) .AND. ALLOCATED(u(1)%WriteOutput)) THEN
-  ALLOCATE(b1(SIZE(u_out%WriteOutput,1)))
-  ALLOCATE(c1(SIZE(u_out%WriteOutput,1)))
-  b1 = (t(3)**2*(u(1)%WriteOutput - u(2)%WriteOutput) + t(2)**2*(-u(1)%WriteOutput + u(3)%WriteOutput))/(t(2)*t(3)*(t(2) - t(3)))
-  c1 = ( (t(2)-t(3))*u(1)%WriteOutput + t(3)*u(2)%WriteOutput - t(2)*u(3)%WriteOutput ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%WriteOutput = u(1)%WriteOutput + b1 * t_out + c1 * t_out**2
+IF (ALLOCATED(y_out%WriteOutput) .AND. ALLOCATED(y(1)%WriteOutput)) THEN
+  ALLOCATE(b1(SIZE(y_out%WriteOutput,1)))
+  ALLOCATE(c1(SIZE(y_out%WriteOutput,1)))
+  b1 = (t(3)**2*(y(1)%WriteOutput - y(2)%WriteOutput) + t(2)**2*(-y(1)%WriteOutput + y(3)%WriteOutput))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*y(1)%WriteOutput + t(3)*y(2)%WriteOutput - t(2)*y(3)%WriteOutput ) / (t(2)*t(3)*(t(2) - t(3)))
+  y_out%WriteOutput = y(1)%WriteOutput + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
 END IF ! check if allocated
-  ALLOCATE(b1(SIZE(u_out%DiskVel,1)))
-  ALLOCATE(c1(SIZE(u_out%DiskVel,1)))
-  b1 = (t(3)**2*(u(1)%DiskVel - u(2)%DiskVel) + t(2)**2*(-u(1)%DiskVel + u(3)%DiskVel))/(t(2)*t(3)*(t(2) - t(3)))
-  c1 = ( (t(2)-t(3))*u(1)%DiskVel + t(3)*u(2)%DiskVel - t(2)*u(3)%DiskVel ) / (t(2)*t(3)*(t(2) - t(3)))
-  u_out%DiskVel = u(1)%DiskVel + b1 * t_out + c1 * t_out**2
+  ALLOCATE(b1(SIZE(y_out%DiskVel,1)))
+  ALLOCATE(c1(SIZE(y_out%DiskVel,1)))
+  b1 = (t(3)**2*(y(1)%DiskVel - y(2)%DiskVel) + t(2)**2*(-y(1)%DiskVel + y(3)%DiskVel))/(t(2)*t(3)*(t(2) - t(3)))
+  c1 = ( (t(2)-t(3))*y(1)%DiskVel + t(3)*y(2)%DiskVel - t(2)*y(3)%DiskVel ) / (t(2)*t(3)*(t(2) - t(3)))
+  y_out%DiskVel = y(1)%DiskVel + b1 * t_out + c1 * t_out**2
   DEALLOCATE(b1)
   DEALLOCATE(c1)
+      CALL Lidar_Output_ExtrapInterp( y%lidar, tin, y_out%lidar, tin_out, ErrStat2, ErrMsg2 )
+         CALL SetErrStat(ErrStat2, ErrMsg2, ErrStat, ErrMsg,RoutineName)
+         IF (ErrStat>=AbortErrLev) RETURN
  ELSE 
    ErrStat = ErrID_Fatal
    ErrMsg = ' order must be less than 3 in InflowWind_Output_ExtrapInterp '
