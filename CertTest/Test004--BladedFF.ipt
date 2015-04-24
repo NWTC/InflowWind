@@ -21,36 +21,6 @@ True                 Echo           - Echo input data to <RootName>.ech (flag)
 ================== Parameters for Binary Bladed-style Full-Field files   [used only for WindType = 4] =========
 "data/Test004--BladedFF.Windfile.wnd"                   FilenameRoot   - Name of the Full field wind file to use (.wnd, .sum)
  F                   TowerFile      - Have tower file (.twr) [flag]
-================== Parameters for coherent turbulence [Only used with WindType = 3 or 4] ======================
- F                   CoherentTurb   - Use coherent turbulence
-""                   CTTSFilename   - Name of coherent turbulence file
-""                   CTTSPath       - Path to coherent turbulence binary data files
-================== Parameters for HAWC-format binary files  [Only used with WindType = 5] =====================
-"unused"             FileName_u      - name of the file containing the u-component fluctuating wind
-"unused"             FileName_v      - name of the file containing the v-component fluctuating wind
-"unused"             FileName_w      - name of the file containing the w-component fluctuating wind
- 64                  nx             - number of grids in the x direction (in the 3 files above)
- 32                  ny             - number of grids in the y direction (in the 3 files above)
- 32                  nz             - number of grids in the z direction (in the 3 files above)
- 16                  dx             - distance (in meters) between points in the x direction
-  3                  dy             - distance (in meters) between points in the y direction
-  3                  dz             - distance (in meters) between points in the z direction
- 50                  RefHt          - reference height; the height (in meters) of the vertical center of the grid
-  -------------   Scaling parameters for turbulence   ---------------------------------------------------------
-    1                ScaleMethod    - Turbulence scaling method   [0 = none, 1 = direct scaling, 2 = calculate scaling factor based on a desired standard deviation]
-    1.0              SFx            - Turbulence scaling factor for the x direction (-)   [ScaleMethod=1]
-    1.0              SFy            - Turbulence scaling factor for the y direction (-)   [ScaleMethod=1]
-    1.0              SFz            - Turbulence scaling factor for the z direction (-)   [ScaleMethod=1]
-   12.0              SigmaFx        - Turbulence standard deviation to calculate scaling from in x direction (m/s)    [ScaleMethod=2]
-    8.0              SigmaFy        - Turbulence standard deviation to calculate scaling from in y direction (m/s)    [ScaleMethod=2]
-    2.0              SigmaFz        - Turbulence standard deviation to calculate scaling from in z direction (m/s)    [ScaleMethod=2]
-    0.0              TStart         -
-    0.0              TEnd           -
-  -------------   Mean wind profile parameters (added to HAWC-format files)   ---------------------------------
-  5.0                URef           - Mean u-component wind speed at the reference height [m/s]
- PL                  WindProfile    - Wind profile type ("LOG"=logarithmic,"PL"=power law, or "UD"=user defined)
-  0                  PLExp          - Power law exponent [-] (used for PL wind profile type only)
-  0.03               Z0             - Surface roughness length [m] (used for LG wind profile type only)
 ====================== OUTPUT ==================================================
 True          SumPrint     - Print summary data to <RootName>.sum (flag) (currently unused)
               OutList      - The next line(s) contains a list of output parameters.  See OutListParameters.xlsx for a listing of available output channels, (-)
