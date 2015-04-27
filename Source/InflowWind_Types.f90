@@ -65,6 +65,7 @@ IMPLICIT NONE
     LOGICAL  :: IsBinary      ! Windfile is a binary file [-]
     REAL(ReKi) , DIMENSION(1:3)  :: TI      ! Turbulence intensity (U,V,W) [-]
     LOGICAL  :: TI_listed      ! Turbulence intesity given in file [-]
+    REAL(ReKi)  :: MWS      ! Approximate mean wind speed [-]
   END TYPE WindFileMetaData
 ! =======================
 ! =========  InflowWind_InputFile  =======
@@ -241,6 +242,7 @@ CONTAINS
     DstWindFileMetaDataData%IsBinary = SrcWindFileMetaDataData%IsBinary
     DstWindFileMetaDataData%TI = SrcWindFileMetaDataData%TI
     DstWindFileMetaDataData%TI_listed = SrcWindFileMetaDataData%TI_listed
+    DstWindFileMetaDataData%MWS = SrcWindFileMetaDataData%MWS
  END SUBROUTINE InflowWind_CopyWindFileMetaData
 
  SUBROUTINE InflowWind_DestroyWindFileMetaData( WindFileMetaDataData, ErrStat, ErrMsg )
@@ -306,6 +308,7 @@ CONTAINS
       Int_BufSz  = Int_BufSz  + 1  ! IsBinary
       Re_BufSz   = Re_BufSz   + SIZE(InData%TI)  ! TI
       Int_BufSz  = Int_BufSz  + 1  ! TI_listed
+      Re_BufSz   = Re_BufSz   + 1  ! MWS
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -369,6 +372,8 @@ CONTAINS
       Re_Xferred   = Re_Xferred   + SIZE(InData%TI)
       IntKiBuf ( Int_Xferred:Int_Xferred+1-1 ) = TRANSFER( InData%TI_listed , IntKiBuf(1), 1)
       Int_Xferred   = Int_Xferred   + 1
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%MWS
+      Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE InflowWind_PackWindFileMetaData
 
  SUBROUTINE InflowWind_UnPackWindFileMetaData( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -477,6 +482,8 @@ CONTAINS
     DEALLOCATE(mask1)
       OutData%TI_listed = TRANSFER( IntKiBuf( Int_Xferred ), mask0 )
       Int_Xferred   = Int_Xferred + 1
+      OutData%MWS = ReKiBuf( Re_Xferred )
+      Re_Xferred   = Re_Xferred + 1
  END SUBROUTINE InflowWind_UnPackWindFileMetaData
 
  SUBROUTINE InflowWind_CopyInputFile( SrcInputFileData, DstInputFileData, CtrlCode, ErrStat, ErrMsg )
