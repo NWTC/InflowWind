@@ -1,6 +1,7 @@
 ECHO OFF
 
-SET PROG_EXE=..\bin\InflowWind.exe
+rem SET PROG_EXE=..\bin\InflowWind.exe
+SET PROG_EXE=..\bin\InflowWind_Driver_gwin32.exe
 SET COMPARE=FC
 SET OLD_RESULTS=.\Results
 @SET  POUNDS=#############################################################################################

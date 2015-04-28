@@ -19,7 +19,7 @@ True                 Echo           - Echo input data to <RootName>.ech (flag)
 ================== Parameters for Binary TurbSim Full-Field files   [used only for WindType = 3] ==============
 ""                   Filename       - Name of the Full field wind file to use (.bts)
 ================== Parameters for Binary Bladed-style Full-Field files   [used only for WindType = 4] =========
-"data/Test004--BladedFF.Windfile.wnd"                   FilenameRoot   - Name of the Full field wind file to use (.wnd, .sum)
+"data/Test004--BladedFF.Windfile"                   FilenameRoot   - Name of the Full field wind file to use (.wnd, .sum)
  F                   TowerFile      - Have tower file (.twr) [flag]
 ====================== OUTPUT ==================================================
 True          SumPrint     - Print summary data to <RootName>.sum (flag) (currently unused)
