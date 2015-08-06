@@ -1,9 +1,9 @@
-!STARTOFREGISTRYGENERATEDFILE './IfW_HAWCWind_Types.f90'
+!STARTOFREGISTRYGENERATEDFILE 'IfW_HAWCWind_Types.f90'
 !
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.06.01, 21-Apr-2015)
+! FAST Registry (v2.08.01, 21-May-2015)
 !*********************************************************************************************************************************
 ! IfW_HAWCWind_Types
 !.................................................................................................................................
@@ -48,7 +48,6 @@ IMPLICIT NONE
 ! =========  IfW_HAWCWind_OtherStateType  =======
   TYPE, PUBLIC :: IfW_HAWCWind_OtherStateType
     INTEGER(IntKi)  :: TimeIndex = 0      ! An Index into the TData array [-]
-    REAL(ReKi) , DIMENSION(:,:,:,:), ALLOCATABLE  :: HAWCData      ! Array of HAWC data [-]
   END TYPE IfW_HAWCWind_OtherStateType
 ! =======================
 ! =========  IfW_HAWCWind_ParameterType  =======
@@ -60,10 +59,11 @@ IMPLICIT NONE
     INTEGER(IntKi)  :: nx = 0      ! Number of grids in the x direction (in the 3 files above) [-]
     INTEGER(IntKi)  :: ny = 0      ! Number of grids in the y direction (in the 3 files above) [-]
     INTEGER(IntKi)  :: nz = 0      ! Number of grids in the z direction (in the 3 files above) [-]
-    REAL(ReKi)  :: dx = 0      ! Number of grids in the x direction (in the 3 files above) [-]
-    REAL(ReKi)  :: dy = 0      ! Number of grids in the y direction (in the 3 files above) [-]
-    REAL(ReKi)  :: dz = 0      ! Number of grids in the z direction (in the 3 files above) [-]
+    REAL(ReKi)  :: dx = 0      ! size of grids in the x direction (in the 3 files above) [-]
+    REAL(ReKi)  :: dy = 0      ! size of grids in the y direction (in the 3 files above) [-]
+    REAL(ReKi)  :: dz = 0      ! size of grids in the z direction (in the 3 files above) [-]
     REAL(ReKi)  :: RefHt = 0      ! Reference (hub) height of the grid [meters]
+    REAL(SiKi) , DIMENSION(:,:,:,:), ALLOCATABLE  :: HAWCData      ! Array of HAWC data [-]
     INTEGER(IntKi)  :: ScaleMethod = 0      ! Turbulence scaling method [0=none, 1=direct scaling, 2= calculate scaling factor based on a desired standard deviation] [-]
     REAL(ReKi)  :: SFx = 0      ! Turbulence scaling factor for the x direction [ScaleMethod=1] [-]
     REAL(ReKi)  :: SFy = 0      ! Turbulence scaling factor for the y direction [ScaleMethod=1] [-]
@@ -118,7 +118,7 @@ CONTAINS
    INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
    INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyInitInput'
 ! 
    ErrStat = ErrID_None
@@ -155,7 +155,7 @@ CONTAINS
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackInitInput'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -230,7 +230,7 @@ CONTAINS
   INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
   INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackInitInput'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -258,7 +258,7 @@ CONTAINS
    INTEGER(IntKi)                 :: i,j,k
    INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyInitOutput'
 ! 
    ErrStat = ErrID_None
@@ -328,7 +328,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackInitOutput'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -485,7 +485,7 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackInitOutput'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -601,35 +601,13 @@ ENDIF
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
-   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
-   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
-   INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
-   INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyOtherState'
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
     DstOtherStateData%TimeIndex = SrcOtherStateData%TimeIndex
-IF (ALLOCATED(SrcOtherStateData%HAWCData)) THEN
-  i1_l = LBOUND(SrcOtherStateData%HAWCData,1)
-  i1_u = UBOUND(SrcOtherStateData%HAWCData,1)
-  i2_l = LBOUND(SrcOtherStateData%HAWCData,2)
-  i2_u = UBOUND(SrcOtherStateData%HAWCData,2)
-  i3_l = LBOUND(SrcOtherStateData%HAWCData,3)
-  i3_u = UBOUND(SrcOtherStateData%HAWCData,3)
-  i4_l = LBOUND(SrcOtherStateData%HAWCData,4)
-  i4_u = UBOUND(SrcOtherStateData%HAWCData,4)
-  IF (.NOT. ALLOCATED(DstOtherStateData%HAWCData)) THEN 
-    ALLOCATE(DstOtherStateData%HAWCData(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
-    IF (ErrStat2 /= 0) THEN 
-      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstOtherStateData%HAWCData.', ErrStat, ErrMsg,RoutineName)
-      RETURN
-    END IF
-  END IF
-    DstOtherStateData%HAWCData = SrcOtherStateData%HAWCData
-ENDIF
  END SUBROUTINE IfW_HAWCWind_CopyOtherState
 
  SUBROUTINE IfW_HAWCWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -641,9 +619,6 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
-IF (ALLOCATED(OtherStateData%HAWCData)) THEN
-  DEALLOCATE(OtherStateData%HAWCData)
-ENDIF
  END SUBROUTINE IfW_HAWCWind_DestroyOtherState
 
  SUBROUTINE IfW_HAWCWind_PackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -664,7 +639,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackOtherState'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -682,11 +657,6 @@ ENDIF
   Db_BufSz  = 0
   Int_BufSz  = 0
       Int_BufSz  = Int_BufSz  + 1  ! TimeIndex
-  Int_BufSz   = Int_BufSz   + 1     ! HAWCData allocated yes/no
-  IF ( ALLOCATED(InData%HAWCData) ) THEN
-    Int_BufSz   = Int_BufSz   + 2*4  ! HAWCData upper/lower bounds for each dimension
-      Re_BufSz   = Re_BufSz   + SIZE(InData%HAWCData)  ! HAWCData
-  END IF
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -716,28 +686,6 @@ ENDIF
 
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%TimeIndex
       Int_Xferred   = Int_Xferred   + 1
-  IF ( .NOT. ALLOCATED(InData%HAWCData) ) THEN
-    IntKiBuf( Int_Xferred ) = 0
-    Int_Xferred = Int_Xferred + 1
-  ELSE
-    IntKiBuf( Int_Xferred ) = 1
-    Int_Xferred = Int_Xferred + 1
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,1)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,1)
-    Int_Xferred = Int_Xferred + 2
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,2)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,2)
-    Int_Xferred = Int_Xferred + 2
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,3)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,3)
-    Int_Xferred = Int_Xferred + 2
-    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,4)
-    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,4)
-    Int_Xferred = Int_Xferred + 2
-
-      IF (SIZE(InData%HAWCData)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%HAWCData))-1 ) = PACK(InData%HAWCData,.TRUE.)
-      Re_Xferred   = Re_Xferred   + SIZE(InData%HAWCData)
-  END IF
  END SUBROUTINE IfW_HAWCWind_PackOtherState
 
  SUBROUTINE IfW_HAWCWind_UnPackOtherState( ReKiBuf, DbKiBuf, IntKiBuf, Outdata, ErrStat, ErrMsg )
@@ -759,12 +707,8 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
-  INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
-  INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
-  INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
-  INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackOtherState'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -778,38 +722,6 @@ ENDIF
   Int_Xferred  = 1
       OutData%TimeIndex = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
-  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! HAWCData not allocated
-    Int_Xferred = Int_Xferred + 1
-  ELSE
-    Int_Xferred = Int_Xferred + 1
-    i1_l = IntKiBuf( Int_Xferred    )
-    i1_u = IntKiBuf( Int_Xferred + 1)
-    Int_Xferred = Int_Xferred + 2
-    i2_l = IntKiBuf( Int_Xferred    )
-    i2_u = IntKiBuf( Int_Xferred + 1)
-    Int_Xferred = Int_Xferred + 2
-    i3_l = IntKiBuf( Int_Xferred    )
-    i3_u = IntKiBuf( Int_Xferred + 1)
-    Int_Xferred = Int_Xferred + 2
-    i4_l = IntKiBuf( Int_Xferred    )
-    i4_u = IntKiBuf( Int_Xferred + 1)
-    Int_Xferred = Int_Xferred + 2
-    IF (ALLOCATED(OutData%HAWCData)) DEALLOCATE(OutData%HAWCData)
-    ALLOCATE(OutData%HAWCData(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
-    IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%HAWCData.', ErrStat, ErrMsg,RoutineName)
-       RETURN
-    END IF
-    ALLOCATE(mask4(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
-    IF (ErrStat2 /= 0) THEN 
-       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask4.', ErrStat, ErrMsg,RoutineName)
-       RETURN
-    END IF
-    mask4 = .TRUE. 
-      IF (SIZE(OutData%HAWCData)>0) OutData%HAWCData = UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%HAWCData))-1 ), mask4, 0.0_ReKi )
-      Re_Xferred   = Re_Xferred   + SIZE(OutData%HAWCData)
-    DEALLOCATE(mask4)
-  END IF
  END SUBROUTINE IfW_HAWCWind_UnPackOtherState
 
  SUBROUTINE IfW_HAWCWind_CopyParam( SrcParamData, DstParamData, CtrlCode, ErrStat, ErrMsg )
@@ -820,8 +732,12 @@ ENDIF
    CHARACTER(*),    INTENT(  OUT) :: ErrMsg
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
+   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
+   INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
+   INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyParam'
 ! 
    ErrStat = ErrID_None
@@ -837,6 +753,24 @@ ENDIF
     DstParamData%dy = SrcParamData%dy
     DstParamData%dz = SrcParamData%dz
     DstParamData%RefHt = SrcParamData%RefHt
+IF (ALLOCATED(SrcParamData%HAWCData)) THEN
+  i1_l = LBOUND(SrcParamData%HAWCData,1)
+  i1_u = UBOUND(SrcParamData%HAWCData,1)
+  i2_l = LBOUND(SrcParamData%HAWCData,2)
+  i2_u = UBOUND(SrcParamData%HAWCData,2)
+  i3_l = LBOUND(SrcParamData%HAWCData,3)
+  i3_u = UBOUND(SrcParamData%HAWCData,3)
+  i4_l = LBOUND(SrcParamData%HAWCData,4)
+  i4_u = UBOUND(SrcParamData%HAWCData,4)
+  IF (.NOT. ALLOCATED(DstParamData%HAWCData)) THEN 
+    ALLOCATE(DstParamData%HAWCData(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+      CALL SetErrStat(ErrID_Fatal, 'Error allocating DstParamData%HAWCData.', ErrStat, ErrMsg,RoutineName)
+      RETURN
+    END IF
+  END IF
+    DstParamData%HAWCData = SrcParamData%HAWCData
+ENDIF
     DstParamData%ScaleMethod = SrcParamData%ScaleMethod
     DstParamData%SFx = SrcParamData%SFx
     DstParamData%SFy = SrcParamData%SFy
@@ -861,6 +795,9 @@ ENDIF
 ! 
   ErrStat = ErrID_None
   ErrMsg  = ""
+IF (ALLOCATED(ParamData%HAWCData)) THEN
+  DEALLOCATE(ParamData%HAWCData)
+ENDIF
  END SUBROUTINE IfW_HAWCWind_DestroyParam
 
  SUBROUTINE IfW_HAWCWind_PackParam( ReKiBuf, DbKiBuf, IntKiBuf, Indata, ErrStat, ErrMsg, SizeOnly )
@@ -881,7 +818,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackParam'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -909,6 +846,11 @@ ENDIF
       Re_BufSz   = Re_BufSz   + 1  ! dy
       Re_BufSz   = Re_BufSz   + 1  ! dz
       Re_BufSz   = Re_BufSz   + 1  ! RefHt
+  Int_BufSz   = Int_BufSz   + 1     ! HAWCData allocated yes/no
+  IF ( ALLOCATED(InData%HAWCData) ) THEN
+    Int_BufSz   = Int_BufSz   + 2*4  ! HAWCData upper/lower bounds for each dimension
+      Re_BufSz   = Re_BufSz   + SIZE(InData%HAWCData)  ! HAWCData
+  END IF
       Int_BufSz  = Int_BufSz  + 1  ! ScaleMethod
       Re_BufSz   = Re_BufSz   + 1  ! SFx
       Re_BufSz   = Re_BufSz   + 1  ! SFy
@@ -977,6 +919,28 @@ ENDIF
       Re_Xferred   = Re_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%RefHt
       Re_Xferred   = Re_Xferred   + 1
+  IF ( .NOT. ALLOCATED(InData%HAWCData) ) THEN
+    IntKiBuf( Int_Xferred ) = 0
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    IntKiBuf( Int_Xferred ) = 1
+    Int_Xferred = Int_Xferred + 1
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,1)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,1)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,2)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,2)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,3)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,3)
+    Int_Xferred = Int_Xferred + 2
+    IntKiBuf( Int_Xferred    ) = LBOUND(InData%HAWCData,4)
+    IntKiBuf( Int_Xferred + 1) = UBOUND(InData%HAWCData,4)
+    Int_Xferred = Int_Xferred + 2
+
+      IF (SIZE(InData%HAWCData)>0) ReKiBuf ( Re_Xferred:Re_Xferred+(SIZE(InData%HAWCData))-1 ) = PACK(InData%HAWCData,.TRUE.)
+      Re_Xferred   = Re_Xferred   + SIZE(InData%HAWCData)
+  END IF
       IntKiBuf ( Int_Xferred:Int_Xferred+(1)-1 ) = InData%ScaleMethod
       Int_Xferred   = Int_Xferred   + 1
       ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%SFx
@@ -1026,8 +990,12 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask3(:,:,:)
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
+  INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
+  INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
+  INTEGER(IntKi)                 :: i3, i3_l, i3_u  !  bounds (upper/lower) for an array dimension 3
+  INTEGER(IntKi)                 :: i4, i4_l, i4_u  !  bounds (upper/lower) for an array dimension 4
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackParam'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1067,6 +1035,38 @@ ENDIF
       Re_Xferred   = Re_Xferred + 1
       OutData%RefHt = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
+  IF ( IntKiBuf( Int_Xferred ) == 0 ) THEN  ! HAWCData not allocated
+    Int_Xferred = Int_Xferred + 1
+  ELSE
+    Int_Xferred = Int_Xferred + 1
+    i1_l = IntKiBuf( Int_Xferred    )
+    i1_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i2_l = IntKiBuf( Int_Xferred    )
+    i2_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i3_l = IntKiBuf( Int_Xferred    )
+    i3_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    i4_l = IntKiBuf( Int_Xferred    )
+    i4_u = IntKiBuf( Int_Xferred + 1)
+    Int_Xferred = Int_Xferred + 2
+    IF (ALLOCATED(OutData%HAWCData)) DEALLOCATE(OutData%HAWCData)
+    ALLOCATE(OutData%HAWCData(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating OutData%HAWCData.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    ALLOCATE(mask4(i1_l:i1_u,i2_l:i2_u,i3_l:i3_u,i4_l:i4_u),STAT=ErrStat2)
+    IF (ErrStat2 /= 0) THEN 
+       CALL SetErrStat(ErrID_Fatal, 'Error allocating mask4.', ErrStat, ErrMsg,RoutineName)
+       RETURN
+    END IF
+    mask4 = .TRUE. 
+      IF (SIZE(OutData%HAWCData)>0) OutData%HAWCData = REAL( UNPACK(ReKiBuf( Re_Xferred:Re_Xferred+(SIZE(OutData%HAWCData))-1 ), mask4, 0.0_ReKi ), SiKi)
+      Re_Xferred   = Re_Xferred   + SIZE(OutData%HAWCData)
+    DEALLOCATE(mask4)
+  END IF
       OutData%ScaleMethod = IntKiBuf( Int_Xferred ) 
       Int_Xferred   = Int_Xferred + 1
       OutData%SFx = ReKiBuf( Re_Xferred )
@@ -1108,7 +1108,7 @@ ENDIF
    INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
    INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyInput'
 ! 
    ErrStat = ErrID_None
@@ -1161,7 +1161,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackInput'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1250,7 +1250,7 @@ ENDIF
   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackInput'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1301,7 +1301,7 @@ ENDIF
    INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
    INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyOutput'
 ! 
    ErrStat = ErrID_None
@@ -1354,7 +1354,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackOutput'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1443,7 +1443,7 @@ ENDIF
   INTEGER(IntKi)                 :: i1, i1_l, i1_u  !  bounds (upper/lower) for an array dimension 1
   INTEGER(IntKi)                 :: i2, i2_l, i2_u  !  bounds (upper/lower) for an array dimension 2
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackOutput'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1492,7 +1492,7 @@ ENDIF
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyContState'
 ! 
    ErrStat = ErrID_None
@@ -1529,7 +1529,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackContState'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1598,7 +1598,7 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackContState'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1623,7 +1623,7 @@ ENDIF
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyDiscState'
 ! 
    ErrStat = ErrID_None
@@ -1660,7 +1660,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackDiscState'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1729,7 +1729,7 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackDiscState'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1754,7 +1754,7 @@ ENDIF
 ! Local 
    INTEGER(IntKi)                 :: i,j,k
    INTEGER(IntKi)                 :: ErrStat2
-   CHARACTER(1024)                :: ErrMsg2
+   CHARACTER(ErrMsgLen)           :: ErrMsg2
    CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_CopyConstrState'
 ! 
    ErrStat = ErrID_None
@@ -1791,7 +1791,7 @@ ENDIF
   INTEGER(IntKi)                 :: i,i1,i2,i3,i4,i5
   LOGICAL                        :: OnlySize ! if present and true, do not pack, just allocate buffers
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_PackConstrState'
  ! buffers to store subtypes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
@@ -1860,7 +1860,7 @@ ENDIF
   LOGICAL, ALLOCATABLE           :: mask4(:,:,:,:)
   LOGICAL, ALLOCATABLE           :: mask5(:,:,:,:,:)
   INTEGER(IntKi)                 :: ErrStat2
-  CHARACTER(1024)                :: ErrMsg2
+  CHARACTER(ErrMsgLen)           :: ErrMsg2
   CHARACTER(*), PARAMETER        :: RoutineName = 'IfW_HAWCWind_UnPackConstrState'
  ! buffers to store meshes, if any
   REAL(ReKi),      ALLOCATABLE   :: Re_Buf(:)
