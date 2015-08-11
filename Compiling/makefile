@@ -125,6 +125,7 @@ IfW_SOURCES =              \
 	IfW_UniformWind_Types.f90  \
 	IfW_UniformWind.f90     \
 	IfW_HAWCWind_Types.f90  \
+	IfW_HAWCWind.f90        \
 	InflowWind_Types.f90    \
 	InflowWind_Subs.f90     \
 	InflowWind.f90          \
@@ -226,16 +227,16 @@ IfW_TSFFWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_TSFFWind_Types$(O
 IfW_BladedFFWind_Types$(OBJ_EXT):   NWTC_Library$(OBJ_EXT)
 IfW_BladedFFWind$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
 IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
-#IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
+IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 IfW_UserWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
 Lidar_Types$(OBJ_EXT):              NWTC_Library$(OBJ_EXT)
 Lidar$(OBJ_EXT):                    NWTC_Library$(OBJ_EXT) Lidar_Types$(OBJ_EXT) InflowWind_Subs$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
                                     IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT) \
-                                    Lidar_Types$(OBJ_EXT)
+                                    Lidar_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
 InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
-                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT)
+                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT) IfW_HAWCWind$(OBJ_EXT)
 InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Subs$(OBJ_EXT) Lidar$(OBJ_EXT)
 
 #Driver dependency rules:
