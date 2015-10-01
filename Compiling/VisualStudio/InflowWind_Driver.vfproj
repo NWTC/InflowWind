@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<VisualStudioProject ProjectCreator="Intel Fortran" Keyword="Console Application" Version="11.0" ProjectIdGuid="{28382951-9300-45E7-B480-C7B381C75D1D}">
+	<Platforms>
+		<Platform Name="Win32"/></Platforms>
+	<Configurations>
+		<Configuration Name="Debug|Win32" OutputDirectory="..\..\bin\">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" DebugInformationFormat="debugEnabled" Optimization="optimizeDisabled" Preprocess="preprocessYes" WarnInterfaces="true" Traceback="true" BoundsCheck="true" StackFrameCheck="true" RuntimeLibrary="rtMultiThreadedDebug" UseMkl="mklSequential"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_$(PlatformName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" GenerateManifest="false" GenerateDebugInformation="true" SubSystem="subSystemConsole" StackReserveSize="999999999" LargeAddressAware="addrAwareLarge"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration>
+		<Configuration Name="Release|Win32" OutputDirectory="..\..\bin\">
+				<Tool Name="VFFortranCompilerTool" SuppressStartupBanner="true" InterproceduralOptimizations="ipoMultiFile" Preprocess="preprocessYes" PreprocessorDefinitions="FPE_TRAP_ENABLED" StandardWarnings="standardWarningsF03" DisableSpecificDiagnostics="5268,5199" UseMkl="mklSequential"/>
+				<Tool Name="VFLinkerTool" OutputFile="$(OutDir)\$(ProjectName)_$(PlatformName).exe" LinkIncremental="linkIncrementalNo" SuppressStartupBanner="true" SubSystem="subSystemConsole"/>
+				<Tool Name="VFResourceCompilerTool"/>
+				<Tool Name="VFMidlTool" SuppressStartupBanner="true"/>
+				<Tool Name="VFCustomBuildTool"/>
+				<Tool Name="VFPreLinkEventTool"/>
+				<Tool Name="VFPreBuildEventTool"/>
+				<Tool Name="VFPostBuildEventTool"/>
+				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
+	<Files>
+		<Filter Name="Header Files" Filter="fi;fd"/>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
+		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
+		<Filter Name="Driver">
+		<File RelativePath="..\..\Source\Driver\InflowWind_Driver.f90"/>
+		<File RelativePath="..\..\Source\Driver\InflowWind_Driver_Subs.f90"/>
+		<File RelativePath="..\..\Source\Driver\InflowWind_Driver_Types.f90"/></Filter>
+		<Filter Name="InflowWind">
+		<Filter Name="Registry">
+		<File RelativePath="..\..\Source\Registry\IfW_BladedFFWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_BladedFFWind" Outputs="..\..\Source\IfW_BladedFFWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\IfW_HAWCWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_HAWCWind" Outputs="..\..\Source\IfW_HAWCWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\IfW_TSFFWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_TSFFWind" Outputs="..\..\Source\IfW_TSFFWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\IfW_UniformWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UniformWind" Outputs="..\..\Source\IfW_UniformWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\IfW_UserWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UserWind" Outputs="..\..\Source\IfW_UserWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\InflowWind.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat InflowWind" Outputs="..\..\Source\InflowWind_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\Registry\Lidar.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat Lidar" Outputs="..\..\Source\Lidar_Types.f90"/></FileConfiguration></File></Filter>
+		<File RelativePath="..\..\Source\IfW_BladedFFWind.f90"/>
+		<File RelativePath="..\..\Source\IfW_BladedFFWind_Types.f90"/>
+		<File RelativePath="..\..\Source\IfW_HAWCWind.f90"/>
+		<File RelativePath="..\..\Source\IfW_HAWCWind_Types.f90"/>
+		<File RelativePath="..\..\Source\IfW_TSFFWind.f90"/>
+		<File RelativePath="..\..\Source\IfW_TSFFWind_Types.f90"/>
+		<File RelativePath="..\..\Source\IfW_UniformWind.f90"/>
+		<File RelativePath="..\..\Source\IfW_UniformWind_Types.f90"/>
+		<File RelativePath="..\..\Source\IfW_UserWind.f90"/>
+		<File RelativePath="..\..\Source\IfW_UserWind_Types.f90"/>
+		<File RelativePath="..\..\Source\InflowWind.f90"/>
+		<File RelativePath="..\..\Source\InflowWind_Subs.f90"/>
+		<File RelativePath="..\..\Source\InflowWind_Types.f90"/>
+		<File RelativePath="..\..\Source\Lidar.f90"/>
+		<File RelativePath="..\..\Source\Lidar_Types.f90"/></Filter>
+		<Filter Name="NWTC_Library">
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\ModMesh.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\ModMesh_Mapping.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\ModMesh_Types.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\NWTC_Base.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\NWTC_IO.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\dependencies\lapack\NWTC_LAPACK.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\NWTC_Library.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\NWTC_Library_Types.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\NWTC_Num.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\SingPrec.f90"/>
+		<File RelativePath="..\..\Source\dependencies\NWTC_Library\SysIVF.f90">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFFortranCompilerTool" Preprocess="preprocessYes"/></FileConfiguration></File></Filter></Filter></Files>
+	<Globals/></VisualStudioProject>
