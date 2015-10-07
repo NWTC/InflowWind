@@ -8,12 +8,12 @@ InflowWind driver input file.  V1.00
    f           Summary        -- Summarize the data extents in the windfile            (flag)
    f           SummaryFile    -- Write summary to file (.dvr.sum)                      (flag)
 ----  IfW inputs -------------------------------------------------------------
-   0.0025      DT             -- timestep size for driver to take (s,o r DEFAULT for what the file contains)
+   0.0025      DT             -- timestep size for driver to take (s,or DEFAULT for what the file contains)
 ----  Points file input (output given as POINTSFILENAME.Velocity.dat) --------
    t           PointsFile     -- read in a list of points from a file                  (flag)
 "Test001--points.txt"   PointsFileName -- name of points file (-) (comma separated x,y,z coordinates, # symbol for comments)
 ----  Output grid (Points below ground will simply be ignored) ---------------
-   t           WindGrid       -- report wind data at set of Y,Z coordinates            (flag)
+   t           WindGrid       -- report wind data at set of X,Y,Z coordinates            (flag)
    0,0,90      GridCtrCoord   -- coordinate of center of grid                          (m)
    1,1,0       GridDx,GridDY,GridDZ  -- Stepsize of grid                               (m)
    11,11,0     GridNx,GridNY,GridNZ  -- number of grid points in X, Y and Z directions (-)
