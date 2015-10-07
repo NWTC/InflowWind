@@ -19,14 +19,18 @@ REM -- NOTE: do not use quotation marks around the path names!!!! --------------
 REM ----------------------------------------------------------------------------
 REM ----------------------------------------------------------------------------
 
-SET Registry=C:\Users\aplatt\Documents\software_development\windsvn\FAST\branches\FAST_Registry\bin\Registry_Win32.exe
+SET Registry=..\..\bin\Registry_win32.exe
+SET Source_Loc=..\..\Source
 
-SET NWTC_Lib_Loc=C:\Users\aplatt\Documents\software_development\windsvn\NWTC_Library\trunk\source
+SET NWTC_Lib_Loc=%Source_Loc%\dependencies\NWTC_Library
 
 
-SET IfW_Reg_Loc=C:\Users\aplatt\Documents\software_development\windsvn\InflowWind\branches\modularization2\Source\Registry
-SET IfW_Reg_OutLoc=C:\Users\aplatt\Documents\software_development\windsvn\InflowWind\branches\modularization2\Source
+SET IfW_Reg_Loc=%Source_Loc%\Registry
+SET IfW_Reg_OutLoc=%Source_Loc%
 
+
+
+IF /I "%2"=="dev" CALL ..\Set_FAST_paths.bat
 
 SET ModuleName=%1
 
@@ -60,8 +64,7 @@ ECHO Error running FAST Registry for %ModuleName%.
 ) ELSE (
 ECHO Registry for %ModuleName% completed.
 REM COPY /Y "%ModuleName%_Types.f90"   "%CURR_LOC%"
-rem IF /I "%ModuleName%"=="MAP" COPY /Y "%ModuleName%_Types.h" "%CURR_LOC%"
-)
+
 
 
 
@@ -76,7 +79,7 @@ ECHO. 
 SET REGISTRY=
 
 SET NWTC_Lib_Loc=
-SET IfW_Loc=
+SET Source_Loc=
 
 SET ModuleName=
 SET CURR_LOC=
