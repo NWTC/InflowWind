@@ -3,7 +3,7 @@
 ! WARNING This file is generated automatically by the FAST registry
 ! Do not edit.  Your changes to this file will be lost.
 !
-! FAST Registry (v2.08.02, 12-Aug-2015)
+! FAST Registry (v2.08.03, 2-Oct-2015)
 !*********************************************************************************************************************************
 ! InflowWind_Types
 !.................................................................................................................................
@@ -506,7 +506,7 @@ CONTAINS
    ErrMsg  = ""
     DstInputFileData%EchoFlag = SrcInputFileData%EchoFlag
     DstInputFileData%WindType = SrcInputFileData%WindType
-    DstInputFileData%PropagationDir = SrcInputFileData%PropogationDir
+    DstInputFileData%PropagationDir = SrcInputFileData%PropagationDir
     DstInputFileData%NWindVel = SrcInputFileData%NWindVel
 IF (ALLOCATED(SrcInputFileData%WindVxiList)) THEN
   i1_l = LBOUND(SrcInputFileData%WindVxiList,1)
@@ -2654,7 +2654,7 @@ ENDIF
     DstParamData%Initialized = SrcParamData%Initialized
     DstParamData%CTTS_Flag = SrcParamData%CTTS_Flag
     DstParamData%DT = SrcParamData%DT
-    DstParamData%PropagationDir = SrcParamData%PropogationDir
+    DstParamData%PropagationDir = SrcParamData%PropagationDir
     DstParamData%RotToWind = SrcParamData%RotToWind
     DstParamData%RotFromWind = SrcParamData%RotFromWind
 IF (ALLOCATED(SrcParamData%WindViXYZprime)) THEN
