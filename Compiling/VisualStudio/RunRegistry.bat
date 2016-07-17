@@ -24,7 +24,7 @@ SET Source_Loc=..\..\Source
 
 SET NWTC_Lib_Loc=%Source_Loc%\dependencies\NWTC_Library
 
-
+SET IfW_Loc=%Source_Loc%
 SET IfW_Reg_Loc=%Source_Loc%\Registry
 SET IfW_Reg_OutLoc=%Source_Loc%
 
@@ -47,10 +47,15 @@ SET CURR_LOC=%IfW_Loc%
 GOTO checkError
 
 
+:IfW_UniformWind
+SET CURR_LOC=%IfW_Loc%
+%REGISTRY% "%IfW_Reg_Loc%\%ModuleName%.txt" -I "%NWTC_Lib_Loc%" -I "%IfW_Reg_Loc%" -O "%CURR_LOC%"
+GOTO checkError
+
+
 :IfW_TSFFWind
 :IfW_HAWCWind
 :IfW_BladedFFWind
-:IfW_UniformWind
 :IfW_UserWind
 SET CURR_LOC=%IfW_Loc%
 %REGISTRY% "%IfW_Reg_Loc%\%ModuleName%.txt" -I "%NWTC_Lib_Loc%" -I "%IfW_Reg_Loc%" -noextrap  -O "%CURR_LOC%"
@@ -63,11 +68,7 @@ IF %ERRORLEVEL% NEQ 0 (
 ECHO Error running FAST Registry for %ModuleName%.
 ) ELSE (
 ECHO Registry for %ModuleName% completed.
-REM COPY /Y "%ModuleName%_Types.f90"   "%CURR_LOC%"
-
-
-
-
+)
 
 :end
 REM ----------------------------------------------------------------------------

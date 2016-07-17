@@ -35,30 +35,44 @@
 		<Filter Name="Registry">
 		<File RelativePath="..\..\Source\Registry\IfW_BladedFFWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_BladedFFWind" Outputs="..\..\Source\IfW_BladedFFWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_BladedFFWind" Outputs="..\..\Source\IfW_BladedFFWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\IfW_BladedFFWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\IfW_HAWCWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_HAWCWind" Outputs="..\..\Source\IfW_HAWCWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_HAWCWind" Outputs="..\..\Source\IfW_HAWCWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\IfW_HAWCWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\IfW_TSFFWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_TSFFWind" Outputs="..\..\Source\IfW_TSFFWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_TSFFWind" Outputs="..\..\Source\IfW_TSFFWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\IfW_TSFFWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\IfW_UniformWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UniformWind" Outputs="..\..\Source\IfW_UniformWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UniformWind" Outputs="..\..\Source\IfW_UniformWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\IfW_UniformWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\IfW_UserWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UserWind" Outputs="..\..\Source\IfW_UserWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_UserWind" Outputs="..\..\Source\IfW_UserWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\IfW_UserWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\InflowWind.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat InflowWind" Outputs="..\..\Source\InflowWind_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat InflowWind" Outputs="..\..\Source\InflowWind_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\InflowWind_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\Lidar.txt">
 			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat Lidar" Outputs="..\..\Source\Lidar_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat Lidar" Outputs="..\..\Source\Lidar_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\Lidar_Types.f90"/></Filter>
 		<File RelativePath="..\..\Source\IfW_BladedFFWind.f90"/>
