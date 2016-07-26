@@ -194,11 +194,6 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 	-I $(NWTC_Lib_DIR) -J $(INTER_DIR)
 
    # Making _Types.f90 files from .txt registry files.   These registries need the extra flag.
-IfW_UniformWind_Types.f90: $(RegistryDIR)/IfW_UniformWind.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC)
-	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
-
-   # These registries need the extra flag.
 IfW_%_Types.f90: $(RegistryDIR)/IfW_%.txt
 	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap
 	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
