@@ -22,7 +22,7 @@ REM ----------------------------------------------------------------------------
 SET Registry=..\..\bin\Registry_win32.exe
 SET Source_Loc=..\..\Source
 
-SET NWTC_Lib_Loc=%Source_Loc%\dependencies\NWTC_Library
+SET NWTC_Lib_Loc=%Source_Loc%\NWTC_Library\source
 
 SET IfW_Loc=%Source_Loc%
 SET IfW_Reg_Loc=%Source_Loc%\Registry
