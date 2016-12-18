@@ -37,9 +37,9 @@ LDFLAGS = -O2 -m$(BITS) -fbacktrace -g -fno-inline
 
 ifeq ($(OS),Windows_NT)
 # anything used in the "del_cmd" on clean cannot have the back slash:
-   RegistryProgram   = C:/Users/bjonkman/Documents/DATA/DesignCodes/simulators/FAST/SVNdirectory/branches/BJonkman/bin/Registry_win32.exe
-   NWTC_Lib_DIR      = ../Source/dependencies/NWTC_Library
-   NETLIB_DIR        = $(NWTC_Lib_DIR)/dependencies/lapack
+   RegistryProgram   = ../bin/Registry_win32.exe
+   NWTC_Lib_DIR      = ../Source/NWTC_Library/source
+   NETLIB_DIR        = $(NWTC_Lib_DIR)/NetLib/lapack
    IfW_DIR           = ../Source
    LDFLAGS          := $(LDFLAGS) -llapack -lblas -LC:/LAPACK/win32
    DEST_DIR          = ../bin
@@ -133,6 +133,8 @@ IfW_SOURCES =              \
 	IfW_TSFFWind.f90        \
 	IfW_BladedFFWind_Types.f90  \
 	IfW_BladedFFWind.f90    \
+	IfW_4Dext_Types.f90  \
+	IfW_4Dext.f90        \
 	IfW_UserWind_Types.f90  \
 	IfW_UserWind.f90        \
 	Lidar_Types.f90         \
@@ -180,30 +182,20 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
    # Making .o or .obj files from .f90 files
 %$(OBJ_EXT): %.f90
-	$(FC) -I $(INTER_DIR) $(FFLAGS) \
-	-c $< \
-	-o $(INTER_DIR)/$@ \
-	-I $(NWTC_Lib_DIR) -J $(INTER_DIR) -B $(INTER_DIR)
-
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)	
 
    # Making .o or .obj files from .f files
 %$(OBJ_EXT): %.f
-	$(FC) $(FFLAGS) \
-	-c $< \
-	-o $(INTER_DIR)/$@ \
-	-I $(NWTC_Lib_DIR) -J $(INTER_DIR)
+	$(FC) -I $(INTER_DIR) $(FFLAGS) -c $< -o $(INTER_DIR)/$@ -J $(INTER_DIR) -B $(INTER_DIR)	
 
+	
    # Making _Types.f90 files from .txt registry files.   These registries need the extra flag.
 IfW_%_Types.f90: $(RegistryDIR)/IfW_%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap
-	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
+	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap -O $(IfW_DIR)
 
    # Making _Types.f90 files from .txt registry files.
 %_Types.f90: $(RegistryDIR)/%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC)
-	$(CP_CMD) $@ "$(IfW_DIR)$(PATH_SEP)"
-
-
+	$(RegistryProgram) $< -I $(RegistryNWTC) -O $(IfW_DIR)
 
 
    #  Dependency rules.
@@ -232,11 +224,14 @@ IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
 IfW_UserWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
 Lidar_Types$(OBJ_EXT):              NWTC_Library$(OBJ_EXT)
 Lidar$(OBJ_EXT):                    NWTC_Library$(OBJ_EXT) Lidar_Types$(OBJ_EXT) InflowWind_Subs$(OBJ_EXT)
+IfW_4Dext_Types$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)
+IfW_4Dext$(OBJ_EXT):                NWTC_Library$(OBJ_EXT) IfW_4Dext_Types$(OBJ_EXT)
 InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
                                     IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT) \
-                                    Lidar_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
+                                    Lidar_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT) IfW_4Dext_Types$(OBJ_EXT)
 InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
-                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT) IfW_HAWCWind$(OBJ_EXT)
+                                    IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT) IfW_HAWCWind$(OBJ_EXT) \
+                                    IfW_4Dext$(OBJ_EXT)
 InflowWind$(OBJ_EXT):               NWTC_Library$(OBJ_EXT)  InflowWind_Subs$(OBJ_EXT) Lidar$(OBJ_EXT)
 
 #Driver dependency rules:
@@ -264,11 +259,13 @@ clean:
 	$(DEL_CMD) $(INTER_DIR)$(PATH_SEP)*.mod $(INTER_DIR)$(PATH_SEP)*$(OBJ_EXT)
 	$(DEL_CMD) "$(DEST_DIR)$(PATH_SEP)$(OUTPUT_NAME)$(EXE_EXT)"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)Lidar_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)InflowWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_UniformWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_TSFFWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_BladedFFWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_HAWCWind_Types.f90"
 	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_UserWind_Types.f90"
+	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)IfW_4Dext_Types.f90"
 	$(DEL_CMD) *_Types.f90
 
 #	$(DEL_CMD) "$(IfW_DIR)$(PATH_SEP)*_Types.f90

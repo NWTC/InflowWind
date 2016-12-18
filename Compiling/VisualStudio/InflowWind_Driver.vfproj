@@ -25,7 +25,8 @@
 				<Tool Name="VFManifestTool" SuppressStartupBanner="true"/></Configuration></Configurations>
 	<Files>
 		<Filter Name="Header Files" Filter="fi;fd"/>
-		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe"/>
+		<Filter Name="Resource Files" Filter="rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe">
+		<File RelativePath=".\RunRegistry.bat"/></Filter>
 		<Filter Name="Source Files" Filter="f90;for;f;fpp;ftn;def;odl;idl">
 		<Filter Name="Driver">
 		<File RelativePath="..\..\Source\Driver\InflowWind_Driver.f90"/>
@@ -33,6 +34,12 @@
 		<File RelativePath="..\..\Source\Driver\InflowWind_Driver_Types.f90"/></Filter>
 		<Filter Name="InflowWind">
 		<Filter Name="Registry">
+		<File RelativePath="..\..\Source\Registry\IfW_4Dext.txt">
+			<FileConfiguration Name="Debug|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_4Dext" Outputs="..\..\Source\IfW_4Dext_Types.f90"/></FileConfiguration>
+			<FileConfiguration Name="Release|Win32">
+				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_4Dext" Outputs="..\..\Source\IfW_4Dext_Types.f90"/></FileConfiguration></File>
+		<File RelativePath="..\..\Source\IfW_4Dext_Types.f90"/>
 		<File RelativePath="..\..\Source\Registry\IfW_BladedFFWind.txt">
 			<FileConfiguration Name="Debug|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat IfW_BladedFFWind" Outputs="..\..\Source\IfW_BladedFFWind_Types.f90"/></FileConfiguration>
@@ -75,6 +82,7 @@
 			<FileConfiguration Name="Release|Win32">
 				<Tool Name="VFCustomBuildTool" CommandLine="CALL RunRegistry.bat Lidar" Outputs="..\..\Source\Lidar_Types.f90"/></FileConfiguration></File>
 		<File RelativePath="..\..\Source\Lidar_Types.f90"/></Filter>
+		<File RelativePath="..\..\Source\IfW_4Dext.f90"/>
 		<File RelativePath="..\..\Source\IfW_BladedFFWind.f90"/>
 		<File RelativePath="..\..\Source\IfW_HAWCWind.f90"/>
 		<File RelativePath="..\..\Source\IfW_TSFFWind.f90"/>
