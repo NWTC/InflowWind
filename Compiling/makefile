@@ -10,7 +10,15 @@
 BITS = 32
 #BITS = 64
 
-#OS=lin
+
+IfW_DIR           = ../Source
+
+IfW_RegDIR        = $(IfW_DIR)/Registry
+NWTC_Lib_DIR      = $(IfW_DIR)/NWTC_Library/source
+NETLIB_DIR        = $(NWTC_Lib_DIR)/NetLib/lapack
+
+Driver_DIR        = $(IfW_DIR)/Driver
+OUTPUT_NAME       = InflowWind_Driver
 
 
    # Name of compiler to use and flags to use.
@@ -31,16 +39,12 @@ LDFLAGS = -O2 -m$(BITS) -fbacktrace -g -fno-inline
 
 
 
-   # Location of source files for InflowWind, NWTC Library, and the FAST Registry.
+   # Location of the FAST Registry.
    # You will probably need to change these for your system.
-
-
+   
 ifeq ($(OS),Windows_NT)
 # anything used in the "del_cmd" on clean cannot have the back slash:
    RegistryProgram   = ../bin/Registry_win32.exe
-   NWTC_Lib_DIR      = ../Source/NWTC_Library/source
-   NETLIB_DIR        = $(NWTC_Lib_DIR)/NetLib/lapack
-   IfW_DIR           = ../Source
    LDFLAGS          := $(LDFLAGS) -llapack -lblas -LC:/LAPACK/win32
    DEST_DIR          = ../bin
 
@@ -50,12 +54,7 @@ else
 #   ifeq ($(HOSTNAME), aplatt-21809s)
       SoftwareDir       = /Users/aplatt/software-development/windsvn
       RegistryProgram   = $(SoftwareDir)/FAST/branches/FAST_Registry/registry.exe
-      NWTC_Lib_DIR      = $(SoftwareDir)/NWTC_Library/trunk/source
-      IfW_DIR           = $(SoftwareDir)/InflowWind/branches/modularization2/Source
-		NETLIB_DIR 			:= \
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/NWTC_Source/                    	\
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/scalapack/scalapack-2.0.2/SRC/    \
-			$(SoftwareDir)/NWTC_Library/branches/NetLib/fftpack
+ 
 			# Mac flag requirement
 	# Mac needs some additional flags prepended for linking to get lapack working, hence the funny notation here.
 		LDFLAGS := -framework Accelerate $(LDFLAGS)
@@ -63,15 +62,9 @@ else
 
 #   else
 #      RegistryProgram   = registry.exe
-#      NWTC_Lib_DIR      = $(FAST_DIR)/dependencies/NWTC_Library
-#      IfW_DIR           = $(FAST_DIR)/dependencies/InflowWind
 #   endif
 endif
 
-RegistryNWTC      = $(NWTC_Lib_DIR)         # Location of the Registry_NWTC_Library.txt file
-RegistryDIR       = $(IfW_DIR)/Registry
-Driver_DIR        = $(IfW_DIR)/Driver
-OUTPUT_NAME       = InflowWind_Driver
 
 
 
@@ -107,7 +100,7 @@ endif
    # Source files (by module)
 
 LIB_SOURCES =           	\
-	SingPrec.f90        	   \
+	SingPrec.f90        	\
 	NWTC_Base.f90        	\
 	$(SYS_FILE).f90      	\
 	NWTC_Library_Types.f90 	\
@@ -149,11 +142,11 @@ Driver_SOURCES =                 \
 
 
 
-vpath %.f90 $(NWTC_Lib_DIR) $(IfW_DIR) $(Driver_DIR) $(RegistryDIR) $(NETLIB_DIR)
+vpath %.f90 $(NWTC_Lib_DIR) $(IfW_DIR) $(Driver_DIR) $(NETLIB_DIR)
 vpath %.f 	$(NETLIB_DIR)
 vpath %.mod $(INTER_DIR)
 vpath %$(OBJ_EXT) $(INTER_DIR)
-vpath %.txt $(RegistryDIR)
+vpath %.txt $(IfW_RegDIR)
 
 
 
@@ -190,12 +183,12 @@ default: $(INTER_DIR) $(ALL_OBJS) $(DEST_DIR)/$(OUTPUT_NAME)$(EXE_EXT)
 
 	
    # Making _Types.f90 files from .txt registry files.   These registries need the extra flag.
-IfW_%_Types.f90: $(RegistryDIR)/IfW_%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC) -noextrap -O $(IfW_DIR)
+IfW_%_Types.f90: $(IfW_RegDIR)/IfW_%.txt
+	$(RegistryProgram) $< -I $(NWTC_Lib_DIR) -noextrap -O $(IfW_DIR)
 
    # Making _Types.f90 files from .txt registry files.
 %_Types.f90: $(RegistryDIR)/%.txt
-	$(RegistryProgram) $< -I $(RegistryNWTC) -O $(IfW_DIR)
+	$(RegistryProgram) $< -I $(NWTC_Lib_DIR) -O $(IfW_DIR)
 
 
    #  Dependency rules.
@@ -212,23 +205,24 @@ NWTC_LAPACK$(OBJ_EXT):              NWTC_Base$(OBJ_EXT)
 NWTC_Library$(OBJ_EXT):             ModMesh$(OBJ_EXT)  ModMesh_Mapping$(OBJ_EXT) NWTC_Num$(OBJ_EXT) NWTC_IO$(OBJ_EXT) NWTC_LAPACK$(OBJ_EXT)
 
 #InflowWind dependency rules:
-IfW_UniformWind_Types$(OBJ_EXT):    NWTC_Library$(OBJ_EXT)
+IfW_UniformWind_Types$(OBJ_EXT):    NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_UniformWind_Types.f90
 IfW_IniformWind$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) IfW_UniformWind_Types$(OBJ_EXT)
-IfW_TSFFWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
+IfW_TSFFWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_TSFFWind_Types.f90
 IfW_TSFFWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_TSFFWind_Types$(OBJ_EXT)
-IfW_BladedFFWind_Types$(OBJ_EXT):   NWTC_Library$(OBJ_EXT)
+IfW_BladedFFWind_Types$(OBJ_EXT):   NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_BladedFFWind_Types.f90
 IfW_BladedFFWind$(OBJ_EXT):         NWTC_Library$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT)
-IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
+IfW_HAWCWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_HAWCWind_Types.f90
 IfW_HAWCWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)
-IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT)
+IfW_UserWind_Types$(OBJ_EXT):       NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_UserWind_Types.f90
 IfW_UserWind$(OBJ_EXT):             NWTC_Library$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT)
-Lidar_Types$(OBJ_EXT):              NWTC_Library$(OBJ_EXT)
+Lidar_Types$(OBJ_EXT):              NWTC_Library$(OBJ_EXT) $(IfW_DIR)/Lidar_Types.f90
 Lidar$(OBJ_EXT):                    NWTC_Library$(OBJ_EXT) Lidar_Types$(OBJ_EXT) InflowWind_Subs$(OBJ_EXT)
-IfW_4Dext_Types$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)
+IfW_4Dext_Types$(OBJ_EXT):          NWTC_Library$(OBJ_EXT) $(IfW_DIR)/IfW_4Dext_Types.f90
 IfW_4Dext$(OBJ_EXT):                NWTC_Library$(OBJ_EXT) IfW_4Dext_Types$(OBJ_EXT)
-InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
+InflowWind_Types$(OBJ_EXT):         NWTC_Library$(OBJ_EXT)  $(IfW_DIR)/InflowWind_Types.f90 \
+                                    IfW_UniformWind_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT)  \
                                     IfW_TSFFWind_Types$(OBJ_EXT) IfW_BladedFFWind_Types$(OBJ_EXT) IfW_UserWind_Types$(OBJ_EXT) \
-                                    Lidar_Types$(OBJ_EXT) IfW_HAWCWind_Types$(OBJ_EXT) IfW_4Dext_Types$(OBJ_EXT)
+                                    Lidar_Types$(OBJ_EXT) IfW_4Dext_Types$(OBJ_EXT) 
 InflowWind_Subs$(OBJ_EXT):          NWTC_Library$(OBJ_EXT)  InflowWind_Types$(OBJ_EXT) IfW_UniformWind$(OBJ_EXT) \
                                     IfW_TSFFWind$(OBJ_EXT) IfW_BladedFFWind$(OBJ_EXT) IfW_UserWind$(OBJ_EXT) IfW_HAWCWind$(OBJ_EXT) \
                                     IfW_4Dext$(OBJ_EXT)
