@@ -36,7 +36,7 @@ IMPLICIT NONE
 ! =========  IfW_4Dext_InitInputType  =======
   TYPE, PUBLIC :: IfW_4Dext_InitInputType
     INTEGER(IntKi) , DIMENSION(1:4)  :: n      !< number of grid points in the x, y, z, and t directions [-]
-    REAL(ReKi) , DIMENSION(1:4)  :: delta      !< size between 2 consecutive grid points in each grid direction [-]
+    REAL(ReKi) , DIMENSION(1:4)  :: delta      !< size between 2 consecutive grid points in each grid direction [m,m,m,s]
     REAL(ReKi) , DIMENSION(1:3)  :: pZero      !< fixed position of the XYZ grid (i.e., XYZ coordinates of m%V(:,1,1,1,:)) [m]
   END TYPE IfW_4Dext_InitInputType
 ! =======================
@@ -54,7 +54,7 @@ IMPLICIT NONE
 ! =========  IfW_4Dext_ParameterType  =======
   TYPE, PUBLIC :: IfW_4Dext_ParameterType
     INTEGER(IntKi) , DIMENSION(1:4)  :: n      !< number of evenly-spaced grid points in the x, y, z, and t directions [-]
-    REAL(ReKi) , DIMENSION(1:4)  :: delta      !< size between 2 consecutive grid points in each grid direction [-]
+    REAL(ReKi) , DIMENSION(1:4)  :: delta      !< size between 2 consecutive grid points in each grid direction [m,m,m,s]
     REAL(ReKi) , DIMENSION(1:3)  :: pZero      !< fixed position of the XYZ grid (i.e., XYZ coordinates of m%V(:,1,1,1,:)) [m]
   END TYPE IfW_4Dext_ParameterType
 ! =======================
