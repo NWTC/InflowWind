@@ -218,7 +218,7 @@ IMPLICIT NONE
 ! =======================
 ! =========  InflowWind_OtherStateType  =======
   TYPE, PUBLIC :: InflowWind_OtherStateType
-    REAL(ReKi)  :: DummyConstrState      !< Remove this variable if you have constraint states [-]
+    REAL(ReKi)  :: DummyOtherState      !< Remove this variable if you have other states [-]
   END TYPE InflowWind_OtherStateType
 ! =======================
 CONTAINS
@@ -5287,7 +5287,7 @@ ENDIF
 ! 
    ErrStat = ErrID_None
    ErrMsg  = ""
-    DstOtherStateData%DummyConstrState = SrcOtherStateData%DummyConstrState
+    DstOtherStateData%DummyOtherState = SrcOtherStateData%DummyOtherState
  END SUBROUTINE InflowWind_CopyOtherState
 
  SUBROUTINE InflowWind_DestroyOtherState( OtherStateData, ErrStat, ErrMsg )
@@ -5336,7 +5336,7 @@ ENDIF
   Re_BufSz  = 0
   Db_BufSz  = 0
   Int_BufSz  = 0
-      Re_BufSz   = Re_BufSz   + 1  ! DummyConstrState
+      Re_BufSz   = Re_BufSz   + 1  ! DummyOtherState
   IF ( Re_BufSz  .GT. 0 ) THEN 
      ALLOCATE( ReKiBuf(  Re_BufSz  ), STAT=ErrStat2 )
      IF (ErrStat2 /= 0) THEN 
@@ -5364,7 +5364,7 @@ ENDIF
   Db_Xferred  = 1
   Int_Xferred = 1
 
-      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyConstrState
+      ReKiBuf ( Re_Xferred:Re_Xferred+(1)-1 ) = InData%DummyOtherState
       Re_Xferred   = Re_Xferred   + 1
  END SUBROUTINE InflowWind_PackOtherState
 
@@ -5400,7 +5400,7 @@ ENDIF
   Re_Xferred  = 1
   Db_Xferred  = 1
   Int_Xferred  = 1
-      OutData%DummyConstrState = ReKiBuf( Re_Xferred )
+      OutData%DummyOtherState = ReKiBuf( Re_Xferred )
       Re_Xferred   = Re_Xferred + 1
  END SUBROUTINE InflowWind_UnPackOtherState
 
