@@ -256,6 +256,8 @@ FUNCTION Interp4D( Time, Position, p, m, ErrStat, ErrMsg )
    DO i=1,size(p%n)   
       IF (Indx_Lo(i) <= 0) THEN
          Indx_Lo(i) = 1
+         CALL SetErrStat(ErrID_Fatal,'Outside the grid bounds.',ErrStat,ErrMsg,RoutineName) !BJJ: check that this isn't too restrictive, especially in time
+         RETURN
       ELSEIF (Indx_Lo(i) >= p%n(i) ) THEN
          Indx_Lo(i) = max( p%n(i) - 1, 1 )           ! make sure it's a valid index
       END IF      
