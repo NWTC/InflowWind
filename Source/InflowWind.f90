@@ -209,7 +209,7 @@ SUBROUTINE InflowWind_Init( InitInp,   InputGuess,    p, ContStates, DiscStates,
          ! let's tell InflowWind if an external module (e.g., FAST.Farm) is going to set the velocity grids.
       IF ( InitInp%Use4Dext) then
          InputFileData%WindType = FDext_WindNumber      
-         InputFileData%PropagationDir = 0.0_ReKi ! wind is in XYZ coordinates (already rotated if nessary), so don't rotate it again
+         InputFileData%PropagationDir = 0.0_ReKi ! wind is in XYZ coordinates (already rotated if necessary), so don't rotate it again
       END IF
       
       

@@ -202,6 +202,7 @@ FUNCTION Interp4D( Time, Position, p, m, ErrStat, ErrMsg )
 
    REAL(ReKi)                                                  :: Interp4D(3)       !< The interpolated UVW from m%V
    
+   CHARACTER(*), PARAMETER                                     :: RoutineName = 'Interp4D'   
 
       ! Local variables
 
@@ -238,8 +239,9 @@ FUNCTION Interp4D( Time, Position, p, m, ErrStat, ErrMsg )
    i=4      
       Tmp = (Time - m%TgridStart) / p%delta(i)
       Indx_Lo(i) = INT( Tmp ) + 1     ! convert REAL to INTEGER, then add one since our grid indices start at 1, not 0
-      isopc(i) = 2.0_ReKi * (Tmp - REAL(Indx_Lo(i) - 1_IntKi, ReKi)) - 1.0_ReKi  ! convert to value between -1 and 1         
-
+     !isopc(i) = 2.0_ReKi * (Tmp - REAL(Indx_Lo(i) - 1_IntKi, ReKi)) - 1.0_ReKi  ! convert to value between -1 and 1         
+      isopc(i) = -1.0_ReKi ! For consistency, we're not going to interpolate in time; this is because we can't interpolate the last time grid in FAST.Farm anyway
+      
    !-------------------------------------------------------------------------------------------------
    ! to verify that we don't extrapolate, make sure isopc is bound between -1 and 1 (effectively nearest neighbor)
    !-------------------------------------------------------------------------------------------------            
